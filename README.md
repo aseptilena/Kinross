@@ -1,4 +1,4 @@
-**Flevo: a collection of Python scripts and extensions to supplement and enrich Inkscape**  
+**Kinross: a collection of Python scripts and extensions to supplement and enrich Inkscape**  
 Parcly Taxel / Jeremy Tan, 2015  
 [Tumblr](http://parclytaxel.tumblr.com) | [Deviant Art](https://parclytaxel.deviantart.com) | [Derpibooru](https://derpiboo.ru/profiles/51c64a35a4c72ddce400081e)  
 GPLv2 / CC BY-SA 4.0 / FAL 1.3

@@ -186,7 +186,6 @@ def stress(string):
         b += seeds[i][2]
     curve = [string[0], a / len(seeds), b / len(seeds), string[-1]]
     # Refine by projection and handle shifting
-    errors = [0.0 for i in range(len(string))]
     for i in range(5):
         for j in range(middle - 1, 0, -1):
             delta1, delta2 = project(curve, string[j]), project(curve, string[-j - 1])

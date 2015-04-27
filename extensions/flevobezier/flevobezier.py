@@ -24,7 +24,6 @@ class root(inkex.Effect):
                     subpaths.append(raw[prev:i])
                     prev = i
             subpaths.append(raw[prev:])
-            
             output = ""
             for simpath in subpaths:
                 closed = False
@@ -193,8 +192,7 @@ def stress(string):
             delta1, delta2 = project(curve, string[j]), project(curve, string[-j - 1])
             curve[1] += 2.5 * delta1
             curve[2] += 2.5 * delta2
-            errors[j], errors[-j - 1] = dist(delta1), dist(delta2)
-    if len(string) % 2: errors[middle] = dist(project(curve, string[middle]))
+    errors = [dist(project(curve, k)) for k in string]
     return curve, errors
 
 # Projection of node onto cubic curve based on public domain code by Mike "Pomax" Kamermans

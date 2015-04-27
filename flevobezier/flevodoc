@@ -1,0 +1,150 @@
+Flevobézier: an Inkscape extension fitting Bézier curves
+Documentation by Parcly Taxel / Jeremy Tan, 2015
+parclytaxel.tumblr.com / parclytaxel.deviantart.com / @Parcly_Taxel
+CC BY-SA 4.0 / FAL 1.3
+
+1. Introduction
+Inkscape's node tool is terrible when it comes to deleting nodes.
+Suppose you draw a three-node path that looks like half of an astroid
+or a V with its ends curved outwards and then delete the middle node;
+you never get back something even remotely resembling the original path.
+Similarly, path simplification and the pencil tool at very high smoothing
+levels sometimes deforms the input beyond recognition. The many improvements
+made in 0.91 have not resolved this issue.
+
+There is a function in the experimental 2geom package,
+cubics_fitting_curvature(), that makes an honest attempt at the problem.[1]
+However, its utility is limited by its fixed number of arguments and
+its inability to generate splines of more than one curve or line.
+Therefore I have written this extension to Inkscape called Flevobézier
+(named after the newest of the Netherlands' twelve provinces, Flevoland)
+which I and fellow Inkscape vectorist Liam P. White have found more useful.
+It is my hope that the extension will be incorporated into 2geom and
+ultimately into the standard Inkscape distribution itself.
+
+2. History
+At the time of the program's creation I was a huge fan of the TV series
+My Little Pony: Friendship Is Magic. I was having difficulty with vectoring
+out some ponies from that show – as well as a whole host of associated
+original characters – because vectoring convention dictates that the fewest
+possible number of nodes be used and yet the outlines I was up against were
+often very complex and nontrivial. So I thought to myself: "Can an extension
+to Inkscape be written to assist me in this 'interesting' task?" (Of course,
+over-reliance on computer scripts is never a good thing.) My literature search
+on DuckDuckGo turned up nothing save for a Stack Overflow question,[2] a thesis
+written by a US Naval Postgraduate School student[3] and a personal GitHub site
+discussing the many operations performable on Bézier curves.[4] This last
+resource would prove immensely helpful in the final program's assembly.
+
+With few threads to start from I tried implementing the thesis, which had the
+Gauss–Newton method at its core. This exposed me to many concepts in linear
+algebra and other fields I never learned in class (somewhat ironic given
+that I had just completed a linear algebra module): Jacobian matrices,
+the Moore–Penrose pseudoinverse, least squares, partial derivatives and so on.
+Alas, all my attempts along this route computed for too long or gave highly
+inaccurate results. So there I was, about to give up, when one of my dreams
+drove the definitive solution straight into my head.
+
+This documentation was written as a supplement to an updated version of the
+extension which simplifies the code using a node class and a more efficient
+fitting algorithm to facilitate translation into other object-oriented
+programming languages.
+
+3. Usage
+To use the extension, just place it in the folder for custom extensions (on
+most Linux machines this is ~/.config/inkscape/extensions); remember to
+include the .corresponding .inx file so Inkscape will recognise it. Then
+select the paths you want simplified and go to Extensions > Generate from Path
+> Flevobézier – no input is required after that, it is a pure script.
+
+4. Operation
+Because compound paths can be treated as sets of simple paths, the first part
+of the script does just that: it looks for moveto (M) commands in the SVG data
+and cuts just before them, producing simple paths which may be open or closed.
+These new paths are then processed independently, first by discarding all data
+except the nodes' positions (considering handles is out of the question) and
+then converting the result into a list of node objects. This last thing is the
+most important part of the update to Flevobézier since it enhances readability
+and simplicity of the code.
+
+While I have somewhat of an aversion to object-oriented programming I felt that
+in this case the encapsulation was necessary. The node class has only two
+variables, x and y, which indicate its position on the SVG canvas. Various
+elementary operators (+, *, etc.) are overridden so they can be used per se in
+the main code to denote vector addition and subtraction among other things.
+Afterwards, a bunch of functions pertaining to Euclidean geometry and linear
+algebra are provided.
+
+From the overarching code the list of nodes and a Boolean variable indicating
+whether the path is open or closed are passed to the main, eponymous algorithm.
+I call it a sliding window method since the actions performed depend on the
+nodes within a creeping slice of the node list which is associated with a
+cubic Bézier curve.
+
+This so-called window starts with the list's first two nodes and then extends
+towards the end one node at a time until (1) the end is reached or (2) an over
+condition is met. One of these over criteria is the linear angle formed by the
+(updated) window's last three nodes; the criterion is met if this falls below
+60 degrees, formerly 90. If it is not met, a new Bézier curve is computed to
+fit every node in the window as follows:
+* 3 nodes: Calculate a quadratic curve passing through all nodes and losslessly
+  convert it to a cubic curve.
+* 4 nodes: Calculate a cubic curve passing through all nodes using cubicfrom4().
+Both computations use the very definition of Bézier curves and are guaranteed
+to produce exact fits to the nodes; they cannot generate an over condition.
+The Bézier curve parameters of the interior points are derived by assuming
+that the curve is a polyline and then extracting the relative lengths of
+the points in question along the line with chords().
+
+When five or more nodes lie within the window, however, there may be no exact
+fit. This is where the program's innovation lies: mimicking how humans adjust
+handles to achieve the best fit to an arbitrary curve, it adjusts the handles
+of the current (working) cubic curve in a process I named stressing. This stress()
+function takes in a list of nodes and uses cubicfrom4() (the relevant sets of
+points being those including the endpoints and having their other two points
+symmetrically placed around the centre) to make an initial guess, then refines
+that guess by computing the projections of some interior nodes onto the curve
+and shifting the handles in the opposite direction of these projections by a
+fixed factor of themselves. The over signal to start a new window may be
+raised here if the curve is found incapable of adequately fitting to all nodes.
+
+Specifically, the projection function implements a binary search over paramater
+(t) values from 0 to 1 as described in section 26 of [4]. After the initial guess
+runs through selected node sets in a certain order, the stressing algorithm goes
+through those same sets in reverse order five times, finding the projections of
+the middle nodes on the curve and simultaneously moving the corresponding handles
+by 2.5 times the projection vectors. This last multiple induces overstressing,
+which unlike its engineering counterpart is beneficial and speeds up convergence.
+All this while the errors (projection lengths) are being logged and they are
+returned as the second item of stress()'s output tuple; an over signal is raised
+if the maximum error is greater than a third of the minimum segment length
+within the window, a rather conservative estimate.
+
+In any case, after over is signalled or the end is reached the current curve
+is written to the variable res(ult) which thus contains the simplified path. Not
+the finish line however – after the dust has settled a routine then identifies
+nodes whose handles make an angle of more than 160 degrees (this deemed as the
+minimum angle a casual look perceives as straight) and proceeds to smooth them
+out. This straightening does not change the handle lengths, only their angles.
+A very complicated expression is used to determine the directions each handle
+should turn. With all the computational carnage finished, final formatting of
+the output to pass back to the overarching code happens and the long-awaited
+strings are put back into the SVG file.
+
+If immediately after an over by exceeding the stressing error bound comes an over
+by too acute an angle or the path's end, the script backs up to the window
+causing the first over and stresses again without the error bound. This makes
+some curves look prettier.
+
+5. Limitations
+As hinted at in [5], a quick documentation of the old version of Flevobézier,
+like all extensions the output can be improved on manually. In particular,
+since the window only slides one way an inspection of the output nodes can take
+into account the other way and lead to a more pleasing solution.
+
+References
+[1] https://bazaar.launchpad.net/~lib2geom-hackers/lib2geom/trunk/view/head:/src/2geom/sbasis-geometric.cpp#L609
+[2] https://stackoverflow.com/questions/12643079/b%C3%A9zier-curve-fitting-with-scipy
+[3] www.dtic.mil/dtic/tr/fulltext/u2/a350611.pdf
+[4] https://pomax.github.io/bezierinfo
+[5] https://derpiboo.ru/740631

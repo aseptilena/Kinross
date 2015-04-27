@@ -1,0 +1,10 @@
+<inkscape-extension>
+  <_name>Flevobézier</_name>
+  <id>org.parclytaxel.inkscape.flevobezier</id>
+  <script><command reldir="extensions" interpreter="python">flevobezier.py</command></script>
+  <dependency type="executable" location="extensions">flevobezier.py</dependency>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+  <dependency type="executable" location="extensions">simplepath.py</dependency>
+  <dependency type="executable" location="extensions">bezmisc.py</dependency>
+  <effect><object-type>path</object-type><effects-menu><submenu _name="Generate from Path"/></effects-menu></effect>
+</inkscape-extension>

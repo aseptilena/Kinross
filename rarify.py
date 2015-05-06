@@ -9,44 +9,65 @@ tr, rn = None, None
 nm = {"d": "http://www.w3.org/2000/svg",
       "inkscape": "http://www.inkscape.org/namespaces/inkscape",
       "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
-sd = [["", ""],
-       ["display", "inline"],
-       ["overflow", "visible"],
-       ["visibility", "visible"],
-       ["isolation", "auto"],
-       ["mix-blend-mode", "normal"],
-       ["color-interpolation", "sRGB"],
-       ["color-interpolation-filters", "linearRGB"],
-       ["color-rendering", "auto"],
-       ["paint-color-rendering", "auto"],
-       ["paint-order", "normal"],
-       ["image-rendering", "auto"],
-       ["shape-rendering", "auto"],
-       ["text-rendering", "auto"],
-       ["clip-rule", "nonzero"],
-       ["color", "black"],
-       ["color", "#000000"],
-       ["color", "#000"],
-       ["solid-color", "black"],
-       ["solid-color", "#000000"],
-       ["solid-color", "#000"],
-       ["solid-opacity", "1"],
-       ["opacity", "1"],
-       ["fill-opacity", "1"],
-       ["fill-rule", "nonzero"],
-       ["stroke-opacity", "1"],
-       ["stroke-width", "1"],
-       ["stroke-linecap", "butt"],
-       ["stroke-linejoin", "miter"],
-       ["stroke-miterlimit", "4"],
-       ["stroke-dasharray", "none"],
-       ["stroke-dashoffset", "0"],
-       ["enable-background", "accumulate"],
-       ["-inkscape-font-specification", "Sans"],
-       ["marker", "none"],
-       ["marker-start", "none"],
-       ["marker-mid", "none"],
-       ["marker-end", "none"]]
+# CSS/SVG properties and Inkscape's assumed values
+sd = {"display": "inline",
+      "overflow": "visible",
+      "visibility": "visible",
+      "isolation": "auto",
+      "enable-background": "accumulate",
+      # Fill and stroke
+      "opacity": "1",
+      "solid-opacity": "1",
+      "fill": "#000",
+      "fill-opacity": "1",
+      "fill-rule": "nonzero",
+      "stroke": "none", # or unset
+      "stroke-opacity": "1",
+      "stroke-width": "1",
+      "stroke-linecap": "butt",
+      "stroke-linejoin": "miter",
+      "stroke-miterlimit": "4",
+      "stroke-dasharray": "none",
+      "stroke-dashoffset": "0",
+      # Filters and gradients
+      "filter": "none",
+      "flood-color": "#000",
+      "flood-opacity": "1",
+      "lighting-color": "#fff",
+      "stop-color": "#000",
+      "stop-opacity": "1",
+      # Advanced colouring
+      "mix-blend-mode": "normal",
+      "color-interpolation": "sRGB",
+      "color-interpolation-filters": "linearRGB",
+      "color-rendering": "auto",
+      "paint-color-rendering": "auto",
+      "paint-order": "normal",
+      "image-rendering": "auto",
+      "shape-rendering": "auto",
+      "text-rendering": "auto",
+      # Markers
+      "marker": "none",
+      "marker-start": "none",
+      "marker-mid": "none",
+      "marker-end": "none",
+      # Clips and masks
+      "clip-path": "none",
+      "clip-rule": "nonzero",
+      "mask": "none",
+      # Text
+      "font-size": "12px",
+      "font-style": "normal",
+      "font-variant": "normal",
+      "font-stretch": "normal",
+      "line-height": "125%",
+      "letter-spacing": "0px",
+      "word-spacing": "0px",
+      "text-align": "start",
+      "writing-mode": "lr-tb",
+      "text-anchor": "start",
+      "font-family": "Sans",
+      "-inkscape-font-specification": "Sans"}
 
 def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
 
@@ -70,36 +91,42 @@ def kill(s):
                 for k in d:
                     if d[k] == "*" or j.attrib[expand(k)] == d[k]: del j.attrib[expand(k)]
 
-def stylewhack(o):
+# Collect styling properties, optimise colour descriptors, kill as if they were attributes and split if it saves a few bytes.
+def styler():
     om = {}
-    m = o.get("style").split(";")
-    for j in m:
-        n = j.partition(":")
-        om[n[0]] = n[2]
-    def ifrm(a, b = None):
-        if a in om and (b == om[a] or b == None): del om[a]
-    def testrm(a, b):
-        return a not in om or om[a] == b
-    
-    for d in sd:
-        ifrm(d[0], d[1])
-    if testrm("stroke", "none"):
-        ifrm("stroke-dashoffset")
-        ifrm("stroke-dasharray")
-        ifrm("stroke-opacity")
-        ifrm("stroke-width")
-        ifrm("stroke-linecap")
-        ifrm("stroke-linejoin")
-        ifrm("stroke-miterlimit")
-        ifrm("stroke")
-    if testrm("stroke-dasharray", "none"):
-        ifrm("stroke-dashoffset")
-        ifrm("stroke-dasharray")
-    if len(om) == 0: del o.attrib["style"]
-    elif len(om) < 4:
-        del o.attrib["style"]
-        for a in om: o.set(a, om[a])
-    else: o.set("style", ";".join([a + ":" + om[a] for a in om]))
+    def imply(a):
+        if a in om and om[a] == sd[a]: del om[a]
+    def testrm(a, b): return a not in om or om[a] == b
+    # Collate individual attribs first and prepend (does not affect existing definitions since last instance counts).
+    for a in sd:
+        for i in rn.findall(".//*[@{0}]".format(a), nm):
+            i.set("style", a + ":" + i.get(a) + ";" + i.get("style", ""))
+            del i.attrib[a]
+    # Regularise the new style attribs by culling multiple/boundary semicolons (the hard work begins here too).
+    for n in rn.findall(".//*[@style]", nm):
+        rw = n.get("style").split(";")
+        for i in range(rw.count("")): rw.remove("")
+        om = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in rw])
+        # TODO colour normalisation
+        for ra in sd: imply(ra)
+        '''# Implications
+        if testrm("stroke", "none"):
+            ifrm("stroke-dashoffset")
+            ifrm("stroke-dasharray")
+            ifrm("stroke-opacity")
+            ifrm("stroke-width")
+            ifrm("stroke-linecap")
+            ifrm("stroke-linejoin")
+            ifrm("stroke-miterlimit")
+            ifrm("stroke")
+        if testrm("stroke-dasharray", "none"):
+            ifrm("stroke-dashoffset")
+            ifrm("stroke-dasharray")'''
+        if len(om) < 1: del n.attrib["style"]
+        elif len(om) < 4:
+            del n.attrib["style"]
+            for a in om: n.set(a, om[a])
+        else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
 
 def rarify(f):
     kill("path||inkscape:original-d=*|d=*")
@@ -111,10 +138,11 @@ def rarify(f):
     kill("inkscape:path-effect|effect=powerstroke|is_visible=true,miter_limit=4,linejoin_type=extrp_arc,sort_points=true,interpolator_beta=0.2")
     
     kill("clipPath||clipPathUnits=userSpaceOnUse")
-    
+    # NOTE: deleting the namedview tag causes Inkscape to fail to load larger SVGs correctly, hence the clear command.
+    # See ...
     for nv in rn.findall("sodipodi:namedview", nm): nv.clear()
-    
-    for o in rn.findall(".//*[@style]", nm): stylewhack(o)
+
+    styler()
     
     tr.write("{0}-rarified.svg".format(f[:-4]))
 

@@ -69,28 +69,28 @@ sd = {"display": "inline", # CSS/SVG properties and Inkscape's assumed values
       "-inkscape-font-specification": "Sans"}
 si = [["stroke-dasharray", "stroke-dashoffset"],
       ["stroke", "stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]]
-      
-def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
 
-# Function for removing redundant/implied attributes.
-# Selector string format is A|(B)|C(|D): if some element A has all attribute pairs in B and any in C then remove all those in D (C if D not given).
+# Dictionary pair remover for kill and styler.
+# s takes the form (A)|B(|C); if d has all pairs in A and any in B then delete C's (B if empty).
+def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
+def dicrem(d, s):
+    p = s.split("|")
+    a = dict([i.split("=") for i in p[0].split(",")]) if p[0] != "" else {}
+    b = dict([i.split("=") for i in p[1].split(",")])
+    c = dict([i.split("=") for i in p[2].split(",")]) if len(p) == 3 else {}
+    x = True if not a else min([expand(e) in d and a[e] in (d[expand(e)], "*") for e in a])
+    y = max([expand(e) in d and b[e] in (d[expand(e)], "*") for e in b])
+    if x and y:
+        v = c if c else b
+        for k in v:
+            if expand(k) in d and v[k] in (d[expand(k)], "*"): del d[expand(k)]
+
+# Function for removing redundant/implied attributes; exploits the fact that elements' attributes come in a dictionary.
+# Selector string format is E|S where E is a path to the attribute and S is the string to be passed to dicrem.
 def kill(s):
-    params = s.split("|")
-    a = params[0]
-    b = dict([i.split("=") for i in params[1].split(",")]) if params[1] != "" else {}
-    c = dict([i.split("=") for i in params[2].split(",")])
-    d = dict([i.split("=") for i in params[3].split(",")]) if len(params) == 4 else {}
-    e = list(c)
-    bb = ".//" + (a if ':' in a or a == "*" else "d:" + a) + "".join(["[@{0}{1}]".format(i, "='{0}'".format(b[i]) if b[i] != "*" else "") for i in b])
-    sl = [bb + "[@{0}{1}]".format(i, "='{0}'".format(c[i]) if c[i] != "*" else "") for i in c]
-    for i in range(len(c)):
-        rs = rn.findall(sl[i], nm)
-        for j in rs:
-            if len(d) == 0:
-                if c[e[i]] == "*" or j.attrib[expand(e[i])] == c[e[i]]: del j.attrib[expand(e[i])]
-            else:
-                for k in d:
-                    if d[k] == "*" or j.attrib[expand(k)] == d[k]: del j.attrib[expand(k)]
+    r = s.partition("|")
+    rs = rn.findall(".//" + (r[0] if ':' in r[0] or r[0] == "*" else "d:" + r[0]), nm)
+    for j in rs: dicrem(j.attrib, r[2])
 
 # Collect styling properties, optimise colour descriptors, kill as if they were attributes and split if it saves a few bytes.
 def styler():

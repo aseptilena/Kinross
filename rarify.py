@@ -9,7 +9,9 @@ tr, rn = None, None
 nm = {"d": "http://www.w3.org/2000/svg",
       "inkscape": "http://www.inkscape.org/namespaces/inkscape",
       "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
-sd = {"display": "inline", # CSS/SVG properties and Inkscape's assumed values
+# CSS/SVG properties and Inkscape's assumed values
+
+sd = {"display": "inline",
       "overflow": "visible",
       "visibility": "visible",
       "isolation": "auto",
@@ -71,7 +73,7 @@ si = [["stroke-dasharray", "stroke-dashoffset"],
       ["stroke", "stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]]
 
 # Dictionary pair remover for kill and styler.
-# s takes the form (A)|B(|C); if d has all pairs in A and any in B then delete C's (B if empty).
+# s = (A)|B(|C); if d has A's pairs and any of B's delete C's (B if empty).
 def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
 def dicrem(d, s):
     p = s.split("|")
@@ -95,8 +97,6 @@ def kill(s):
 # Collect styling properties, optimise colour descriptors, kill as if they were attributes and split if it saves a few bytes.
 def styler():
     om = {}
-    def imply(a):
-        if a in om and om[a] == sd[a]: del om[a]
     for a in sd:
         for i in rn.findall(".//*[@{0}]".format(a), nm):
             i.set("style", a + ":" + i.get(a) + ";" + i.get("style", ""))
@@ -106,12 +106,13 @@ def styler():
         for i in range(rw.count("")): rw.remove("")
         om = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in rw])
         # TODO colour normalisation
+        
         for s in si:
             if s[0] not in om or om[s[0]] == sd[s[0]]:
                 for a in s:
                     if a in om: del om[a]
-        for a in sd:
-            if a in om and om[a] == sd[a]: del om[a]
+        
+        for a in sd: dicrem(om, "|{0}={1}".format(a, sd[a]))
         if len(om) < 1: del n.attrib["style"]
         elif len(om) < 4:
             del n.attrib["style"]
@@ -121,13 +122,20 @@ def styler():
 def rarify(f):
     kill("path||inkscape:original-d=*|d=*")
     kill("*||inkscape:connector-curvature=0")
-    kill("path||sodipodi:nodetypes=*")
+    kill("*||sodipodi:nodetypes=*")
     
-    kill("path||sodipodi:type=star|d=*,inkscape:rounded=0,inkscape:randomized=0")
+    kill("rect||x=0,y=0")
+    kill("circle||cx=0,cy=0")
+    kill("ellipse||cx=0,cy=0")
+    kill("path||sodipodi:type=star|d=*,inkscape:rounded=0,inkscape:randomized=0,inkscape:flatsided=false")
     kill("use||x=0,y=0,height=100%,width=100%")
-    kill("inkscape:path-effect|effect=powerstroke|is_visible=true,miter_limit=4,linejoin_type=extrp_arc,sort_points=true,interpolator_beta=0.2")
+    
+    kill("inkscape:path-effect||is_visible=true")
+    kill("inkscape:path-effect|effect=powerstroke|miter_limit=4,linejoin_type=extrp_arc,sort_points=true,interpolator_beta=0.2")
     
     kill("clipPath||clipPathUnits=userSpaceOnUse")
+    kill("mask||maskUnits=userSpaceOnUse")
+    kill("*||inkscape:collect=always")
     # Deleting the namedview tag causes Inkscape to fail to load larger SVGs correctly on LPEs, hence the clear command. See ...
     for nv in rn.findall("sodipodi:namedview", nm): nv.clear()
     styler()

@@ -6,71 +6,28 @@ import sys
 import xml.etree.ElementTree as t
 
 tr, rn = None, None
-nm = {"d": "http://www.w3.org/2000/svg",
-      "inkscape": "http://www.inkscape.org/namespaces/inkscape",
-      "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
-# CSS/SVG properties and Inkscape's assumed values
-
-sd = {"display": "inline",
-      "overflow": "visible",
-      "visibility": "visible",
-      "isolation": "auto",
-      "enable-background": "accumulate",
-      # Fill and stroke
-      "opacity": "1",
-      "solid-opacity": "1",
-      "fill": "#000",
-      "fill-opacity": "1",
-      "fill-rule": "nonzero",
-      "stroke": "none",
-      "stroke-opacity": "1",
-      "stroke-width": "1",
-      "stroke-linecap": "butt",
-      "stroke-linejoin": "miter",
-      "stroke-miterlimit": "4",
-      "stroke-dasharray": "none",
-      "stroke-dashoffset": "0",
+nm = {"d": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
+sd = {"display": "inline", "overflow": "visible", "visibility": "visible", "isolation": "auto", "enable-background": "accumulate",
+      # Fill, stroke and markers
+      "opacity": "1", "solid-opacity": "1", "fill": "#000", "fill-opacity": "1", "fill-rule": "nonzero",
+      "stroke": "none", "stroke-opacity": "1", "stroke-width": "1", "stroke-linecap": "butt", "stroke-linejoin": "miter", "stroke-miterlimit": "4", "stroke-dasharray": "none", "stroke-dashoffset": "0",
+      "marker": "none", "marker-start": "none", "marker-mid": "none", "marker-end": "none",
       # Filters and gradients
-      "filter": "none",
-      "flood-color": "#000",
-      "flood-opacity": "1",
-      "lighting-color": "#fff",
-      "stop-color": "#000",
-      "stop-opacity": "1",
-      # Advanced colouring
-      "mix-blend-mode": "normal",
-      "color-interpolation": "sRGB",
-      "color-interpolation-filters": "linearRGB",
-      "color-rendering": "auto",
-      "paint-color-rendering": "auto",
-      "paint-order": "normal",
-      "image-rendering": "auto",
-      "shape-rendering": "auto",
-      "text-rendering": "auto",
-      # Markers
-      "marker": "none",
-      "marker-start": "none",
-      "marker-mid": "none",
-      "marker-end": "none",
+      "filter": "none", "flood-color": "#000", "flood-opacity": "1", "lighting-color": "#fff", "stop-color": "#000", "stop-opacity": "1",
+      # Miscellaneous colouring
+      "color-interpolation": "sRGB", "color-interpolation-filters": "linearRGB", "color-rendering": "auto", "paint-color-rendering": "auto", "paint-order": "normal", "mix-blend-mode": "normal", "image-rendering": "auto", "shape-rendering": "auto", "text-rendering": "auto",
       # Clips and masks
-      "clip-path": "none",
-      "clip-rule": "nonzero",
-      "mask": "none",
+      "clip-path": "none", "clip-rule": "nonzero", "mask": "none",
       # Text
-      "font-size": "12px",
-      "font-style": "normal",
-      "font-variant": "normal",
-      "font-stretch": "normal",
-      "line-height": "125%",
-      "letter-spacing": "0px",
-      "word-spacing": "0px",
-      "text-align": "start",
-      "writing-mode": "lr-tb",
-      "text-anchor": "start",
-      "font-family": "Sans",
-      "-inkscape-font-specification": "Sans"}
+      "font-size": "12px", "font-style": "normal", "font-variant": "normal", "font-stretch": "normal", "line-height": "125%", "letter-spacing": "0px", "word-spacing": "0px", "text-align": "start", "writing-mode": "lr-tb", "text-anchor": "start", "font-family": "Sans", "-inkscape-font-specification": "Sans"}
 si = [["stroke-dasharray", "stroke-dashoffset"],
       ["stroke", "stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]]
+cm = {"#000000": "#000", "black": "#000", "#ffffff": "#fff", "white": "#fff",
+      "#ff0000": "red", "#f00": "red", "#00ff00": "#0f0", "lime": "#0f0", "#0000ff": "#00f", "blue": "#00f",
+      "#ffff00": "#ff0", "yellow": "#ff0", "#ff00ff": "#f0f", "magenta": "#f0f", "fuchsia": "f0f", "#00ffff": "#0ff", "cyan": "#0ff", "aqua": "#0ff",
+      "808080": "grey", "gray": "grey",
+      "#800000": "maroon", "#008000": "green", "#000080": "navy",
+      "#808000": "olive", "#800080": "purple", "#008080": "teal"}
 
 # Dictionary pair remover for kill and styler.
 # s = (A)|B(|C); if d has A's pairs and any of B's delete C's (B if empty).
@@ -105,13 +62,11 @@ def styler():
         rw = n.get("style").split(";")
         for i in range(rw.count("")): rw.remove("")
         om = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in rw])
-        # TODO colour normalisation
-        
+        for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color", "color"]:
+            if c in om and om[c] in cm: om[c] = cm[om[c]]
         for s in si:
-            if s[0] not in om or om[s[0]] == sd[s[0]]:
-                for a in s:
-                    if a in om: del om[a]
-        
+            if s[0] not in om: om[s[0]] = sd[s[0]]
+            dicrem(om, "|{0}|{1}".format(s[0] + "=" + sd[s[0]], ",".join([a + "=*" for a in s])))
         for a in sd: dicrem(om, "|{0}={1}".format(a, sd[a]))
         if len(om) < 1: del n.attrib["style"]
         elif len(om) < 4:
@@ -136,7 +91,7 @@ def rarify(f):
     kill("clipPath||clipPathUnits=userSpaceOnUse")
     kill("mask||maskUnits=userSpaceOnUse")
     kill("*||inkscape:collect=always")
-    # Deleting the namedview tag causes Inkscape to fail to load larger SVGs correctly on LPEs, hence the clear command. See ...
+    # Deleting the namedview tag causes Inkscape to fail to load larger SVGs correctly on LPEs, hence the clear command. See (bug goes here).
     for nv in rn.findall("sodipodi:namedview", nm): nv.clear()
     styler()
     tr.write("{0}-rarified.svg".format(f[:-4]))

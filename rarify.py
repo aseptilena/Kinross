@@ -89,13 +89,16 @@ def rarify(f):
     
     kill("clipPath||clipPathUnits=userSpaceOnUse")
     # kill("clipPath/path||!d=*,X=Y,!Z=W"): if clipPath/path contains something NOT d=*, something X=Y or something NOT Z=W
-    # then delete the attribs that are not d=*, those not Z=W, those X=Y 
+    # then delete the attribs that are not d=*, those not Z=W, those X=Y TODO
     kill("mask||maskUnits=userSpaceOnUse")
     kill("*||inkscape:collect=always")
     
     dicrem(rn.attrib, "|version=*,inkscape:version=*,sodipodi:docname=*,inkscape:export-filename=*,inkscape:export-xdpi=*,inkscape:export-ydpi=*")
     for nv in rn.findall("sodipodi:namedview", nm): nv.clear() # Deleting namedview breaks SVGs with LPEs; see (bug goes here).
     styler()
+    
+    # Unused def + id removal here TODO
+    
     tr.write("{0}-rarified.svg".format(f[:-4]))
 
 if len(sys.argv) == 1:

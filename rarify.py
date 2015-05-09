@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.4
 # Rarify: an Inkscape vector file cleanup program
 # Parcly Taxel / Jeremy Tan, 2015
-# http://parclytaxel.tumblr.com
 import sys
 import xml.etree.ElementTree as t
 
@@ -86,13 +85,16 @@ def rarify(f):
     kill("use||x=0,y=0,height=100%,width=100%")
     
     kill("inkscape:path-effect||is_visible=true")
-    kill("inkscape:path-effect|effect=powerstroke|miter_limit=4,linejoin_type=extrp_arc,sort_points=true,interpolator_beta=0.2")
+    kill("inkscape:path-effect|effect=powerstroke|miter_limit=4,linejoin_type=extrp_arc,sort_points=true,interpolator_beta=0.2,start_linecap_type=butt,end_linecap_type=butt")
     
     kill("clipPath||clipPathUnits=userSpaceOnUse")
+    # kill("clipPath/path||!d=*,X=Y,!Z=W"): if clipPath/path contains something NOT d=*, something X=Y or something NOT Z=W
+    # then delete the attribs that are not d=*, those not Z=W, those X=Y 
     kill("mask||maskUnits=userSpaceOnUse")
     kill("*||inkscape:collect=always")
-    # Deleting the namedview tag causes Inkscape to fail to load larger SVGs correctly on LPEs, hence the clear command. See (bug goes here).
-    for nv in rn.findall("sodipodi:namedview", nm): nv.clear()
+    
+    dicrem(rn.attrib, "|version=*,inkscape:version=*,sodipodi:docname=*,inkscape:export-filename=*,inkscape:export-xdpi=*,inkscape:export-ydpi=*")
+    for nv in rn.findall("sodipodi:namedview", nm): nv.clear() # Deleting namedview breaks SVGs with LPEs; see (bug goes here).
     styler()
     tr.write("{0}-rarified.svg".format(f[:-4]))
 

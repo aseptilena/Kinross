@@ -1,7 +1,5 @@
 #!/usr/bin/env python3.4
-# This generates the SVG file for my logo, the construction of which is documented in
-# http://parclytaxel.tumblr.com/post/58496447207 (set g to however big you like).
-# Do whatever you want with it (or the logo).
+# This generates the SVG file for my logo; set g to whatever is needed.
 from decimal import Decimal, getcontext
 g = 20
 getcontext().prec = g

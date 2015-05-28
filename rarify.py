@@ -49,14 +49,15 @@ def kill(s):
     r = s.partition("|")
     rs = rn.findall(".//" + (r[0] if ':' in r[0] or r[0] == "*" else "d:" + r[0]), nm)
     for j in rs: dicrem(j.attrib, r[2])
-
-def gangnam(k):
+# Function to return the style dictionary of any node
+def gets(k):
     rw = k.get("style", "").split(";")
     for i in range(rw.count("")): rw.remove("")
     return dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in rw])
 
 def rarify(f):
     # Phase 1: node and attribute removals
+    print("Removing redundant nodes and attributes...")
     kill("path||inkscape:original-d=*|d=*")
     kill("*||inkscape:connector-curvature=0")
     kill("*||sodipodi:nodetypes=*")
@@ -77,20 +78,22 @@ def rarify(f):
     dicrem(rn.attrib, "|version=*,inkscape:version=*,sodipodi:docname=*,inkscape:export-filename=*,inkscape:export-xdpi=*,inkscape:export-ydpi=*")
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
     # Phase 2: style property removals
+    print("Removing redundant style properties...")
     om = {}
     for a in sd:
         for i in rn.findall(".//*[@{0}]".format(a), nm):
             i.set("style", a + ":" + i.get(a) + ";" + i.get("style", ""))
             del i.attrib[a]
+    # It is safe to remove all style from a clipping path except clip-rule; only that and the path's d are considered. Not actual masks though.
     for n in rn.findall(".//d:clipPath/d:path", nm):
-        om = gangnam(n)
+        om = gets(n)
         if om:
             for a in sd:
                 if a != "clip-rule": dicrem(om, "|{0}=*".format(a))
             if len(om) < 1: del n.attrib["style"]
             else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
     for n in rn.findall(".//*[@style]", nm):
-        om = gangnam(n)
+        om = gets(n)
         for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color", "color"]:
             if c in om and om[c] in cm: om[c] = cm[om[c]]
         for s in si:
@@ -103,7 +106,16 @@ def rarify(f):
             for a in om: n.set(a, om[a])
         else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
     # Phase 3: unused definitions and redundant ID removal TODO
+    # 3a: dictionary of all elements (assign temporary IDs to those lacking it)
+    
+    # 3b: X <- use <- use and X <- linearGradient <- linearGradient flattening
+    
+    # 3c: removal of unused objects in the definitions block
+    
+    # 3d: unreferenced ID removal
+    
     tr.write("{0}-rarified.svg".format(f[:-4]))
+    print("Done")
 
 if len(sys.argv) == 1:
     print("Usage: " + sys.argv[0] + " [list of files in same directory separated by spaces]")

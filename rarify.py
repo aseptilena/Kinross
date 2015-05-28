@@ -50,30 +50,13 @@ def kill(s):
     rs = rn.findall(".//" + (r[0] if ':' in r[0] or r[0] == "*" else "d:" + r[0]), nm)
     for j in rs: dicrem(j.attrib, r[2])
 
-# Collect styling properties, optimise colour descriptors, kill as if they were attributes and split if it saves a few bytes.
-def styler():
-    om = {}
-    for a in sd:
-        for i in rn.findall(".//*[@{0}]".format(a), nm):
-            i.set("style", a + ":" + i.get(a) + ";" + i.get("style", ""))
-            del i.attrib[a]
-    for n in rn.findall(".//*[@style]", nm):
-        rw = n.get("style").split(";")
-        for i in range(rw.count("")): rw.remove("")
-        om = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in rw])
-        for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color", "color"]:
-            if c in om and om[c] in cm: om[c] = cm[om[c]]
-        for s in si:
-            if s[0] not in om: om[s[0]] = sd[s[0]]
-            dicrem(om, "|{0}|{1}".format(s[0] + "=" + sd[s[0]], ",".join([a + "=*" for a in s])))
-        for a in sd: dicrem(om, "|{0}={1}".format(a, sd[a]))
-        if len(om) < 1: del n.attrib["style"]
-        elif len(om) < 4:
-            del n.attrib["style"]
-            for a in om: n.set(a, om[a])
-        else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
+def gangnam(k):
+    rw = k.get("style", "").split(";")
+    for i in range(rw.count("")): rw.remove("")
+    return dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in rw])
 
 def rarify(f):
+    # Phase 1: node and attribute removals
     kill("path||inkscape:original-d=*|d=*")
     kill("*||inkscape:connector-curvature=0")
     kill("*||sodipodi:nodetypes=*")
@@ -88,17 +71,38 @@ def rarify(f):
     kill("inkscape:path-effect|effect=powerstroke|miter_limit=4,linejoin_type=extrp_arc,sort_points=true,interpolator_beta=0.2,start_linecap_type=butt,end_linecap_type=butt")
     
     kill("clipPath||clipPathUnits=userSpaceOnUse")
-    # kill("clipPath/path||!d=*,X=Y,!Z=W"): if clipPath/path contains something NOT d=*, something X=Y or something NOT Z=W
-    # then delete the attribs that are not d=*, those not Z=W, those X=Y TODO
     kill("mask||maskUnits=userSpaceOnUse")
-    kill("*||inkscape:collect=always")
-    
+
+    kill("*||inkscape:collect=always,inkscape:transform-center-x=*,inkscape:transform-center-y=*")
     dicrem(rn.attrib, "|version=*,inkscape:version=*,sodipodi:docname=*,inkscape:export-filename=*,inkscape:export-xdpi=*,inkscape:export-ydpi=*")
-    for nv in rn.findall("sodipodi:namedview", nm): nv.clear() # Deleting namedview breaks SVGs with LPEs; see (bug goes here).
-    styler()
-    
-    # Unused def + id removal here TODO
-    
+    for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
+    # Phase 2: style property removals
+    om = {}
+    for a in sd:
+        for i in rn.findall(".//*[@{0}]".format(a), nm):
+            i.set("style", a + ":" + i.get(a) + ";" + i.get("style", ""))
+            del i.attrib[a]
+    for n in rn.findall(".//d:clipPath/d:path", nm):
+        om = gangnam(n)
+        if om:
+            for a in sd:
+                if a != "clip-rule": dicrem(om, "|{0}=*".format(a))
+            if len(om) < 1: del n.attrib["style"]
+            else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
+    for n in rn.findall(".//*[@style]", nm):
+        om = gangnam(n)
+        for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color", "color"]:
+            if c in om and om[c] in cm: om[c] = cm[om[c]]
+        for s in si:
+            if s[0] not in om: om[s[0]] = sd[s[0]]
+            dicrem(om, "|{0}|{1}".format(s[0] + "=" + sd[s[0]], ",".join([a + "=*" for a in s])))
+        for a in sd: dicrem(om, "|{0}={1}".format(a, sd[a]))
+        if len(om) < 1: del n.attrib["style"]
+        elif len(om) < 4:
+            del n.attrib["style"]
+            for a in om: n.set(a, om[a])
+        else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
+    # Phase 3: unused definitions and redundant ID removal TODO
     tr.write("{0}-rarified.svg".format(f[:-4]))
 
 if len(sys.argv) == 1:

@@ -28,9 +28,14 @@ cm = {"#000000": "#000", "black": "#000", "#ffffff": "#fff", "white": "#fff",
       "#800000": "maroon", "#008000": "green", "#000080": "navy",
       "#808000": "olive", "#800080": "purple", "#008080": "teal"}
 
-# Dictionary pair remover for kill and styler.
-# s = (A)|B(|C); if d has A's pairs and any of B's delete C's (B if empty).
 def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
+def collapse(a):
+    z = a.partition("}")
+    for m in nm:
+        if nm[m] == z[0][1:]: return (m + ":" if m != "d" else "") + z[2]
+    return a
+
+# Dictionary pair remover for kill and styler. s = (A)|B(|C); if d has A's pairs and any of B's delete C's (B if empty).
 def dicrem(d, s):
     p = s.split("|")
     a = dict([i.split("=") for i in p[0].split(",")]) if p[0] != "" else {}
@@ -42,14 +47,12 @@ def dicrem(d, s):
         v = c if c else b
         for k in v:
             if expand(k) in d and v[k] in (d[expand(k)], "*"): del d[expand(k)]
-
-# Function for removing redundant/implied attributes; exploits the fact that elements' attributes come in a dictionary.
-# Selector string format is E|S where E is a path to the attribute and S is the string to be passed to dicrem.
+# Input to function below is E|S where E is a path to the attribute and S is the string to be passed to dicrem.
 def kill(s):
     r = s.partition("|")
     rs = rn.findall(".//" + (r[0] if ':' in r[0] or r[0] == "*" else "d:" + r[0]), nm)
     for j in rs: dicrem(j.attrib, r[2])
-# Function to return the style dictionary of any node
+
 def gets(k):
     rw = k.get("style", "").split(";")
     for i in range(rw.count("")): rw.remove("")
@@ -57,7 +60,6 @@ def gets(k):
 
 def rarify(f):
     # Phase 1: node and attribute removals
-    print("Removing redundant nodes and attributes...")
     kill("path||inkscape:original-d=*|d=*")
     kill("*||inkscape:connector-curvature=0")
     kill("*||sodipodi:nodetypes=*")
@@ -78,13 +80,12 @@ def rarify(f):
     dicrem(rn.attrib, "|version=*,inkscape:version=*,sodipodi:docname=*,inkscape:export-filename=*,inkscape:export-xdpi=*,inkscape:export-ydpi=*")
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
     # Phase 2: style property removals
-    print("Removing redundant style properties...")
     om = {}
     for a in sd:
         for i in rn.findall(".//*[@{0}]".format(a), nm):
             i.set("style", a + ":" + i.get(a) + ";" + i.get("style", ""))
             del i.attrib[a]
-    # It is safe to remove all style from a clipping path except clip-rule; only that and the path's d are considered. Not actual masks though.
+    # It is safe to remove all style save clip-rule from clips. Not for masks though.
     for n in rn.findall(".//d:clipPath/d:path", nm):
         om = gets(n)
         if om:
@@ -105,17 +106,41 @@ def rarify(f):
             del n.attrib["style"]
             for a in om: n.set(a, om[a])
         else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
-    # Phase 3: unused definitions and redundant ID removal TODO
-    # 3a: dictionary of all elements (assign temporary IDs to those lacking it)
-    
-    # 3b: X <- use <- use and X <- linearGradient <- linearGradient flattening
-    
-    # 3c: removal of unused objects in the definitions block
-    
+    # Phase 3: unused definitions and redundant ID removal
+    # 3a: dictionary of all elements and their references (assign temporary IDs to those lacking it)
+    rd, cnt = {}, 0
+    for k in rn.findall(".//*"):
+        if not("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}" in k.tag or 
+               "{http://creativecommons.org/ns#}" in k.tag or
+               "{http://purl.org/dc/elements/1.1/}" in k.tag):
+            rf, sty = {}, gets(k)
+            for a in ["fill", "stroke", "clip-path", "mask", "filter"]:
+                rf[a] = k.get(a, "")
+                if a in sty: rf[a] = sty[a]
+                rf[a] = rf[a][5:-1] if rf[a].startswith("url(#") else None
+            rf["tag"] = collapse(k.tag)
+            tmp = k.get("{http://www.w3.org/1999/xlink}href")
+            rf["use"] = tmp[1:] if tmp != None else None
+            tmp = k.get("{http://www.inkscape.org/namespaces/inkscape}path-effect")
+            rf["path-effect"] = tmp[1:] if tmp != None else None
+            rf["transform"] = k.get("transform")
+            irk = k.get("id")
+            if irk == None:
+                while "q" + str(cnt) in rd: cnt += 1
+                irk = "q" + str(cnt)
+                k.set("id", irk)
+            rd[irk] = rf
+    # 3b: reference tree flattening TODO
+    # 3c: removal of unused <defs> TODO
     # 3d: unreferenced ID removal
-    
+    ao, ro = set(rd.keys()), []
+    for e in rd: ro.extend([rd[e][a] for a in ["use", "fill", "stroke", "clip-path", "mask", "filter", "path-effect"]])
+    for rm in ao - set(ro):
+        fat = rn.find(".//*[@id='{0}']".format(rm), nm)
+        del fat.attrib["id"]
+    if rn.get("id") != None: del rn.attrib["id"]
+    # Final output
     tr.write("{0}-rarified.svg".format(f[:-4]))
-    print("Done")
 
 if len(sys.argv) == 1:
     print("Usage: " + sys.argv[0] + " [list of files in same directory separated by spaces]")

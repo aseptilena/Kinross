@@ -8,17 +8,79 @@ tr, rn = None, None
 nm = {"d": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
 sd = {"display": "inline", "overflow": "visible", "visibility": "visible", "isolation": "auto", "enable-background": "accumulate",
       # Fill, stroke and markers
-      "opacity": "1", "solid-opacity": "1", "fill": "#000", "fill-opacity": "1", "fill-rule": "nonzero",
-      "stroke": "none", "stroke-opacity": "1", "stroke-width": "1", "stroke-linecap": "butt", "stroke-linejoin": "miter", "stroke-miterlimit": "4", "stroke-dasharray": "none", "stroke-dashoffset": "0",
-      "marker": "none", "marker-start": "none", "marker-mid": "none", "marker-end": "none",
+      "opacity": "1",
+      "solid-opacity": "1",
+      "fill": "#000",
+      "fill-opacity": "1",
+      "fill-rule": "nonzero",
+      "stroke": "none",
+      "stroke-opacity": "1",
+      "stroke-width": "1",
+      "stroke-linecap": "butt",
+      "stroke-linejoin": "miter",
+      "stroke-miterlimit": "4",
+      "stroke-dasharray": "none",
+      "stroke-dashoffset": "0",
+      "marker": "none",
+      "marker-start": "none",
+      "marker-mid": "none",
+      "marker-end": "none",
       # Filters and gradients
-      "filter": "none", "flood-color": "#000", "flood-opacity": "1", "lighting-color": "#fff", "stop-color": "#000", "stop-opacity": "1",
+      "filter": "none",
+      "flood-color": "#000",
+      "flood-opacity": "1",
+      "lighting-color": "#fff",
+      "stop-color": "#000",
+      "stop-opacity": "1",
       # Miscellaneous colouring
-      "color-interpolation": "sRGB", "color-interpolation-filters": "linearRGB", "color-rendering": "auto", "paint-color-rendering": "auto", "paint-order": "normal", "mix-blend-mode": "normal", "image-rendering": "auto", "shape-rendering": "auto", "text-rendering": "auto",
+      "color": "#000",
+      "solid-color": "#000",
+      "color-interpolation": "sRGB",
+      "color-interpolation-filters": "linearRGB",
+      "color-rendering": "auto",
+      "paint-color-rendering": "auto",
+      "paint-order": "normal",
+      "mix-blend-mode": "normal",
+      "image-rendering": "auto",
+      "shape-rendering": "auto",
+      "text-rendering": "auto",
       # Clips and masks
-      "clip-path": "none", "clip-rule": "nonzero", "mask": "none",
+      "clip-path": "none",
+      "clip-rule": "nonzero",
+      "mask": "none",
       # Text
-      "font-size": "12px", "font-style": "normal", "font-variant": "normal", "font-stretch": "normal", "line-height": "125%", "letter-spacing": "0px", "word-spacing": "0px", "text-align": "start", "writing-mode": "lr-tb", "text-anchor": "start", "font-family": "Sans", "-inkscape-font-specification": "Sans"}
+      "font-size": "12px;medium",
+      "font-style": "normal",
+      "font-variant": "normal",
+      "font-stretch": "normal",
+      "font-weight": "normal",
+      "line-height": "125%;normal",
+      "letter-spacing": "0px",
+      "word-spacing": "0px;normal",
+      "text-align": "start",
+      "direction": "ltr",
+      "writing-mode": "lr-tb",
+      "block-progression": "tb",
+      "baseline-shift": "baseline",
+      "text-anchor": "start",
+      "text-decoration-line": "none",
+      "font-variant-ligatures": "normal",
+      "text-decoration-style": "solid",
+      "font-variant-position": "normal",
+      "font-variant-numeric": "normal",
+      "font-variant-alternates": "normal",
+      "font-variant-caps": "normal",
+      "baseline-shift": "baseline",
+      "white-space": "normal",
+      "shape-padding": "0",
+      "text-indent": "0",
+      "text-decoration": "none",
+      "text-decoration-color": "#000",
+      "text-transform": "none",
+      "letter-spacing": "normal",
+      "font-feature-settings": "normal",
+      "font-family": "Sans;sans-serif",
+      "-inkscape-font-specification": "Sans"}
 si = [["stroke-dasharray", "stroke-dashoffset"],
       ["stroke", "stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]]
 cm = {"#000000": "#000", "black": "#000", "#ffffff": "#fff", "white": "#fff",
@@ -95,12 +157,20 @@ def rarify(f):
             else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
     for n in rn.findall(".//*[@style]", nm):
         om = gets(n)
-        for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color", "color"]:
+        # Colour simplification
+        for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color", "color", "solid-color", "text-decoration-color"]:
             if c in om and om[c] in cm: om[c] = cm[om[c]]
+        # Lack of some attributes wastes others; remove if applicable
         for s in si:
             if s[0] not in om: om[s[0]] = sd[s[0]]
             dicrem(om, "|{0}|{1}".format(s[0] + "=" + sd[s[0]], ",".join([a + "=*" for a in s])))
-        for a in sd: dicrem(om, "|{0}={1}".format(a, sd[a]))
+        # Removal of default-valued attributes
+        for a in sd:
+            bore = sd[a].split(";")
+            for sa in bore: dicrem(om, "|{0}={1}".format(a, sa))
+        # stroke-linejoin = round/bevel: stroke-miterlimit wasted
+        # TODO
+        
         if len(om) < 1: del n.attrib["style"]
         elif len(om) < 4:
             del n.attrib["style"]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.4
 # Rarify: an Inkscape vector file cleanup program
 # Parcly Taxel / Jeremy Tan, 2015
-import sys
+import sys, argparse
 import xml.etree.ElementTree as t
 
 tr, rn = None, None
@@ -89,6 +89,7 @@ cm = {"#000000": "#000", "black": "#000", "#ffffff": "#fff", "white": "#fff",
       "808080": "grey", "gray": "grey",
       "#800000": "maroon", "#008000": "green", "#000080": "navy",
       "#808000": "olive", "#800080": "purple", "#008080": "teal"}
+rmmd = False
 
 def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
 def collapse(a):
@@ -97,7 +98,7 @@ def collapse(a):
         if nm[m] == z[0][1:]: return (m + ":" if m != "d" else "") + z[2]
     return a
 
-# Dictionary pair remover for kill and styler. s = (A)|B(|C); if d has A's pairs and any of B's delete C's (B if empty).
+# Dictionary pair remover. s = (A)|B(|C); if d has A's pairs and any of B's delete C's (B if empty).
 def dicrem(d, s):
     p = s.split("|")
     a = dict([i.split("=") for i in p[0].split(",")]) if p[0] != "" else {}
@@ -141,6 +142,8 @@ def rarify(f):
     kill("*||inkscape:collect=always,inkscape:transform-center-x=*,inkscape:transform-center-y=*")
     dicrem(rn.attrib, "|version=*,inkscape:version=*,sodipodi:docname=*,inkscape:export-filename=*,inkscape:export-xdpi=*,inkscape:export-ydpi=*")
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
+    if rmmd:
+        for nv in rn.findall("d:metadata", nm): rn.remove(nv)
     # Phase 2: style property removals
     om = {}
     for a in sd:
@@ -164,13 +167,13 @@ def rarify(f):
         for s in si:
             if s[0] not in om: om[s[0]] = sd[s[0]]
             dicrem(om, "|{0}|{1}".format(s[0] + "=" + sd[s[0]], ",".join([a + "=*" for a in s])))
+        # If stroke-linejoin isn't mitre, stroke-miterlimit is redundant
+        dicrem(om, "|stroke-linejoin=round|stroke-miterlimit=*")
+        dicrem(om, "|stroke-linejoin=bevel|stroke-miterlimit=*")
         # Removal of default-valued attributes
         for a in sd:
             bore = sd[a].split(";")
             for sa in bore: dicrem(om, "|{0}={1}".format(a, sa))
-        # stroke-linejoin = round/bevel: stroke-miterlimit wasted
-        # TODO
-        
         if len(om) < 1: del n.attrib["style"]
         elif len(om) < 4:
             del n.attrib["style"]
@@ -212,17 +215,19 @@ def rarify(f):
     # Final output
     tr.write("{0}-rarified.svg".format(f[:-4]))
 
-if len(sys.argv) == 1:
-    print("Usage: " + sys.argv[0] + " [list of files in same directory separated by spaces]")
-    sys.exit(1)
-t.register_namespace("","http://www.w3.org/2000/svg")
+t.register_namespace("", "http://www.w3.org/2000/svg")
 t.register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")
 t.register_namespace("sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
 t.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 t.register_namespace("dc", "http://purl.org/dc/elements/1.1/")
 t.register_namespace("cc", "http://creativecommons.org/ns#")
 t.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-for f in sys.argv[1:]:
+cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncouth tantibus SVG optimiser")
+cdl.add_argument("-m", "--rm-metadata", action="store_true", default=False, help="remove metadata (useful for optimising cutie marks)")
+cdl.add_argument("files", nargs="*", help="list of files to rarify")
+flags = cdl.parse_args()
+rmmd = flags.rm_metadata
+for f in flags.files:
     tr = t.parse(f)
     rn = tr.getroot()
     rarify(f)

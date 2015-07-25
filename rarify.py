@@ -135,6 +135,7 @@ def rarify(f):
     
     kill("inkscape:path-effect||is_visible=true")
     kill("inkscape:path-effect|effect=powerstroke|miter_limit=4,linejoin_type=extrp_arc,sort_points=true,interpolator_beta=0.2,start_linecap_type=butt,end_linecap_type=butt")
+    kill("inkscape:path-effect|effect=envelope|xx=true,yy=true,bendpath1-nodetypes=*,bendpath2-nodetypes=*,bendpath3-nodetypes=*,bendpath4-nodetypes=*")
     
     kill("clipPath||clipPathUnits=userSpaceOnUse")
     kill("mask||maskUnits=userSpaceOnUse")
@@ -150,7 +151,7 @@ def rarify(f):
         for i in rn.findall(".//*[@{0}]".format(a), nm):
             i.set("style", a + ":" + i.get(a) + ";" + i.get("style", ""))
             del i.attrib[a]
-    # It is safe to remove all style save clip-rule from clips. Not for masks though.
+    # By now all styling is within style tags; it may be purged (except clip-rule) from clips...
     for n in rn.findall(".//d:clipPath/d:path", nm):
         om = gets(n)
         if om:
@@ -196,22 +197,25 @@ def rarify(f):
             rf["use"] = tmp[1:] if tmp != None else None
             tmp = k.get("{http://www.inkscape.org/namespaces/inkscape}path-effect")
             rf["path-effect"] = tmp[1:] if tmp != None else None
-            rf["transform"] = k.get("transform")
             irk = k.get("id")
             if irk == None:
                 while "q" + str(cnt) in rd: cnt += 1
                 irk = "q" + str(cnt)
                 k.set("id", irk)
             rd[irk] = rf
-    # 3b: reference tree flattening TODO
-    # 3c: removal of unused <defs> TODO
-    # 3d: unreferenced ID removal
+    # 3b: unreferenced ID removal
     ao, ro = set(rd.keys()), []
     for e in rd: ro.extend([rd[e][a] for a in ["use", "fill", "stroke", "clip-path", "mask", "filter", "path-effect"]])
     for rm in ao - set(ro):
         fat = rn.find(".//*[@id='{0}']".format(rm), nm)
         del fat.attrib["id"]
     if rn.get("id") != None: del rn.attrib["id"]
+    # 3c: removal of unused <defs>
+    df, ud = rn.find(".//d:defs", nm), []
+    for dlm in df:
+        if dlm.get("id") == None: ud.append(dlm)
+    for z in ud: df.remove(z)
+    if not len(list(df)): rn.remove(df)
     # Final output
     tr.write("{0}-rarified.svg".format(f[:-4]))
 

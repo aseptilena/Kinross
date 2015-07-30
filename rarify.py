@@ -1,120 +1,137 @@
 #!/usr/bin/env python3.4
-# Rarify: an Inkscape vector file cleanup program
+# Rarify, the uncouth SVG optimiser
 # Parcly Taxel / Jeremy Tan, 2015
+# http://parclytaxel.tumblr.com
 import sys, argparse
 import xml.etree.ElementTree as t
 
 tr, rn = None, None
-nm = {"d": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
-sd = {"display": "inline", "overflow": "visible", "visibility": "visible", "isolation": "auto", "enable-background": "accumulate",
-      # Fill, stroke and markers
-      "opacity": "1",
-      "solid-opacity": "1",
-      "fill": "#000",
-      "fill-opacity": "1",
-      "fill-rule": "nonzero",
-      "stroke": "none",
-      "stroke-opacity": "1",
-      "stroke-width": "1",
-      "stroke-linecap": "butt",
-      "stroke-linejoin": "miter",
-      "stroke-miterlimit": "4",
-      "stroke-dasharray": "none",
-      "stroke-dashoffset": "0",
-      "marker": "none",
-      "marker-start": "none",
-      "marker-mid": "none",
-      "marker-end": "none",
-      # Filters and gradients
-      "filter": "none",
-      "flood-color": "#000",
-      "flood-opacity": "1",
-      "lighting-color": "#fff",
-      "stop-color": "#000",
-      "stop-opacity": "1",
-      # Miscellaneous colouring
-      "color": "#000",
-      "solid-color": "#000",
-      "color-interpolation": "sRGB",
-      "color-interpolation-filters": "linearRGB",
-      "color-rendering": "auto",
-      "paint-color-rendering": "auto",
-      "paint-order": "normal",
-      "mix-blend-mode": "normal",
-      "image-rendering": "auto",
-      "shape-rendering": "auto",
-      "text-rendering": "auto",
-      # Clips and masks
-      "clip-path": "none",
-      "clip-rule": "nonzero",
-      "mask": "none",
-      # Text
-      "font-size": "12px;medium",
-      "font-style": "normal",
-      "font-variant": "normal",
-      "font-stretch": "normal",
-      "font-weight": "normal",
-      "line-height": "125%;normal",
-      "letter-spacing": "0px",
-      "word-spacing": "0px;normal",
-      "text-align": "start",
-      "direction": "ltr",
-      "writing-mode": "lr-tb",
-      "block-progression": "tb",
-      "baseline-shift": "baseline",
-      "text-anchor": "start",
-      "text-decoration-line": "none",
-      "font-variant-ligatures": "normal",
-      "text-decoration-style": "solid",
-      "font-variant-position": "normal",
-      "font-variant-numeric": "normal",
-      "font-variant-alternates": "normal",
-      "font-variant-caps": "normal",
-      "baseline-shift": "baseline",
-      "white-space": "normal",
-      "shape-padding": "0",
-      "text-indent": "0",
-      "text-decoration": "none",
-      "text-decoration-color": "#000",
-      "text-transform": "none",
-      "letter-spacing": "normal",
-      "font-feature-settings": "normal",
-      "font-family": "Sans;sans-serif",
-      "-inkscape-font-specification": "Sans"}
+nm = {"d": "http://www.w3.org/2000/svg",
+      "inkscape": "http://www.inkscape.org/namespaces/inkscape",
+      "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
+# Default styling attributes, as defined by the SVG specifications and Inkscape's default parameters
+defstyle = {"display": "inline",
+            "overflow": "visible",
+            "visibility": "visible",
+            "isolation": "auto",
+            "enable-background": "accumulate",
+            # Fill, stroke and markers
+            "opacity": "1",
+            "solid-opacity": "1",
+            "fill": "#000",
+            "fill-opacity": "1",
+            "fill-rule": "nonzero",
+            "stroke": "none",
+            "stroke-opacity": "1",
+            "stroke-width": "1",
+            "stroke-linecap": "butt",
+            "stroke-linejoin": "miter",
+            "stroke-miterlimit": "4",
+            "stroke-dasharray": "none",
+            "stroke-dashoffset": "0",
+            "marker": "none",
+            "marker-start": "none",
+            "marker-mid": "none",
+            "marker-end": "none",
+            # Filters and gradients
+            "filter": "none",
+            "flood-color": "#000",
+            "flood-opacity": "1",
+            "lighting-color": "#fff",
+            "stop-color": "#000",
+            "stop-opacity": "1",
+            # Miscellaneous colouring
+            "color": "#000",
+            "color-interpolation": "sRGB",
+            "color-interpolation-filters": "linearRGB",
+            "color-rendering": "auto",
+            "image-rendering": "auto",
+            "mix-blend-mode": "normal",
+            "paint-color-rendering": "auto",
+            "paint-order": "normal",
+            "shape-rendering": "auto",
+            "solid-color": "#000",
+            "text-rendering": "auto",
+            # Clips and masks
+            "clip-path": "none",
+            "clip-rule": "nonzero",
+            "mask": "none",
+            # Text
+            "baseline-shift": "baseline",
+            "block-progression": "tb",
+            "direction": "ltr",
+            "font-family": "Sans",
+            "font-feature-settings": "normal",
+            "font-size": "medium",
+            "font-stretch": "normal",
+            "font-style": "normal",
+            "font-variant": "normal",
+            "font-variant-alternates": "normal",
+            "font-variant-caps": "normal",
+            "font-variant-ligatures": "normal",
+            "font-variant-numeric": "normal",
+            "font-variant-position": "normal",
+            "font-weight": "normal",
+            "letter-spacing": "normal",
+            "line-height": "125%",
+            "shape-padding": "0",
+            "text-align": "start",
+            "text-anchor": "start",
+            "text-decoration": "none",
+            "text-decoration-color": "#000",
+            "text-decoration-line": "none",
+            "text-decoration-style": "solid",
+            "text-indent": "0",
+            "text-transform": "none",
+            "white-space": "normal",
+            "word-spacing": "normal",
+            "writing-mode": "lr-tb",
+            "-inkscape-font-specification": "Sans"}
 si = [["stroke-dasharray", "stroke-dashoffset"],
       ["stroke", "stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]]
-cm = {"#000000": "#000", "black": "#000", "#ffffff": "#fff", "white": "#fff",
-      "#ff0000": "red", "#f00": "red", "#00ff00": "#0f0", "lime": "#0f0", "#0000ff": "#00f", "blue": "#00f",
-      "#ffff00": "#ff0", "yellow": "#ff0", "#ff00ff": "#f0f", "magenta": "#f0f", "fuchsia": "f0f", "#00ffff": "#0ff", "cyan": "#0ff", "aqua": "#0ff",
-      "808080": "grey", "gray": "grey",
-      "#800000": "maroon", "#008000": "green", "#000080": "navy",
-      "#808000": "olive", "#800080": "purple", "#008080": "teal"}
+# Colour aliases
+calias = {"#000000": "#000", "black": "#000",
+          "#ffffff": "#fff", "white": "#fff",
+          "#ff0000": "red", "#f00": "red",
+          "#00ff00": "#0f0", "lime": "#0f0",
+          "#0000ff": "#00f", "blue": "#00f",
+          "#ffff00": "#ff0", "yellow": "#ff0",
+          "#ff00ff": "#f0f", "magenta": "#f0f", "fuchsia": "#f0f",
+          "#00ffff": "#0ff", "cyan": "#0ff", "aqua": "#0ff",
+          "#808080": "grey", "gray": "grey",
+          "#800000": "maroon", "#008000": "green", "#000080": "navy",
+          "#808000": "olive", "#800080": "purple", "#008080": "teal"}
 rmmd = False
 
+# Functions converting namespaces into URLs and vice versa
 def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
 def collapse(a):
     z = a.partition("}")
     for m in nm:
         if nm[m] == z[0][1:]: return (m + ":" if m != "d" else "") + z[2]
     return a
-
-# Dictionary pair remover. s = (A)|B(|C); if d has A's pairs and any of B's delete C's (B if empty).
-def dicrem(d, s):
-    p = s.split("|")
-    a = dict([i.split("=") for i in p[0].split(",")]) if p[0] != "" else {}
-    b = dict([i.split("=") for i in p[1].split(",")])
-    c = dict([i.split("=") for i in p[2].split(",")]) if len(p) == 3 else {}
-    x = True if not a else min([expand(e) in d and a[e] in (d[expand(e)], "*") for e in a])
-    y = max([expand(e) in d and b[e] in (d[expand(e)], "*") for e in b])
-    if x and y:
-        v = c if c else b
-        for k in v:
-            if expand(k) in d and v[k] in (d[expand(k)], "*"): del d[expand(k)]
-# Input to function below is E|S where E is a path to the attribute and S is the string to be passed to dicrem.
-def kill(s):
-    r = s.partition("|")
-    rs = rn.findall(".//" + (r[0] if ':' in r[0] or r[0] == "*" else "d:" + r[0]), nm)
-    for j in rs: dicrem(j.attrib, r[2])
+# Dictionary match-and-remove with namespaces.
+# Input pairs to remove as dictionary and prefix keys with ! to remove non-matchings.
+# e.g. {"!this": "that"} removes this if it isn't that
+#      {"![attribute]": None} doesn't do anything (remove if value is no thing)
+# cond gives pairs all conditional for pr to take effect.
+# As with the pairs for removal, !-prefixing indicates negation.
+# e.g. {"d": None} stipulates that an attribute d has to be present
+#      {"!stroke-linejoin": "miter"} requires stroke-linejoin to not be miter (and exist)
+#      {![attribute]: None} is premature
+def dmrn(d, pr, cond = {}):
+    rute = True
+    for c in cond:
+        negate, term = c[0] == '!', c.lstrip("!")
+        rute &= expand(term) in d and negate ^ (cond[c] in (d[expand(term)], None))
+    if rute:
+        for p in pr:
+            negate, term = p[0] == '!', p.lstrip("!")
+            if expand(term) in d and negate ^ (pr[p] in (d[expand(term)], None)): del d[expand(term)]
+# The declutterer of XML nodes! * for tag matches any node.
+def dclt(tag, pr, cond = {}):
+    rs = rn.findall(".//" + (tag if ':' in tag or tag == "*" else "d:" + tag), nm)
+    for j in rs: dmrn(j.attrib, pr, cond)
 
 def gets(k):
     rw = k.get("style", "").split(";")
@@ -122,66 +139,68 @@ def gets(k):
     return dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in rw])
 
 def rarify(f):
-    # Phase 1: node and attribute removals
-    kill("path||inkscape:original-d=*|d=*")
-    kill("*||inkscape:connector-curvature=0")
-    kill("*||sodipodi:nodetypes=*")
-    
-    kill("rect||x=0,y=0")
-    kill("circle||cx=0,cy=0")
-    kill("ellipse||cx=0,cy=0")
-    kill("path||sodipodi:type=star|d=*,inkscape:rounded=0,inkscape:randomized=0,inkscape:flatsided=false")
-    kill("use||x=0,y=0,height=100%,width=100%")
-    
-    kill("inkscape:path-effect||is_visible=true")
-    kill("inkscape:path-effect|effect=powerstroke|miter_limit=4,linejoin_type=extrp_arc,sort_points=true,interpolator_beta=0.2,start_linecap_type=butt,end_linecap_type=butt")
-    kill("inkscape:path-effect|effect=envelope|xx=true,yy=true,bendpath1-nodetypes=*,bendpath2-nodetypes=*,bendpath3-nodetypes=*,bendpath4-nodetypes=*")
-    
-    kill("clipPath||clipPathUnits=userSpaceOnUse")
-    kill("mask||maskUnits=userSpaceOnUse")
-
-    kill("*||inkscape:collect=always,inkscape:transform-center-x=*,inkscape:transform-center-y=*")
-    dicrem(rn.attrib, "|version=*,inkscape:version=*,sodipodi:docname=*,inkscape:export-filename=*,inkscape:export-xdpi=*,inkscape:export-ydpi=*")
+    # Phase 1: attribute decluttering
+    # Paths
+    dclt("path", {"d": None}, {"inkscape:original-d": None}) # This is the very reason this script was written
+    dclt("*", {"inkscape:connector-curvature": "0"})
+    dclt("*", {"sodipodi:nodetypes": None})
+    # Shapes
+    dclt("rect", {"x": "0", "y": "0"})
+    dclt("circle", {"cx": "0", "cy": "0"})
+    dclt("ellipse", {"cx": "0", "cy": "0"})
+    dclt("path", {"d": None, "inkscape:rounded": "0", "inkscape:randomized": "0", "inkscape:flatsided": "false"}, {"sodipodi:type": "star"})
+    # LPEs
+    dclt("inkscape:path-effect", {"is_visible": "true"})
+    dclt("inkscape:path-effect", {"miter_limit": "4", "linejoin_type": "extrp_arc", "sort_points": "true", "interpolator_beta": "0.2",
+                                  "start_linecap_type": "butt", "end_linecap_type": "butt"}, {"effect": "powerstroke"})
+    dclt("inkscape:path-effect", {"xx": "true", "yy": "true", "bendpath1-nodetypes": None, "bendpath2-nodetypes": None,
+                                                              "bendpath3-nodetypes": None, "bendpath4-nodetypes": None}, {"effect": "envelope"})
+    # Other SVG objects
+    dclt("use", {"x": "0", "y": "0", "height": "100%", "width": "100%"})
+    dclt("clipPath", {"clipPathUnits": "userSpaceOnUse"})
+    dclt("mask", {"maskUnits": "userSpaceOnUse"})
+    # Miscellaneous
+    dclt("*", {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None})
+    # Operations on the root node, which can't be reached by findall
+    dmrn(rn.attrib, {"version": None, "inkscape:version": None, "sodipodi:docname": None,
+                     "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None})
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
     if rmmd:
         for nv in rn.findall("d:metadata", nm): rn.remove(nv)
-    # Phase 2: style property removals
-    om = {}
-    for a in sd:
+    
+    # Phase 2: style property removals (but push properties into style tags first)
+    for a in defstyle:
         for i in rn.findall(".//*[@{0}]".format(a), nm):
             i.set("style", a + ":" + i.get(a) + ";" + i.get("style", ""))
             del i.attrib[a]
-    # By now all styling is within style tags; it may be purged (except clip-rule) from clips...
-    for n in rn.findall(".//d:clipPath/d:path", nm):
-        om = gets(n)
-        if om:
-            for a in sd:
-                if a != "clip-rule": dicrem(om, "|{0}=*".format(a))
-            if len(om) < 1: del n.attrib["style"]
-            else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
+    for n in rn.findall(".//d:clipPath/d:path", nm): # Look for "clip-rule:evenodd", keep only that
+        if "clip-rule:evenodd" in n.get("style", ""): n.set("style", "clip-rule:evenodd")
+        else: dmrn(n.attrib, {"style": None})
     for n in rn.findall(".//*[@style]", nm):
-        om = gets(n)
-        # Colour simplification
-        for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color", "color", "solid-color", "text-decoration-color"]:
-            if c in om and om[c] in cm: om[c] = cm[om[c]]
-        # Lack of some attributes wastes others; remove if applicable
+        raw = n.get("style", "").split(";")
+        for i in range(raw.count("")): raw.remove("")
+        om = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in raw]) # om is the working dictionary
+        # Colour aliasing
+        for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color",
+                  "color", "solid-color", "text-decoration-color"]:
+            if c in om and om[c] in calias: om[c] = calias[om[c]]
+        # >implying some attributes don't matter
         for s in si:
-            if s[0] not in om: om[s[0]] = sd[s[0]]
-            dicrem(om, "|{0}|{1}".format(s[0] + "=" + sd[s[0]], ",".join([a + "=*" for a in s])))
-        # If stroke-linejoin isn't mitre, stroke-miterlimit is redundant
-        dicrem(om, "|stroke-linejoin=round|stroke-miterlimit=*")
-        dicrem(om, "|stroke-linejoin=bevel|stroke-miterlimit=*")
-        # Removal of default-valued attributes
-        for a in sd:
-            bore = sd[a].split(";")
-            for sa in bore: dicrem(om, "|{0}={1}".format(a, sa))
+            if s[0] not in om: om[s[0]] = defstyle[s[0]]
+            dmrn(om, {a: None for a in s}, {s[0]: defstyle[s[0]]})
+        # If stroke-linejoin isn't miter, stroke-miterlimit is redundant
+        dmrn(om, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
+        # Remove default properties. TODO could this be Kilimanjaro?
+        dmrn(om, defstyle)
+        # Splitting a style attribute with less than four properties saves a few bytes
         if len(om) < 1: del n.attrib["style"]
         elif len(om) < 4:
             del n.attrib["style"]
             for a in om: n.set(a, om[a])
         else: n.set("style", ";".join([a + ":" + om[a] for a in om]))
+    
     # Phase 3: unused definitions and redundant ID removal
-    # 3a: dictionary of all elements and their references (assign temporary IDs to those lacking it)
+    # 3a: reference map with temporary IDs
     rd, cnt = {}, 0
     for k in rn.findall(".//*"):
         if not("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}" in k.tag or 
@@ -216,6 +235,7 @@ def rarify(f):
         if dlm.get("id") == None: ud.append(dlm)
     for z in ud: df.remove(z)
     if not len(list(df)): rn.remove(df)
+    
     # Final output
     tr.write("{0}-rarified.svg".format(f[:-4]))
 

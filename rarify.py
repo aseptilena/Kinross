@@ -106,7 +106,6 @@ calias = {"#000000": "#000", "black": "#000",
           "#ffa500": "orange", "#ffc0cb": "pink", "#a52a2a": "brown",
           "#c0c0c0": "silver", "#ffd700": "gold", "#f5f5dc": "beige",
           "#4b0082": "indigo", "#ee82ee": "violet", "#dda0dd": "plum"}
-rmmd = False
 
 # Functions converting namespaces into URLs and vice versa
 def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
@@ -138,7 +137,7 @@ def dclt(tag, pr, cond = {}):
     rs = rn.findall(".//" + (tag if ':' in tag or tag == "*" else "d:" + tag), nm)
     for j in rs: dmrn(j.attrib, pr, cond)
 
-def rarify(f):
+def rarify(f, ct, xl):
     # Phase 1: attribute decluttering
     # Paths
     dclt("path", {"d": None}, {"inkscape:original-d": None}) # This is the very reason this script was written
@@ -165,8 +164,9 @@ def rarify(f):
     dmrn(rn.attrib, {"version": None, "inkscape:version": None, "sodipodi:docname": None,
                      "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None})
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
-    if rmmd:
+    if ct:
         for nv in rn.findall("d:metadata", nm): rn.remove(nv)
+        # TODO viewbox processing
     
     # Phase 2: style property removals (but push properties into style tags first)
     for a in defstyle:
@@ -232,12 +232,14 @@ def rarify(f):
     if rn.get("id") != None: del rn.attrib["id"]
     # 3c: removal of unused <defs>
     df, ud = rn.find(".//d:defs", nm), []
-    for dlm in df:
-        if dlm.get("id") == None: ud.append(dlm)
-    for z in ud: df.remove(z)
-    if not len(list(df)): rn.remove(df)
+    if df != None:
+        for dlm in df:
+            if dlm.get("id") == None: ud.append(dlm)
+        for z in ud: df.remove(z)
+        if not len(list(df)): rn.remove(df)
     
     # Final output
+    # TODO where to process xl?
     tr.write("{0}-rarified.svg".format(f[:-4]))
 
 t.register_namespace("", "http://www.w3.org/2000/svg")
@@ -247,12 +249,13 @@ t.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 t.register_namespace("dc", "http://purl.org/dc/elements/1.1/")
 t.register_namespace("cc", "http://creativecommons.org/ns#")
 t.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncouth tantibus SVG optimiser")
-cdl.add_argument("-m", "--rm-metadata", action="store_true", default=False, help="remove metadata (useful for optimising cutie marks)")
+cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncouth SVG optimiser")
+cdl.add_argument("-c", "--cutie", action="store_true", default=False, help="remove metadata/dimensions and process viewbox (for cutie marks)")
+cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()
-rmmd = flags.rm_metadata
+ct, xl = flags.cutie, flags.xml
 for f in flags.files:
     tr = t.parse(f)
     rn = tr.getroot()
-    rarify(f)
+    rarify(f, ct, xl)

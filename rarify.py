@@ -87,8 +87,9 @@ defstyle = {"display": "inline",
             "word-spacing": "normal",
             "writing-mode": "lr-tb",
             "-inkscape-font-specification": "Sans"}
-si = [["stroke-dasharray", "stroke-dashoffset"],
-      ["stroke", "stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]]
+# The key for each pair precludes itself and the properties in the corresponding value, hence the name.
+precld = {"stroke-dasharray": ["stroke-dashoffset"],
+          "stroke": ["stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]}
 # Colour aliases
 calias = {"#000000": "#000", "black": "#000",
           "#ffffff": "#fff", "white": "#fff",
@@ -100,7 +101,11 @@ calias = {"#000000": "#000", "black": "#000",
           "#00ffff": "#0ff", "cyan": "#0ff", "aqua": "#0ff",
           "#808080": "grey", "gray": "grey",
           "#800000": "maroon", "#008000": "green", "#000080": "navy",
-          "#808000": "olive", "#800080": "purple", "#008080": "teal"}
+          "#808000": "olive", "#800080": "purple", "#008080": "teal",
+          
+          "#ffa500": "orange", "#ffc0cb": "pink", "#a52a2a": "brown",
+          "#c0c0c0": "silver", "#ffd700": "gold", "#f5f5dc": "beige",
+          "#4b0082": "indigo", "#ee82ee": "violet", "#dda0dd": "plum"}
 rmmd = False
 
 # Functions converting namespaces into URLs and vice versa
@@ -118,7 +123,7 @@ def collapse(a):
 # As with the pairs for removal, !-prefixing indicates negation.
 # e.g. {"d": None} stipulates that an attribute d has to be present
 #      {"!stroke-linejoin": "miter"} requires stroke-linejoin to not be miter (and exist)
-#      {![attribute]: None} is premature
+#      {![attribute]: None} is a premature break
 def dmrn(d, pr, cond = {}):
     rute = True
     for c in cond:
@@ -132,11 +137,6 @@ def dmrn(d, pr, cond = {}):
 def dclt(tag, pr, cond = {}):
     rs = rn.findall(".//" + (tag if ':' in tag or tag == "*" else "d:" + tag), nm)
     for j in rs: dmrn(j.attrib, pr, cond)
-
-def gets(k):
-    rw = k.get("style", "").split(";")
-    for i in range(rw.count("")): rw.remove("")
-    return dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in rw])
 
 def rarify(f):
     # Phase 1: attribute decluttering
@@ -184,13 +184,13 @@ def rarify(f):
         for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color",
                   "color", "solid-color", "text-decoration-color"]:
             if c in om and om[c] in calias: om[c] = calias[om[c]]
-        # >implying some attributes don't matter
-        for s in si:
-            if s[0] not in om: om[s[0]] = defstyle[s[0]]
-            dmrn(om, {a: None for a in s}, {s[0]: defstyle[s[0]]})
+        # Preclusions
+        for p in precld:
+            if p not in om: om[p] = defstyle[p]
+            dmrn(om, {q: None for q in precld[p]}, {p: defstyle[p]})
         # If stroke-linejoin isn't miter, stroke-miterlimit is redundant
         dmrn(om, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
-        # Remove default properties. TODO could this be Kilimanjaro?
+        # Remove default properties
         dmrn(om, defstyle)
         # Splitting a style attribute with less than four properties saves a few bytes
         if len(om) < 1: del n.attrib["style"]
@@ -201,27 +201,28 @@ def rarify(f):
     
     # Phase 3: unused definitions and redundant ID removal
     # 3a: reference map with temporary IDs
+    # Dictionary pairs are {id: {uses, fills, strokes, etc. referenced by that ID}}
     rd, cnt = {}, 0
     for k in rn.findall(".//*"):
-        if not("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}" in k.tag or 
-               "{http://creativecommons.org/ns#}" in k.tag or
-               "{http://purl.org/dc/elements/1.1/}" in k.tag):
-            rf, sty = {}, gets(k)
-            for a in ["fill", "stroke", "clip-path", "mask", "filter"]:
-                rf[a] = k.get(a, "")
-                if a in sty: rf[a] = sty[a]
-                rf[a] = rf[a][5:-1] if rf[a].startswith("url(#") else None
-            rf["tag"] = collapse(k.tag)
-            tmp = k.get("{http://www.w3.org/1999/xlink}href")
-            rf["use"] = tmp[1:] if tmp != None else None
-            tmp = k.get("{http://www.inkscape.org/namespaces/inkscape}path-effect")
-            rf["path-effect"] = tmp[1:] if tmp != None else None
-            irk = k.get("id")
-            if irk == None:
-                while "q" + str(cnt) in rd: cnt += 1
-                irk = "q" + str(cnt)
-                k.set("id", irk)
-            rd[irk] = rf
+        rf = {}
+        # Style properties
+        for a in ["fill", "stroke", "clip-path", "mask", "filter"]:
+            raw = k.get("style", "").split(";")
+            sty = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in raw]) if len(raw) > 1 else {}
+            rf[a] = sty[a] if a in sty else k.get(a, "")
+            rf[a] = rf[a][5:-1] if rf[a].startswith("url(#") else None
+        # Not style properties
+        rf["tag"] = collapse(k.tag)
+        tmp = k.get("{http://www.w3.org/1999/xlink}href")
+        rf["use"] = tmp[1:] if tmp != None else None
+        tmp = k.get("{http://www.inkscape.org/namespaces/inkscape}path-effect")
+        rf["path-effect"] = tmp[1:] if tmp != None else None
+        irk = k.get("id")
+        if irk == None:
+            while "q" + str(cnt) in rd: cnt += 1
+            irk = "q" + str(cnt)
+            k.set("id", irk)
+        rd[irk] = rf
     # 3b: unreferenced ID removal
     ao, ro = set(rd.keys()), []
     for e in rd: ro.extend([rd[e][a] for a in ["use", "fill", "stroke", "clip-path", "mask", "filter", "path-effect"]])

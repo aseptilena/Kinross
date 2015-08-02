@@ -166,7 +166,7 @@ def rarify(f, ct, xl):
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
     if ct:
         for nv in rn.findall("d:metadata", nm): rn.remove(nv)
-        # TODO viewbox processing
+        dmrn(rn.attrib, {"height": None, "width": None, "viewBox": None})
     
     # Phase 2: style property removals (but push properties into style tags first)
     for a in defstyle:
@@ -176,22 +176,26 @@ def rarify(f, ct, xl):
     for n in rn.findall(".//d:clipPath/d:path", nm): # Look for "clip-rule:evenodd", keep only that
         if "clip-rule:evenodd" in n.get("style", ""): n.set("style", "clip-rule:evenodd")
         else: dmrn(n.attrib, {"style": None})
+    # EXCEPT if the styled element represents a bespokely placed path. Then you don't do anything.
+    ptemplate = rn.findall(".//d:defs/d:path", nm)
     for n in rn.findall(".//*[@style]", nm):
+        # Prepare the style dictionary om
         raw = n.get("style", "").split(";")
         for i in range(raw.count("")): raw.remove("")
-        om = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in raw]) # om is the working dictionary
-        # Colour aliasing
-        for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color",
-                  "color", "solid-color", "text-decoration-color"]:
-            if c in om and om[c] in calias: om[c] = calias[om[c]]
-        # Preclusions
-        for p in precld:
-            if p not in om: om[p] = defstyle[p]
-            dmrn(om, {q: None for q in precld[p]}, {p: defstyle[p]})
-        # If stroke-linejoin isn't miter, stroke-miterlimit is redundant
-        dmrn(om, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
-        # Remove default properties
-        dmrn(om, defstyle)
+        om = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in raw])
+        if n not in ptemplate:
+            # Colour aliasing
+            for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color",
+                      "color", "solid-color", "text-decoration-color"]:
+                if c in om and om[c] in calias: om[c] = calias[om[c]]
+            # Preclusions
+            for p in precld:
+                if p not in om: om[p] = defstyle[p]
+                dmrn(om, {q: None for q in precld[p]}, {p: defstyle[p]})
+            # If stroke-linejoin isn't miter, stroke-miterlimit is redundant
+            dmrn(om, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
+            # Default values
+            dmrn(om, defstyle)
         # Splitting a style attribute with less than four properties saves a few bytes
         if len(om) < 1: del n.attrib["style"]
         elif len(om) < 4:
@@ -239,8 +243,10 @@ def rarify(f, ct, xl):
         if not len(list(df)): rn.remove(df)
     
     # Final output
-    # TODO where to process xl?
-    tr.write("{0}-rarified.svg".format(f[:-4]))
+    outf = open("{0}-rarified.svg".format(f[:-4]), 'w')
+    if xl: outf.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n")
+    tr.write(outf, "unicode")
+    outf.close()
 
 t.register_namespace("", "http://www.w3.org/2000/svg")
 t.register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")
@@ -250,7 +256,7 @@ t.register_namespace("dc", "http://purl.org/dc/elements/1.1/")
 t.register_namespace("cc", "http://creativecommons.org/ns#")
 t.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncouth SVG optimiser")
-cdl.add_argument("-c", "--cutie", action="store_true", default=False, help="remove metadata/dimensions and process viewbox (for cutie marks)")
+cdl.add_argument("-c", "--cutie", action="store_true", default=False, help="remove metadata and dimensions (for cutie marks)")
 cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()

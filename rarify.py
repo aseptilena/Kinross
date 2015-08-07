@@ -137,7 +137,7 @@ def dclt(tag, pr, cond = {}):
     rs = rn.findall(".//" + (tag if ':' in tag or tag == "*" else "d:" + tag), nm)
     for j in rs: dmrn(j.attrib, pr, cond)
 
-def rarify(f, ct, xl):
+def rarify(f, opts):
     # Phase 1: attribute decluttering
     # Paths
     dclt("path", {"d": None}, {"inkscape:original-d": None}) # This is the very reason this script was written
@@ -164,9 +164,9 @@ def rarify(f, ct, xl):
     dmrn(rn.attrib, {"version": None, "inkscape:version": None, "sodipodi:docname": None,
                      "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None})
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
-    if ct:
+    if opts[0]:
         for nv in rn.findall("d:metadata", nm): rn.remove(nv)
-        dmrn(rn.attrib, {"height": None, "width": None, "viewBox": None})
+    if opts[1]: dmrn(rn.attrib, {"height": None, "width": None, "viewBox": None})
     
     # Phase 2: style property removals (but push properties into style tags first)
     for a in defstyle:
@@ -244,7 +244,7 @@ def rarify(f, ct, xl):
     
     # Final output
     outf = open("{0}-rarified.svg".format(f[:-4]), 'w')
-    if xl: outf.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n")
+    if opts[2]: outf.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n")
     tr.write(outf, "unicode")
     outf.close()
 
@@ -256,12 +256,13 @@ t.register_namespace("dc", "http://purl.org/dc/elements/1.1/")
 t.register_namespace("cc", "http://creativecommons.org/ns#")
 t.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncouth SVG optimiser")
-cdl.add_argument("-c", "--cutie", action="store_true", default=False, help="remove metadata and dimensions (for cutie marks)")
+cdl.add_argument("-m", "--metadata", action="store_true", default=False, help="remove metadata")
+cdl.add_argument("-d", "--dimens", action="store_true", default=False, help="remove dimensions")
 cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()
-ct, xl = flags.cutie, flags.xml
+opts = (flags.metadata, flags.dimens, flags.xml)
 for f in flags.files:
     tr = t.parse(f)
     rn = tr.getroot()
-    rarify(f, ct, xl)
+    rarify(f, opts)

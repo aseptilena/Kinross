@@ -154,6 +154,7 @@ def rarify(f, opts):
                                   "start_linecap_type": "butt", "end_linecap_type": "butt"}, {"effect": "powerstroke"})
     dclt("inkscape:path-effect", {"xx": "true", "yy": "true", "bendpath1-nodetypes": None, "bendpath2-nodetypes": None,
                                                               "bendpath3-nodetypes": None, "bendpath4-nodetypes": None}, {"effect": "envelope"})
+    dclt("inkscape:path-effect", {"copytype": "single_stretched", "fuse_tolerance": "0", "normal_offset": "0", "pattern-nodetypes": None, "prop_scale": "1", "prop_units": "false", "scale_y_rel": "false", "spacing": "0", "tang_offset": "0", "vertical_pattern": "false"}, {"effect": "skeletal"})
     # Other SVG objects
     dclt("use", {"x": "0", "y": "0", "height": "100%", "width": "100%"})
     dclt("clipPath", {"clipPathUnits": "userSpaceOnUse"})

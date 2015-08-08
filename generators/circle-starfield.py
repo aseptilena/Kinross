@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.4
-# A starfield simulator - insanely good for something almost looking like it's bootstrapped.
+# A starfield generator - insanely good for something almost looking bootstrapped.
 import random, time
 
 def star(d = 3, m = 6, b = 3.5, s = 1.5):

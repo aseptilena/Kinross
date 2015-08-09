@@ -1,6 +1,11 @@
 #!/usr/bin/env python3.4
 # A starfield generator - insanely good for something almost looking bootstrapped.
-import random, time
+# Parcly Taxel / Jeremy Tan, 2015
+# http://parclytaxel.tumblr.com
+import sys, os, random
+sys.path.append(os.path.abspath("./utilities")) # When the script is run in-place in the Kinross folder
+sys.path.append(os.path.abspath("../utilities")) # or in a folder containing the utilities as a sub-folder,
+from filestamps import timestamp                # these three lines ensure the last import occurs successfully.
 
 def star(d = 3, m = 6, b = 3.5, s = 1.5):
     # d = decay rate (how many times less frequent the next lower magnitude of star is)
@@ -26,7 +31,7 @@ c, p = "b4a8fe" if c == "" else c, ""
 if len(c) == 8:
     o = int(c[-2:], 16)
     p = "" if o == 255 else ' fill-opacity="{0}"'.format(o / 255)
-with open("starfield-{0}.svg".format(time.strftime("%Y-%m-%d-%H-%M-%S")), 'w') as out:
+with open(timestamp("starfield.svg"), 'w') as out:
     out.write('<svg><g fill="#{0}"{1}>'.format(c[:6], p))
     for i in range(r): out.write(star(d, m, b, s))
     out.write("</g></svg>")

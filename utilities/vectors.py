@@ -2,12 +2,12 @@
 # Helper functions for Kinross: vector geometry
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from math import hypot, atan2, sin, cos
+from math import hypot, atan2, sin, cos, acos
 
 def prox(a, b = 0, e = 1e-5): return a - b <= e and a - b >= -e # Proximal function
 
 # A point in the plane, equivalently a vector from the origin or complex number.
-# For trigonometric operations, positive angle is clockwise to follow SVG convention.
+# The y-axis is downwards and positive angle is clockwise as in the SVG specs.
 class Point:
     def __init__(self): # Origin
         self.x, self.y = 0.0, 0.0
@@ -15,13 +15,11 @@ class Point:
         self.x, self.y = iterb[0], iterb[1]
     def __init__(self, x, y): # From Cartesian coordinates
         self.x, self.y = float(x), float(y)
-    def __str__(self): return str(self.x) + " " + str(self.y)
-    def __repr__(self): return str(self)
-    
+    def __str__(self): return str((self.x, self.y))
+    def __repr__(self): return "Point({0}, {1})".format(self.x, self.y)
     def __add__(self, that): return Point(self.x + that.x, self.y + that.y)
     def __sub__(self, that): return Point(self.x - that.x, self.y - that.y)
-    def __neg__(self): return node(-self.x, -self.y)
-    
+    def __neg__(self): return Point(-self.x, -self.y)
     def __mul__(self, that):
         if type(that) == Point: return Point(self.x * that.x - self.y * that.y, self.y * that.x + self.x * that.y)
         else: return Point(self.x * that, self.y * that)
@@ -46,19 +44,22 @@ class Point:
     def lturn(self): return Point(self.y, -self.x) # Both rotate by 90 degrees
     def rturn(self): return Point(-self.y, self.x)
 
-# For each of the methods in Point above there is a corresponding relative function taking a given point as the origin.
-# Some names change to reflect this distinction.
+# Functions of two vectors, hence outside the class
+def dot(a, b): return a.x * b.x + a.y * b.y
+def angle(a, b): return acos(dot(a, b) / a.md() / b.md()) # Unsigned, less than 180 degrees
+def sangle(p, base): return (p / base).th() # A number in (-pi, pi]
+# Each of the non-operator methods above has a relative version (mostly) r-prefixed.
 def pnear(p, origin): return (p - origin).is0()
 def dist(p, origin): return (p - origin).md()
 def dirc(p, origin): return (p - origin).th()
-def hat(p, origin): return (p - origin).hat()
-def lenbyhat(p, origin, l): return (p - origin).lenbyhat(l)
-def rot(p, origin, th): return (p - origin).rot(th)
-def lturn(p, origin): return (p - origin).lturn()
-def rturn(p, origin): return (p - origin).rturn()
+def rhat(p, origin): return (p - origin).hat()
+def rlenbyhat(p, origin, l): return (p - origin).lenbyhat(l)
+def rrot(p, origin, th): return (p - origin).rot(th)
+def rlturn(p, origin): return (p - origin).lturn()
+def rrturn(p, origin): return (p - origin).rturn()
+def rdot(a, origin, b): return dot(a - origin, b - origin)
+def rsangle(p, origin, base): return sangle(p - origin, base - origin)
 
-# TODO dot product
-
-# Functions between two points
+# Functions that genuinely have no relative counterpart
 def midpoint(p, q): return (p + q) / 2
 def slide(p, q, t): return p + t * (q - p)

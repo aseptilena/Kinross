@@ -2,23 +2,21 @@
 # Helper functions for Kinross: vector geometry
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
+# 
+# +y is downwards and +angle is clockwise as per the SVG specifications
 from math import hypot, atan2, sin, cos, acos
 
-def prox(a, b = 0, e = 1e-5): return a - b <= e and a - b >= -e # Proximal function
-
-# A point in the plane, equivalently a vector from the origin or complex number.
-# The y-axis is downwards and positive angle is clockwise as in the SVG specs.
-class Point:
-    def __init__(self): # Origin
-        self.x, self.y = 0.0, 0.0
-    def __init__(self, iterb): # From list or tuple
-        self.x, self.y = iterb[0], iterb[1]
-    def __init__(self, x, y): # From Cartesian coordinates
-        self.x, self.y = float(x), float(y)
+def prox(a, b, e = 1e-5): return a - b <= e and a - b >= -e
+class Origin: x, y = 0., 0. # WHAT A HACK! CALAMITY!
+class Point: # or vector or complex number
+    def __init__(self, r = 0., s = 0., polar = False):
+        if polar: self.x, self.y = r * cos(s), r * sin(s)
+        elif type(r) == list or type(r) == tuple: self.x, self.y = float(r[0]), float(r[1])
+        else: self.x, self.y = float(r), float(s)
     def __str__(self): return str((self.x, self.y))
     def __repr__(self): return "Point({0}, {1})".format(self.x, self.y)
-    def __add__(self, that): return Point(self.x + that.x, self.y + that.y)
-    def __sub__(self, that): return Point(self.x - that.x, self.y - that.y)
+    def __add__(self, that): return self if type(that) == Origin else Point(self.x + that.x, self.y + that.y)
+    def __sub__(self, that): return self if type(that) == Origin else Point(self.x - that.x, self.y - that.y)
     def __neg__(self): return Point(-self.x, -self.y)
     def __mul__(self, that):
         if type(that) == Point: return Point(self.x * that.x - self.y * that.y, self.y * that.x + self.x * that.y)
@@ -29,37 +27,24 @@ class Point:
             n = that.x * that.x + that.y * that.y
             return Point(self.x * that.x + self.y * that.y, self.y * that.x - self.x * that.y) / n
         else: return Point(self.x / that, self.y / that)
-    
-    def is0(self): return prox(self.x) and prox(self.y)
-    # Modulus and argument
-    def md(self): return hypot(self.x, self.y)
-    def md2(self): return self.x * self.x + self.y * self.y
-    def th(self): return atan2(self.y, self.x)
-    # Classic vector operations
-    def hat(self): return self / self.md() if not self.is0() else Point(1, 0) # The normalised vector, denoted with a hat
-    def lenbyhat(self, l): return self.hat() * l # length * hat(vector)
-    def rot(self, th):
-        s, c = sin(th), cos(th)
-        return Point(self.x * c - self.y * s, self.x * s + self.y * c)
-    def lturn(self): return Point(self.y, -self.x) # Both rotate by 90 degrees
-    def rturn(self): return Point(-self.y, self.x)
+    # The methods below can all take an arbitrary point as the origin
+    def near(self, o = Origin(), e = 1e-5): return prox(self.x, o.x, e) and prox(self.y, o.y, e)
+    def dist(self, o = Origin()): return hypot(self.y - o.y, self.x - o.x)
+    def sqdist(self, o = Origin()): return (self.y - o.y) ** 2 + (self.x - o.x) ** 2
+    def dirc(self, o = Origin()): return atan2(self.y - o.y, self.x - o.x)
+    def hat(self, o = Origin()): return (self - o) / self.dist(o) + o if not self.near(o) else self
+    # Vector pointing in the same direction as self - o having length l
+    def lhat(self, l, o = Origin()): return (self - o) / self.dist(o) * l + o if not self.near(o) else self
+    def rot(self, theta, o = Origin()):
+        s, c, d = sin(theta), cos(theta), self - o
+        return Point(d.x * c - d.y * s, d.x * s + d.y * c) + o
+    def lturn(self, o = Origin()): return Point(self.y - o.y, o.x - self.x) + o
+    def rturn(self, o = Origin()): return Point(o.y - self.y, self.x - o.x) + o
 
-# Functions of two vectors, hence outside the class
-def dot(a, b): return a.x * b.x + a.y * b.y
-def angle(a, b): return acos(dot(a, b) / a.md() / b.md()) # Unsigned, less than 180 degrees
-def sangle(p, base): return (p / base).th() # A number in (-pi, pi]
-# Each of the non-operator methods above has a relative version (mostly) r-prefixed.
-def pnear(p, origin): return (p - origin).is0()
-def dist(p, origin): return (p - origin).md()
-def dirc(p, origin): return (p - origin).th()
-def rhat(p, origin): return (p - origin).hat()
-def rlenbyhat(p, origin, l): return (p - origin).lenbyhat(l)
-def rrot(p, origin, th): return (p - origin).rot(th)
-def rlturn(p, origin): return (p - origin).lturn()
-def rrturn(p, origin): return (p - origin).rturn()
-def rdot(a, origin, b): return dot(a - origin, b - origin)
-def rsangle(p, origin, base): return sangle(p - origin, base - origin)
-
-# Functions that genuinely have no relative counterpart
+# Functions of two vectors; these also accept arbitrary origins
+def dot(a, b, o = Point()): return (a.x - o.x) * (b.x - o.x) + (a.y - o.y) * (b.y - o.y)
+def angle(a, b, o = Point()): return acos(dot(a, b, o) / a.dist(o) / b.dist(o)) # (0, pi]
+def sangle(p, base, o = Point()): return ((p - o) / (base - o)).th() # (-pi, pi]
+# Interpolation functions
 def midpoint(p, q): return (p + q) / 2
-def slide(p, q, t): return p + t * (q - p)
+def linterp(p, q, t): return t * (q - p) + p

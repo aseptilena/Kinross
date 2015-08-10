@@ -33,7 +33,7 @@ class Ellipse:
 def rytz(centre, a, b):
     if prox(dot(a, b, centre), 0.): return Ellipse(centre, a.dist(centre), b.dist(centre), a.dirc(centre))
     else:
-        c = a.lturn(centre)
+        c = a.rturn(centre)
         m = midpoint(b, c)
         axav = m.dist(centre)
         mb, mc = b.lhat(axav, m), c.lhat(axav, m)

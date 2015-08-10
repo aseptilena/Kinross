@@ -43,7 +43,7 @@ class Point: # or vector or complex number
 
 # Functions of two vectors; these also accept arbitrary origins
 def dot(a, b, o = Point()): return (a.x - o.x) * (b.x - o.x) + (a.y - o.y) * (b.y - o.y)
-def angle(a, b, o = Point()): return acos(dot(a, b, o) / a.dist(o) / b.dist(o)) # (0, pi]
+def angle(a, b, o = Point()): return acos(dot(a, b, o) / a.dist(o) / b.dist(o)) # [0, pi]
 def sangle(p, base, o = Point()): return ((p - o) / (base - o)).th() # (-pi, pi]
 # Interpolation functions
 def midpoint(p, q): return (p + q) / 2

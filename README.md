@@ -8,7 +8,7 @@ Parcly Taxel / Jeremy Tan, 2015
 Kinross is a town in Scotland whose sister Perth provided the Australian Perth's name, which is why the licence file is idiosyncratically named Perth.
 
 **Extensions, incompatibility and everything else**  
-There are two types of programs in Kinross: extensions for Inkscape (located in the extensions folder) and standalone scripts (generators). For the former you take the \*.inx and \*.py files and place them into your custom Inkscape extensions folder (~/.config/inkscape/extensions on Linux); for the latter you either run the script in-place or take the *kinback* folder and place both it and the script in question in the same directory to run. Python 3.4 is required for operation.
+There are two types of programs in Kinross: extensions for Inkscape (located in the extensions folder) and standalone scripts (generators). For the former you take the \*.inx and \*.py files and place them into your custom Inkscape extensions folder (~/.config/inkscape/extensions on Linux); for the latter you take the *kinback* folder and place both it and the script in question in the same directory to run. Python 3.4 is required for operation.
 
 **The ~~cutie map~~ path format**  
 Points (nodes and handles alike) are complex numbers, thereby exploiting Python's native support for them and simplifying things a lot. *Rhythms* are lists of points (the cardinality corresponding to a set of commands in [the SVG specifications](http://www.w3.org/TR/SVG11/paths.html) as below), subpaths are lists of rhythms and paths are lists of subpaths:

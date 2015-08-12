@@ -2,7 +2,7 @@
 # Helper functions for Kinross: vector geometry
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-# 
+
 # Points in Kinross are complex numbers, supported natively by Python.
 # +y is downwards and +angle is clockwise as per the SVG specifications.
 from math import sin, cos

@@ -5,6 +5,9 @@
 import sys, argparse
 import xml.etree.ElementTree as t
 
+from kinback.ellipse import *
+from kinback.affinity import *
+
 tr, rn = None, None
 nm = {"d": "http://www.w3.org/2000/svg",
       "inkscape": "http://www.inkscape.org/namespaces/inkscape",

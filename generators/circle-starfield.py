@@ -3,6 +3,8 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import random
+import xml.etree.ElementTree as t
+
 from kinback.miscellanea import *
 
 def star(d = 3, m = 6, b = 3.5, s = 1.5):

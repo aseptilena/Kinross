@@ -2,7 +2,7 @@
 # Helper functions for Kinross: ellipses
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from vectors import *
+from .vectors import *
 from math import pi, sqrt, fabs
 
 hpi = pi / 2

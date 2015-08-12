@@ -2,10 +2,8 @@
 # A starfield generator - insanely good for something almost looking bootstrapped.
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-import sys, os, random
-sys.path.append(os.path.abspath("./utilities")) # When the script is run in-place in the Kinross folder
-sys.path.append(os.path.abspath("../utilities")) # or in a folder containing the utilities as a sub-folder,
-from filestamps import timestamp                # these three lines ensure the last import occurs successfully.
+import random
+from kinback.miscellanea import *
 
 def star(d = 3, m = 6, b = 3.5, s = 1.5):
     # d = decay rate (how many times less frequent the next lower magnitude of star is)

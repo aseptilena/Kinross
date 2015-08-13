@@ -14,6 +14,9 @@ def stamp(fn, s):
 # Classic timestamp (with Unix time)
 def timestamp(fn): return stamp(fn, str(int(time.time())))
 
+# Stamp with the date
+def datestamp(fn): return stamp(fn, time.strftime("%d-%m-%y"))
+
 # A stamp based on file contents, appending the first eight hex digits of the Whirlpool hash.
 # Inspired by a similar system on Derpibooru (anonymous users there are differentiated by four hex digits).
 def hashstamp(fn):

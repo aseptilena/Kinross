@@ -16,7 +16,7 @@ Points (nodes and handles alike) are complex numbers, thereby exploiting Python'
 * **M/L/H/V**: one point (one at a subpath's start is compulsory and understood only as M)
 * **Q/T**: two points
 * **C/S**: three points
-* **A**: five points
+* **A**: four points (explained below)
 
 For example, "M8 3" is the first rhythm of a subpath containing the point (8, 3). Every rhythm but the last is a straight transcription of specification syntax. (The elliptical arc movement, however, represents the arc whose centre is the first point going from the current pen position to the second point, the boolean indicating counterclockwise movement around the centre if false and vice versa.)
 

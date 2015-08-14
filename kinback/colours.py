@@ -151,7 +151,8 @@ aliases = {"pink": (255, 192, 203), # Pink
            "black": (0, 0, 0)}
 
 # These functions take the raw (string) value of a colour property and its corresponding opacity and convert to and from the internal representation.
-# Calling fromccol(toccol(s, a)) should return the shortest possible representation of s and a; if the result's a is None it means no opacity property needs to be put.
+# Calling fromccol(toccol(s, a)) should terse (return the shortest representation of) s and a with opacity explicitly stated (for later whacking).
+# Rarify is specifically targeted here: get() on an XML element will return None if the attribute doesn't exist.
 def toccol(s, a = None):
     if s in aliases: z = [i / 255 for i in aliases[s]]
     else:
@@ -160,22 +161,27 @@ def toccol(s, a = None):
         else: z = [int(t[i:i + 2], 16) / 255 for i in range(0, 6, 2)]
     if a != None and float(a) < 1.: z.append(float(a))
     return tuple(z)
-
 def fromccol(c):
-    pass
+    nm = None
+    rgb = tuple(round(i * 255) for i in c[:3])
+    for a in aliases:
+        if rgb == aliases[a]: nm = a
+    if nm == "gray": nm = "grey"
+    if nm == "aqua": nm = "cyan"
+    if nm == "fuchsia": nm = "magenta"
+    if max(i % 17 for i in rgb): code = "#" + "".join(["{0:02x}".format(i) for i in rgb])
+    else: code = "#" + "".join(["{0:x}".format(i >> 4) for i in rgb])
+    if nm == None or len(code) <= len(nm): nm = code
+    # Alpha is rounded to the nearest 1 / 255 (smallest possible display differential).
+    if len(c) < 4: return nm, "1"
+    else:
+        z = round(c[3] * 255)
+        if z == 255: return nm, "1"
+        elif z == 0: return nm, "0"
+        else: return nm, str(round(z / 255, 3))[1:]
+def terse(s, a = None): return fromccol(toccol(s, a))
 
-# Because I'm a completeness freak, conversions to other colour spaces.
-# r = sRGB, x = CIEXYZ (1931), l = CIELAB (1976)
-# Tristimulus values for D65:
-xn, yn, zn = .95047, 1., 1.08883
-def r2x(c):
-    def linearise(k): return k / 12.92 if k <= .04045 else ((k + .055) / 1.055) ** 2.4
-    cc = [linearise(k) for k in c[:3]]
-    z = [.4124 * cc[0] + .3576 * cc[1] + .1805 * cc[2],
-         .2126 * cc[0] + .7152 * cc[1] + .0722 * cc[2],
-         .0193 * cc[0] + .1192 * cc[1] + .9505 * cc[2]]
-    if len(c) == 4: z.append(c[3])
-    return tuple(z)
+# Conversions between colour spaces: r = sRGB, x = CIEXYZ (1931), l = CIELAB (1976)
 def x2r(c):
     def delinearise(k): return 12.92 * k if k <= .0031308 else 1.055 * k ** (1 / 2.4) - 0.055
     cc = [3.2406 * c[0] - 1.5372 * c[1] -  .4986 * c[2],
@@ -184,6 +190,15 @@ def x2r(c):
     z = [delinearise(k) for k in cc]
     if len(c) == 4: z.append(c[3])
     return tuple(z)
+def r2x(c):
+    def linearise(k): return k / 12.92 if k <= .04045 else ((k + .055) / 1.055) ** 2.4
+    cc = [linearise(k) for k in c[:3]]
+    z = [.4124 * cc[0] + .3576 * cc[1] + .1805 * cc[2],
+         .2126 * cc[0] + .7152 * cc[1] + .0722 * cc[2],
+         .0193 * cc[0] + .1192 * cc[1] + .9505 * cc[2]]
+    if len(c) == 4: z.append(c[3])
+    return tuple(z)
+xn, yn, zn = .95047, 1., 1.08883 # D65 tristimulus values
 def x2l(c):
     def cise(k): return k ** (1 / 3) if k > 216 / 24389 else k * 841 / 108 + 4 / 29
     z = [116 * cise(c[1] / yn) - 16,
@@ -199,3 +214,6 @@ def l2x(c):
          zn * icise(l0 - c[2] / 200)]
     if len(c) == 4: z.append(c[3])
     return tuple(z)
+
+# Calculations may occasionally produce values outside [0, 1]; this function clips them to the desired range.
+def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)

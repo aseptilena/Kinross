@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 # Reverses alpha compositing, returning the overlay L
-# Input file on command line contains several lines, each of four RGBA strings, optionally followed by a comment (which can be anything):
+# Input file on command line contains several lines, each of four RGBA strings:
 # A A' B B' [comment]
 # A + L = A', B + L = B'
 # L is then printed with its position and any comments.

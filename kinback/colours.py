@@ -3,10 +3,8 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 
-# An RGB(A) colour is a 3- or 4-tuple of floats in [0, 1].
-# These can be readily converted to and from other colour spaces; operations between them are easier in this format.
-
-# The CSS colour alias set, ordered by how their Wikipedia page lists them
+# An RGBA colour is a 4-tuple of floats in [0, 1]; operations, especially alpha compositing and its reverse, are easier in this format.
+# The CSS colour aliases follow in the order Wikipedia gives them:
 aliases = {"pink": (255, 192, 203), # Pink
            "lightpink": (255, 182, 193),
            "hotpink": (255, 105, 180),
@@ -150,70 +148,81 @@ aliases = {"pink": (255, 192, 203), # Pink
            "darkslategray": (47, 79, 79),
            "black": (0, 0, 0)}
 
-# These functions take the raw (string) value of a colour property and its corresponding opacity and convert to and from the internal representation.
-# Calling fromccol(toccol(s, a)) should terse (return the shortest representation of) s and a with opacity explicitly stated (for later whacking).
-# Rarify is specifically targeted here: get() on an XML element will return None if the attribute doesn't exist.
-def toccol(s, a = None):
-    if s in aliases: z = [i / 255 for i in aliases[s]]
-    else:
-        t = s.strip('#')
-        if len(t) == 3: z = [int(t[i] + t[i], 16) / 255 for i in range(3)]
-        else: z = [int(t[i:i + 2], 16) / 255 for i in range(0, 6, 2)]
-    if a != None and float(a) < 1.: z.append(float(a))
-    return tuple(z)
-def fromccol(c):
-    nm = None
-    rgb = tuple(round(i * 255) for i in c[:3])
-    for a in aliases:
-        if rgb == aliases[a]: nm = a
-    if nm == "gray": nm = "grey"
-    if nm == "aqua": nm = "cyan"
-    if nm == "fuchsia": nm = "magenta"
-    if max(i % 17 for i in rgb): code = "#" + "".join(["{0:02x}".format(i) for i in rgb])
-    else: code = "#" + "".join(["{0:x}".format(i >> 4) for i in rgb])
-    if nm == None or len(code) <= len(nm): nm = code
-    # Alpha is rounded to the nearest 1 / 255 (smallest possible display differential).
-    if len(c) < 4: return nm, "1"
-    else:
-        z = round(c[3] * 255)
-        if z == 255: return nm, "1"
-        elif z == 0: return nm, "0"
-        else: return nm, str(round(z / 255, 3))[1:]
-def terse(s, a = None): return fromccol(toccol(s, a))
+# decs[n] = shortest string that when converted to float, multiplied by 255 and rounded to nearest even integer will yield n
+decs = ("0"   , ".004", ".008", ".01" , ".016", ".02" , ".024", ".028", ".03" , ".036", ".04" , ".044", ".048", ".05" , ".056", ".06" ,
+        ".064", ".068", ".07" , ".076", ".08" , ".084", ".088", ".09" , ".096", ".098", ".1"  , ".104", ".11" , ".112", ".116", ".12" ,
+        ".124", ".13" , ".132", ".136", ".14" , ".144", ".15" , ".152", ".156", ".16" , ".164", ".17" , ".172", ".176", ".18" , ".184",
+        ".19" , ".192", ".196", ".2"  , ".204", ".208", ".21" , ".216", ".22" , ".224", ".228", ".23" , ".236", ".24" , ".244", ".248",
+        ".25" , ".256", ".26" , ".264", ".268", ".27" , ".276", ".28" , ".284", ".288", ".29" , ".296", ".3"  , ".302", ".304", ".31" ,
+        ".312", ".316", ".32" , ".324", ".33" , ".332", ".336", ".34" , ".344", ".35" , ".352", ".356", ".36" , ".364", ".37" , ".372",
+        ".376", ".38" , ".384", ".39" , ".392", ".396", ".4"  , ".404", ".408", ".41" , ".416", ".42" , ".424", ".428", ".43" , ".436",
+        ".44" , ".444", ".448", ".45" , ".456", ".46" , ".464", ".468", ".47" , ".476", ".48" , ".484", ".488", ".49" , ".496", ".498",
+        ".5"  , ".504", ".51" , ".512", ".516", ".52" , ".524", ".53" , ".532", ".536", ".54" , ".544", ".55" , ".552", ".556", ".56" ,
+        ".564", ".57" , ".572", ".576", ".58" , ".584", ".59" , ".592", ".596", ".6"  , ".604", ".608", ".61" , ".616", ".62" , ".624",
+        ".628", ".63" , ".636", ".64" , ".644", ".648", ".65" , ".656", ".66" , ".664", ".668", ".67" , ".676", ".68" , ".684", ".688",
+        ".69" , ".696", ".7"  , ".702", ".704", ".71" , ".712", ".716", ".72" , ".724", ".73" , ".732", ".736", ".74" , ".744", ".75" ,
+        ".752", ".756", ".76" , ".764", ".77" , ".772", ".776", ".78" , ".784", ".79" , ".792", ".796", ".8"  , ".804", ".808", ".81" ,
+        ".816", ".82" , ".824", ".828", ".83" , ".836", ".84" , ".844", ".848", ".85" , ".856", ".86" , ".864", ".868", ".87" , ".876",
+        ".88" , ".884", ".888", ".89" , ".896", ".898", ".9"  , ".904", ".91" , ".912", ".916", ".92" , ".924", ".93" , ".932", ".936",
+        ".94" , ".944", ".95" , ".952", ".956", ".96" , ".964", ".97" , ".972", ".976", ".98" , ".984", ".99" , ".992", ".996",    "1")
 
-# Conversions between colour spaces: r = sRGB, x = CIEXYZ (1931), l = CIELAB (1976)
+# The colour string may have # + 3/6/8 hexes or an alias. The opacity is a string representing a number in [0, 1].
+# Separately specified opacities override any opacity that might be in the colour string.
+def col2repr(col, alpha = None):
+    if col in aliases:
+        return tuple([i / 255 for i in aliases[col]] + [1. if alpha == None else float(alpha)])
+    else:
+        h, a = col.strip('#'), 1.
+        if len(h) == 3: rgb = [int(2 * h[i], 16) / 255 for i in range(3)]
+        else: rgb = [int(h[i:i + 2], 16) / 255 for i in range(0, 6, 2)]
+        if len(h) == 8: a = int(h[6:], 16) / 255
+        if alpha != None: a = float(alpha)
+        return tuple(rgb + [a])
+# four causes an eight-hex RGBA string to be returned instead of a six-hex RGB string or alias and an opacity float for pasting into Inkscape's fill/stroke dialogue.
+def repr2col(tups, four = False):
+    if four: return "".join(["{0:02x}".format(round(comp * 255)) for comp in tups])
+    else:
+        nm = None
+        rgb = tuple(round(i * 255) for i in tups[:3])
+        for a in aliases:
+            if rgb == aliases[a]: nm = a
+        if nm == "gray": nm = "grey"
+        if max(i % 17 for i in rgb): code = "#" + "".join(["{:02x}".format(i) for i in rgb])
+        else: code = "#" + "".join(["{:x}".format(i >> 4) for i in rgb])
+        if nm == None or len(code) <= len(nm): nm = code
+        return nm, decs[round(tups[3] * 255)] # Alpha is rounded to the smallest possible display differential, 1 / 255
+# terse() returns the shortest representation of the input with opacity explicitly stated (for Rarify to whack).
+def terse(s, a): return repr2col(col2repr(s, a))
+
+# Conversions between colour spaces: r = sRGB, x = CIEXYZ, l = CIELAB
 def x2r(c):
     def delinearise(k): return 12.92 * k if k <= .0031308 else 1.055 * k ** (1 / 2.4) - 0.055
     cc = [3.2406 * c[0] - 1.5372 * c[1] -  .4986 * c[2],
           -.9689 * c[0] + 1.8758 * c[1] +  .0415 * c[2],
            .0557 * c[0] -  .2040 * c[1] + 1.0570 * c[2]]
     z = [delinearise(k) for k in cc]
-    if len(c) == 4: z.append(c[3])
-    return tuple(z)
+    return tuple(z + [c[3]])
 def r2x(c):
     def linearise(k): return k / 12.92 if k <= .04045 else ((k + .055) / 1.055) ** 2.4
     cc = [linearise(k) for k in c[:3]]
     z = [.4124 * cc[0] + .3576 * cc[1] + .1805 * cc[2],
          .2126 * cc[0] + .7152 * cc[1] + .0722 * cc[2],
          .0193 * cc[0] + .1192 * cc[1] + .9505 * cc[2]]
-    if len(c) == 4: z.append(c[3])
-    return tuple(z)
+    return tuple(z + [c[3]])
 xn, yn, zn = .95047, 1., 1.08883 # D65 tristimulus values
 def x2l(c):
     def cise(k): return k ** (1 / 3) if k > 216 / 24389 else k * 841 / 108 + 4 / 29
     z = [116 * cise(c[1] / yn) - 16,
          500 * (cise(c[0] / xn) - cise(c[1] / yn)),
          200 * (cise(c[1] / yn) - cise(c[2] / zn))]
-    if len(c) == 4: z.append(c[3])
-    return tuple(z)
+    return tuple(z + [c[3]])
 def l2x(c):
     def icise(k): return k ** 3 if k > 6 / 29 else 108 / 841 * (k - 4 / 29)
     l0 = (c[0] + 16) / 116
     z = [xn * icise(l0 + c[1] / 500),
          yn * icise(l0),
          zn * icise(l0 - c[2] / 200)]
-    if len(c) == 4: z.append(c[3])
-    return tuple(z)
+    return tuple(z + [c[3]])
 
 # Calculations may occasionally produce values outside [0, 1]; this function clips them to the desired range.
 def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)

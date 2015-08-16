@@ -169,8 +169,7 @@ decs = ("0"   , ".004", ".008", ".01" , ".016", ".02" , ".024", ".028", ".03" , 
 # The colour string may have # + 3/6/8 hexes or an alias. The opacity is a string representing a number in [0, 1].
 # Separately specified opacities override any opacity that might be in the colour string.
 def col2repr(col, alpha = None):
-    if col in aliases:
-        return tuple([i / 255 for i in aliases[col]] + [1. if alpha == None else float(alpha)])
+    if col in aliases: return tuple([i / 255 for i in aliases[col]] + [1. if alpha == None else float(alpha)])
     else:
         h, a = col.strip('#'), 1.
         if len(h) == 3: rgb = [int(2 * h[i], 16) / 255 for i in range(3)]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: linear algebra and low-level numeric functions
+# Helper functions for Kinross: numeric functions and linear algebra
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 

@@ -2,7 +2,7 @@
 # Helper functions for Kinross: colours in all their colours
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from .linumeric import *
+from .numbers import * # local
 # An RGBA colour is a 4-tuple of floats in [0, 1]; operations, especially alpha compositing and its reverse, are easier in this format.
 # The CSS colour aliases follow in the order Wikipedia gives them:
 aliases = {"pink": (255, 192, 203), # Pink
@@ -226,14 +226,34 @@ def l2x(c):
 # Calculations may occasionally produce values outside [0, 1]; this function clips them to the desired range.
 def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)
 
-# Three alpha-compositing functions, the latter two of which used to be in other places
-def alphacomp(back, tint): # tint over back = result
+# Three alpha-compositing functions, the latter two of which used to be in other places.
+# Let the (back)ground be B, the "source" (tint) S and the result (comp) R, then
+# R_A = S_A + B_A * (1 - S_A)
+# R_R = (S_R * S_A + B_R * B_A * (1 - S_A)) / R_A, 0 if R_A = 0, same for the other two primaries
+def alphacomp(back, tint): # tint over back = comp
     resa = back[3] * (1 - tint[3]) + tint[3]
     if near(resa, 0.): return (0., 0., 0., 0.)
-    else: return tuple([(tint[i] * tint[3] + back[i] * back[3] * (1 - tint[3])) / resa for i in range(3)] + [resa])
-
+    else: return clip01([(tint[i] * tint[3] + back[i] * back[3] * (1 - tint[3])) / resa for i in range(3)] + [resa])
+# B_A = (R_A - S_A) / (1 - S_A)
+# B_R = (R_R * R_A - S_R * S_A) / (R_A - S_A)
 def alphaback(tint, comp):
     if near(tint[3], 1.): return (0., 0., 0., 1.)
-    elif tint[3] >= comp[3]: return (0., 0., 0., 0.)
-    else: # TODO 
-        pass
+    elif near(tint[3], comp[3]): return (0., 0., 0., 0.)
+    else:
+        rgb = [(comp[i] * comp[3] - tint[i] * tint[3]) / (comp[3] - tint[3]) for i in range(3)]
+        rgb.append((comp[3] - tint[3]) / (1 - tint[3]))
+        return clip01(rgb)
+# R1_R * R1_A = S_R * S_A + B1_R * (R1_A - S_A)
+#           = S_R * S_A + B1_R * R1_A - B1_R * S_A
+#           = S_A * (S_R - B1_R) + B1_R * R1_A
+# (R1_R - B1_R) * R1_A = S_A * (S_R - B1_R)
+#                   K1 = S_A * (S_R - B1_R)
+# S_R = K1 / S_A + B1_R <-----------.
+#     = K2 / S_A + B2_R             |
+# K1 + B1_R * S_A = K2 + B2_R * S_A |
+# S_A = (K2 - K1) / (B1_R - B2_R) --.
+#
+# The three pairs of primaries yield at most three values for S_A.
+# The average is back-substituted to find S_R values for both background/composite pairs, which are again averaged.
+def alphatint(back1, comp1, back2, comp2):
+    pass # TODO

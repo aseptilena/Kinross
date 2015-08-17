@@ -2,7 +2,7 @@
 # Helper functions for Kinross: colours in all their colours
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-
+from .linumeric import *
 # An RGBA colour is a 4-tuple of floats in [0, 1]; operations, especially alpha compositing and its reverse, are easier in this format.
 # The CSS colour aliases follow in the order Wikipedia gives them:
 aliases = {"pink": (255, 192, 203), # Pink
@@ -176,7 +176,7 @@ def col2repr(col, alpha = None):
         else: rgb = [int(h[i:i + 2], 16) / 255 for i in range(0, 6, 2)]
         if len(h) == 8: a = int(h[6:], 16) / 255
         if alpha != None: a = float(alpha)
-        return tuple(rgb + [a])
+        return (rgb[0], rgb[1], rgb[2], a)
 # four causes an eight-hex RGBA string to be returned instead of a six-hex RGB string or alias and an opacity float for pasting into Inkscape's fill/stroke dialogue.
 def repr2col(tups, four = False):
     if four: return "".join(["{0:02x}".format(round(comp * 255)) for comp in tups])
@@ -189,7 +189,7 @@ def repr2col(tups, four = False):
         if max(i % 17 for i in rgb): code = "#" + "".join(["{:02x}".format(i) for i in rgb])
         else: code = "#" + "".join(["{:x}".format(i >> 4) for i in rgb])
         if nm == None or len(code) <= len(nm): nm = code
-        return nm, decs[round(tups[3] * 255)] # Alpha is rounded to the smallest possible display differential, 1 / 255
+        return (nm, decs[round(tups[3] * 255)]) # Alpha is rounded to the smallest possible display differential, 1 / 255
 # terse() returns the shortest representation of the input with opacity explicitly stated (for Rarify to whack).
 def terse(s, a): return repr2col(col2repr(s, a))
 
@@ -200,28 +200,40 @@ def x2r(c):
           -.9689 * c[0] + 1.8758 * c[1] +  .0415 * c[2],
            .0557 * c[0] -  .2040 * c[1] + 1.0570 * c[2]]
     z = [delinearise(k) for k in cc]
-    return tuple(z + [c[3]])
+    return (z[0], z[1], z[2], c[3])
 def r2x(c):
     def linearise(k): return k / 12.92 if k <= .04045 else ((k + .055) / 1.055) ** 2.4
     cc = [linearise(k) for k in c[:3]]
     z = [.4124 * cc[0] + .3576 * cc[1] + .1805 * cc[2],
          .2126 * cc[0] + .7152 * cc[1] + .0722 * cc[2],
          .0193 * cc[0] + .1192 * cc[1] + .9505 * cc[2]]
-    return tuple(z + [c[3]])
+    return (z[0], z[1], z[2], c[3])
 xn, yn, zn = .95047, 1., 1.08883 # D65 tristimulus values
 def x2l(c):
     def cise(k): return k ** (1 / 3) if k > 216 / 24389 else k * 841 / 108 + 4 / 29
     z = [116 * cise(c[1] / yn) - 16,
          500 * (cise(c[0] / xn) - cise(c[1] / yn)),
          200 * (cise(c[1] / yn) - cise(c[2] / zn))]
-    return tuple(z + [c[3]])
+    return (z[0], z[1], z[2], c[3])
 def l2x(c):
     def icise(k): return k ** 3 if k > 6 / 29 else 108 / 841 * (k - 4 / 29)
     l0 = (c[0] + 16) / 116
     z = [xn * icise(l0 + c[1] / 500),
          yn * icise(l0),
          zn * icise(l0 - c[2] / 200)]
-    return tuple(z + [c[3]])
+    return (z[0], z[1], z[2], c[3])
 
 # Calculations may occasionally produce values outside [0, 1]; this function clips them to the desired range.
 def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)
+
+# Three alpha-compositing functions, the latter two of which used to be in other places
+def alphacomp(back, tint): # tint over back = result
+    resa = back[3] * (1 - tint[3]) + tint[3]
+    if near(resa, 0.): return (0., 0., 0., 0.)
+    else: return tuple([(tint[i] * tint[3] + back[i] * back[3] * (1 - tint[3])) / resa for i in range(3)] + [resa])
+
+def alphaback(tint, comp):
+    if near(tint[3], 1.): return (0., 0., 0., 1.)
+    elif tint[3] >= comp[3]: return (0., 0., 0., 0.)
+    else: # TODO 
+        pass

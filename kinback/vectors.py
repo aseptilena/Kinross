@@ -7,8 +7,8 @@
 # +y is downwards and +angle is clockwise as per the SVG specifications.
 from math import sin, cos
 from cmath import phase, rect
+from .linumeric import * # local
 point = complex
-def near(a, b, e = 1e-5): return abs(b - a) <= e
 def ppp(p): return "({0}, {1})".format(p.real, p.imag) # Pretty printing of a point
 def hat(p, o = 0j): return o if near(p, o) else (p - o) / abs(p - o) + o
 def lhat(p, l, o = 0j): return o if near(p, o) else (p - o) / abs(p - o) * l + o # l * hat(p)

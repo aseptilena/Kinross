@@ -2,7 +2,7 @@
 # Helper functions for Kinross: colours in all their colours
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from .numbers import * # local
+from .numbers import near # local
 # An RGBA colour is a 4-tuple of floats in [0, 1]; operations, especially alpha compositing and its reverse, are easier in this format.
 # The CSS colour aliases follow in the order Wikipedia gives them:
 aliases = {"pink": (255, 192, 203), # Pink
@@ -244,8 +244,8 @@ def alphaback(tint, comp):
         rgb.append((comp[3] - tint[3]) / (1 - tint[3]))
         return clip01(rgb)
 # R1_R * R1_A = S_R * S_A + B1_R * (R1_A - S_A)
-#           = S_R * S_A + B1_R * R1_A - B1_R * S_A
-#           = S_A * (S_R - B1_R) + B1_R * R1_A
+#             = S_R * S_A + B1_R * R1_A - B1_R * S_A
+#             = S_A * (S_R - B1_R) + B1_R * R1_A
 # (R1_R - B1_R) * R1_A = S_A * (S_R - B1_R)
 #                   K1 = S_A * (S_R - B1_R)
 # S_R = K1 / S_A + B1_R <-----------.

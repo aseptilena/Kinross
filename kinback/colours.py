@@ -256,4 +256,20 @@ def alphaback(tint, comp):
 # The three pairs of primaries yield at most three values for S_A.
 # The average is back-substituted to find S_R values for both background/composite pairs, which are again averaged.
 def alphatint(back1, comp1, back2, comp2):
-    pass # TODO
+    p, ta, kval, out = 0, 0., [], []
+    for i in range(3):
+        k1 = (comp1[i] - back1[i]) * comp1[3]
+        k2 = (comp2[i] - back2[i]) * comp2[3]
+        kval.append((k1, k2))
+        if not near(back1[i], back2[i]):
+            p += 1
+            ta += (k2 - k1) / (back1[i] - back2[i])
+    if p == 0: return (0., 0., 0., .5)
+    ta /= p
+    if near(ta, 0.): return (0., 0., 0., 0.)
+    for i in range(3):
+        c1 = kval[i][0] / ta + back1[i]
+        c2 = kval[i][1] / ta + back2[i]
+        out.append((c1 + c2) / 2)
+    out.append(ta)
+    return clip01(out)

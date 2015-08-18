@@ -191,7 +191,10 @@ def repr2col(tups, four = False):
         if nm == None or len(code) <= len(nm): nm = code
         return (nm, decs[round(tups[3] * 255)]) # Alpha is rounded to the smallest possible display differential, 1 / 255
 # terse() returns the shortest representation of the input with opacity explicitly stated (for Rarify to whack).
-def terse(s, a): return repr2col(col2repr(s, a))
+# TODO move into a separate SVG attributes sub-script
+def terse(s, a):
+    if s[0] == "u" or s == "none": return (s, a)
+    else: return repr2col(col2repr(s, a))
 
 # Conversions between colour spaces: r = sRGB, x = CIEXYZ, l = CIELAB
 def x2r(c):

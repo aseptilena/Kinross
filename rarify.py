@@ -4,6 +4,7 @@
 # http://parclytaxel.tumblr.com
 import sys, argparse
 import xml.etree.ElementTree as t
+from kinback.colours import terse
 
 tr, rn = None, None
 nm = {"d": "http://www.w3.org/2000/svg",
@@ -90,22 +91,6 @@ defstyle = {"display": "inline",
 # The key for each pair precludes itself and the properties in the corresponding value, hence the name.
 precld = {"stroke-dasharray": ["stroke-dashoffset"],
           "stroke": ["stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]}
-# Colour aliases
-calias = {"#000000": "#000", "black": "#000",
-          "#ffffff": "#fff", "white": "#fff",
-          "#ff0000": "red", "#f00": "red",
-          "#00ff00": "#0f0", "lime": "#0f0",
-          "#0000ff": "#00f", "blue": "#00f",
-          "#ffff00": "#ff0", "yellow": "#ff0",
-          "#ff00ff": "#f0f", "magenta": "#f0f", "fuchsia": "#f0f",
-          "#00ffff": "#0ff", "cyan": "#0ff", "aqua": "#0ff",
-          "#808080": "grey", "gray": "grey",
-          "#800000": "maroon", "#008000": "green", "#000080": "navy",
-          "#808000": "olive", "#800080": "purple", "#008080": "teal",
-          
-          "#ffa500": "orange", "#ffc0cb": "pink", "#a52a2a": "brown",
-          "#c0c0c0": "silver", "#ffd700": "gold", "#f5f5dc": "beige",
-          "#4b0082": "indigo", "#ee82ee": "violet", "#dda0dd": "plum"}
 
 # Functions converting namespaces into URLs and vice versa
 def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
@@ -186,9 +171,8 @@ def rarify(f, opts):
         om = dict([(a[:a.index(":")], a[a.index(":") + 1:]) for a in raw])
         if n not in ptemplate:
             # Colour aliasing
-            for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color",
-                      "color", "solid-color", "text-decoration-color"]:
-                if c in om and om[c] in calias: om[c] = calias[om[c]]
+            for c in ["fill", "stroke", "stop-color", "flood-color", "lighting-color", "color", "solid-color", "text-decoration-color"]:
+                if c in om: om[c] = terse(om[c], None)[0]
             # Preclusions
             for p in precld:
                 if p not in om: om[p] = defstyle[p]

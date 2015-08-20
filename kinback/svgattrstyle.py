@@ -5,7 +5,6 @@
 import xml.etree.ElementTree as t
 from .colours import repr2col, col2repr
 
-# TODO Still migrating here...
 # Default style properties
 defstyle = {"display": "inline",
             "overflow": "visible",
@@ -116,9 +115,9 @@ colp = {"fill": "fill-opacity",
         "lighting-color": None,
         "text-decoration-color": None}
 
-# The key for each pair precludes itself and the properties in the corresponding value, hence the name.
+# Preclusions
 precld = {"stroke-dasharray": ["stroke-dashoffset"],
-          "stroke": ["stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]}\
+          "stroke": ["stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]}
 
 # Namespace map
 nm = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
@@ -126,6 +125,11 @@ nm = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/
 def nmsify(t):
     a = t.split(':')
     if len(a) == 1: return "{http://www.w3.org/2000/svg}" + t
+    return "{{{0}}}{1}".format(nm[a[0]], a[1])
+# How is this different from the above function? It doesn't apply the default namespace to tags without a namespace.
+def expand(t):
+    a = t.split(':')
+    if len(a) == 1: return t
     return "{{{0}}}{1}".format(nm[a[0]], a[1])
 
 # terse() returns the shortest representation of the input with opacity explicitly stated.
@@ -146,7 +150,7 @@ def dmrn(d, pr, cond = {}):
             negate, term = p[0] == '!', p.lstrip("!")
             if expand(term) in d and negate ^ (pr[p] in (d[expand(term)], None)): del d[expand(term)]
 
-# Phases 1 and 2 of the old (standalone) Rarify script on the node level
+# Phases 1 and 2 of the old (standalone) Rarify script, now on the node level
 def nwhack(node):
     sd = {}
     for p in node.attrib:
@@ -169,7 +173,6 @@ def nwhack(node):
         dmrn(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
     dmrn(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
     dmrn(sd, defstyle)
-    
     if len(sd) < 1: del node.attrib["style"]
     elif len(sd) < 4:
         del node.attrib["style"]

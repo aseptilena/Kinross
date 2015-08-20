@@ -7,7 +7,6 @@ import xml.etree.ElementTree as t
 from kinback.svgattrstyle import *
 tr, rn = None, None
 
-def expand(a): return a if ":" not in a else "{{{0}}}{1}".format(nm[a[:a.index(":")]], a[a.index(":") + 1:])
 def collapse(a):
     z = a.partition("}")
     for m in nm:
@@ -15,27 +14,29 @@ def collapse(a):
     return a
 
 def rarify(f, opts):
-    # Currently moving to svgattrstyle ("Sweetie Belle"), please use an earlier version
-    # TODO here, here
-    for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
+    # Phase 0: things trivial but optional
+    for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv) # Yes, this is fine (as long as nm is imported)
     if opts[0]:
-        for nv in rn.findall("d:metadata", nm): rn.remove(nv)
+        for md in rn.findall("svg:metadata", nm): rn.remove(md)
     if opts[1]: dmrn(rn.attrib, {"height": None, "width": None, "viewBox": None})
+    # Phase 1: the nodes themselves
     
-    
-    for n in rn.findall(".//d:clipPath/d:path", nm): # Look for "clip-rule:evenodd", keep only that
-        if "clip-rule:evenodd" in n.get("style", ""): n.set("style", "clip-rule:evenodd")
+    # Look for "clip-rule:evenodd", keep only that
+    for clips in rn.findall(".//svg:clipPath/svg:path", nm):
+        if "clip-rule:evenodd" in clips.get("style", ""): clips.set("style", "clip-rule:evenodd")
         else: dmrn(n.attrib, {"style": None})
     
-    # EXCEPT if the styled element represents a bespokely placed path. Then you don't do anything.
-    ptemplate = rn.findall(".//d:defs/d:path", nm)
-    for n in rn.findall(".//*[@style]", nm):
+    whole = rn.findall(".//*")
+    # Actual paths in defs and metadata: don't do anything
+    ptemplate = rn.findall(".//svg:defs/svg:path", nm)
+    mdelem = rn.findall(".//svg:metadata/*", nm)
+    for n in whole:
         
         # POINTER HERE TODO
         if n not in ptemplate:
             nwhack(n)
     
-    # Phase 3: unused definitions and redundant ID removal
+    # Phase "3" (actually 2 now): unused definitions and redundant ID removal
     # 3a: reference map with temporary IDs
     # Dictionary pairs are {id: {uses, fills, strokes, etc. referenced by that ID}}
     rd, cnt = {}, 0
@@ -67,7 +68,7 @@ def rarify(f, opts):
         del fat.attrib["id"]
     if rn.get("id") != None: del rn.attrib["id"]
     # 3c: removal of unused <defs>
-    df, ud = rn.find(".//d:defs", nm), []
+    df, ud = rn.find(".//svg:defs", nm), []
     if df != None:
         for dlm in df:
             if dlm.get("id") == None: ud.append(dlm)

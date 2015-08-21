@@ -157,7 +157,7 @@ def collsty(node):
             sa.append(p)
     for a in sa: del node.attrib[a]
     sp = node.get("style", "").split(';')
-    if sp[0]: sd.update(dict([a.split(':') for a in sp]))
+    if sp: sd.update(dict([a.split(':') for a in sp if a]))
     node.set("style", "")
     return sd
 # Sets the style while minimising the number of bytes used (collstyle will always leave a stub so del is OK)

@@ -3,10 +3,8 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import sys, argparse
-import xml.etree.ElementTree as t
 from kinback.svgattrstyle import *
 tr, rn = None, None
-
 def collapse(a):
     z = a.partition("}")
     for m in nm:
@@ -14,30 +12,24 @@ def collapse(a):
     return a
 
 def rarify(f, opts):
-    # Phase 0: things trivial but optional
+    # Phase 0: trivial but optional things
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv) # Yes, this is fine (as long as nm is imported)
     if opts[0]:
         for md in rn.findall("svg:metadata", nm): rn.remove(md)
     if opts[1]: dmrn(rn.attrib, {"height": None, "width": None, "viewBox": None})
     # Phase 1: the nodes themselves
-    
-    # Look for "clip-rule:evenodd", keep only that
+    # Isolated clipping paths can be stripped of all style except for clip-rule:evenodd
     for clips in rn.findall(".//svg:clipPath/svg:path", nm):
         if "clip-rule:evenodd" in clips.get("style", ""): clips.set("style", "clip-rule:evenodd")
-        else: dmrn(n.attrib, {"style": None})
-    
-    whole = rn.findall(".//*")
-    # Actual paths in defs and metadata: don't do anything
-    ptemplate = rn.findall(".//svg:defs/svg:path", nm)
-    mdelem = rn.findall(".//svg:metadata/*", nm)
-    for n in whole:
-        
-        # POINTER HERE TODO
-        if n not in ptemplate:
-            nwhack(n)
-    
-    # Phase "3" (actually 2 now): unused definitions and redundant ID removal
-    # 3a: reference map with temporary IDs
+        else: dmrn(clips.attrib, {"style": None})
+    # Bespokely placed paths and metadata are processed differently
+    templates = set(rn.findall(".//svg:defs/svg:path", nm))
+    mdelem = set(rn.findall(".//svg:title", nm) + rn.findall(".//svg:metadata", nm) + rn.findall(".//svg:metadata//*", nm))
+    actual = set(rn.findall(".//*")) - templates - mdelem
+    for n in actual: nwhack(n)
+    for t in templates: streamsty(t)
+    # Phase 2: unused definitions and redundant ID removal
+    # 2a: reference map with temporary IDs
     # Dictionary pairs are {id: {uses, fills, strokes, etc. referenced by that ID}}
     rd, cnt = {}, 0
     for k in rn.findall(".//*"):
@@ -60,14 +52,14 @@ def rarify(f, opts):
             irk = "q" + str(cnt)
             k.set("id", irk)
         rd[irk] = rf
-    # 3b: unreferenced ID removal
+    # 2b: unreferenced ID removal
     ao, ro = set(rd.keys()), []
     for e in rd: ro.extend([rd[e][a] for a in ["use", "fill", "stroke", "clip-path", "mask", "filter", "path-effect"]])
     for rm in ao - set(ro):
         fat = rn.find(".//*[@id='{0}']".format(rm), nm)
         del fat.attrib["id"]
     if rn.get("id") != None: del rn.attrib["id"]
-    # 3c: removal of unused <defs>
+    # 2c: removal of unused <defs>
     df, ud = rn.find(".//svg:defs", nm), []
     if df != None:
         for dlm in df:

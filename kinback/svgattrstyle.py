@@ -83,27 +83,26 @@ defstyle = {"display": "inline",
             "word-spacing": "normal",
             "writing-mode": "lr-tb",
             "-inkscape-font-specification": "Sans"}
-
 # Default attributes of projects; None denotes any string
 defattrb = [("path", {"d": None}, {"inkscape:original-d": None}), # This is the very reason this script was written
-            (None, {"inkscape:connector-curvature": "0"}),
-            (None, {"sodipodi:nodetypes": None}),
+            (None, {"inkscape:connector-curvature": "0"}, {}),
+            (None, {"sodipodi:nodetypes": None}, {}),
             
-            ("circle", {"cx": "0", "cy": "0"}),
-            ("ellipse", {"cx": "0", "cy": "0"}),
+            ("circle", {"cx": "0", "cy": "0"}, {}),
+            ("ellipse", {"cx": "0", "cy": "0"}, {}),
             ("path", {"d": None, "inkscape:rounded": "0", "inkscape:randomized": "0", "inkscape:flatsided": "false"}, {"sodipodi:type": "star"}),
             
-            ("inkscape:path-effect", {"is_visible": "true"}),
+            ("inkscape:path-effect", {"is_visible": "true"}, {}),
             ("inkscape:path-effect", {"miter_limit": "4", "linejoin_type": "extrp_arc", "sort_points": "true", "interpolator_beta": "0.2", "start_linecap_type": "butt", "end_linecap_type": "butt"}, {"effect": "powerstroke"}),
             ("inkscape:path-effect", {"xx": "true", "yy": "true", "bendpath1-nodetypes": None, "bendpath2-nodetypes": None, "bendpath3-nodetypes": None, "bendpath4-nodetypes": None}, {"effect": "envelope"}),
             ("inkscape:path-effect", {"copytype": "single_stretched", "fuse_tolerance": "0", "normal_offset": "0", "pattern-nodetypes": None, "prop_scale": "1", "prop_units": "false", "scale_y_rel": "false", "spacing": "0", "tang_offset": "0", "vertical_pattern": "false"}, {"effect": "skeletal"}),
             
-            ("use", {"x": "0", "y": "0", "height": "100%", "width": "100%"}),
-            ("clipPath", {"clipPathUnits": "userSpaceOnUse"}),
-            ("mask", {"maskUnits": "userSpaceOnUse"}),
+            ("use", {"x": "0", "y": "0", "height": "100%", "width": "100%"}, {}),
+            ("clipPath", {"clipPathUnits": "userSpaceOnUse"}, {}),
+            ("mask", {"maskUnits": "userSpaceOnUse"}, {}),
             
-            (None, {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None}),
-            ("svg", {"version": None, "inkscape:version": None, "sodipodi:docname": None, "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None})]
+            (None, {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None}, {}),
+            ("svg", {"version": None, "inkscape:version": None, "sodipodi:docname": None, "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None}, {})]
 
 # Colour properties and their corresponding opacities
 colp = {"fill": "fill-opacity",
@@ -116,9 +115,8 @@ colp = {"fill": "fill-opacity",
         "text-decoration-color": None}
 
 # Preclusions
-precld = {"stroke-dasharray": ["stroke-dashoffset"],
-          "stroke": ["stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"]}
-
+precld = {"stroke-dasharray": ("stroke-dashoffset"),
+          "stroke": ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset")}
 # Namespace map
 nm = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
 
@@ -126,7 +124,7 @@ def nmsify(t):
     a = t.split(':')
     if len(a) == 1: return "{http://www.w3.org/2000/svg}" + t
     return "{{{0}}}{1}".format(nm[a[0]], a[1])
-# How is this different from the above function? It doesn't apply the default namespace to tags without a namespace.
+# How is this different from the above function? It doesn't add the default namespace, which is useful for attributes.
 def expand(t):
     a = t.split(':')
     if len(a) == 1: return t
@@ -150,20 +148,31 @@ def dmrn(d, pr, cond = {}):
             negate, term = p[0] == '!', p.lstrip("!")
             if expand(term) in d and negate ^ (pr[p] in (d[expand(term)], None)): del d[expand(term)]
 
-# Phases 1 and 2 of the old (standalone) Rarify script, now on the node level
-def nwhack(node):
-    sd = {}
+# Returns the style dictionary while at the same time purging it from the node in question
+def collsty(node):
+    sd, sa = {}, []
     for p in node.attrib:
         if p in defstyle:
             sd[p] = node.get(p)
-            del node[p]
+            sa.append(p)
+    for a in sa: del node.attrib[a]
     sp = node.get("style", "").split(';')
-    if sp: sd.update(dict([a.split(':') for a in sp]))
+    if sp[0]: sd.update(dict([a.split(':') for a in sp]))
     node.set("style", "")
+    return sd
+# Sets the style while minimising the number of bytes used (collstyle will always leave a stub so del is OK)
+def locksty(node, sd):
+    if len(sd) < 1: del node.attrib["style"]
+    elif len(sd) < 4:
+        del node.attrib["style"]
+        for p in sd: node.set(p, sd[p])
+    else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
     
+# Phases 1 and 2 of the old (standalone) Rarify script on the node level
+def nwhack(node):
+    sd = collsty(node)
     for aset in defattrb:
-        if aset[0] == None or node.tag == nmsify(aset[0]):
-            dmrn(node.attrib, aset[1], aset[2] if len(aset) == 3 else {}) # TODO shorter?
+        if aset[0] == None or node.tag == nmsify(aset[0]): dmrn(node.attrib, aset[1], aset[2])
     # Colour aliasing TODO handle opacities?
     for c in colp:
         if c in sd: sd[c] = terse(sd[c], None)[0]
@@ -173,8 +182,6 @@ def nwhack(node):
         dmrn(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
     dmrn(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
     dmrn(sd, defstyle)
-    if len(sd) < 1: del node.attrib["style"]
-    elif len(sd) < 4:
-        del node.attrib["style"]
-        for p in sd: node.set(p, sd[p])
-    else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
+    locksty(node, sd)
+
+def streamsty(node): locksty(node, collsty(node))

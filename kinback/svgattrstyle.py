@@ -129,6 +129,11 @@ def expand(t):
     a = t.split(':')
     if len(a) == 1: return t
     return "{{{0}}}{1}".format(nm[a[0]], a[1])
+def collapse(a):
+    z = a.partition("}")
+    for m in nm:
+        if nm[m] == z[0][1:]: return (m + ":" if m != "d" else "") + z[2]
+    return a
 
 # terse() returns the shortest representation of the input with opacity explicitly stated.
 def terse(s, a):
@@ -148,17 +153,17 @@ def dmrn(d, pr, cond = {}):
             negate, term = p[0] == '!', p.lstrip("!")
             if expand(term) in d and negate ^ (pr[p] in (d[expand(term)], None)): del d[expand(term)]
 
-# Returns the style dictionary while at the same time purging it from the node in question
-def collsty(node):
+# Returns the style dictionary. If the second argument is False (the default), also wipes the style out.
+def collsty(node, preserve = False):
     sd, sa = {}, []
     for p in node.attrib:
         if p in defstyle:
             sd[p] = node.get(p)
-            sa.append(p)
+            if not preserve: sa.append(p)
     for a in sa: del node.attrib[a]
     sp = node.get("style", "").split(';')
     if sp: sd.update(dict([a.split(':') for a in sp if a]))
-    node.set("style", "")
+    if not preserve: node.set("style", "")
     return sd
 # Sets the style while minimising the number of bytes used (collstyle will always leave a stub so del is OK)
 def locksty(node, sd):
@@ -185,3 +190,14 @@ def nwhack(node):
     locksty(node, sd)
 
 def streamsty(node): locksty(node, collsty(node))
+
+# The nodes a node references (via "URLs" and hashes)
+def refnodes(node):
+    rf, sd = {}, collsty(node, True)
+    for a in ["fill", "stroke", "clip-path", "mask", "filter"]:
+        if a in sd and sd[a][0] == 'u': rf[a] = sd[a][5:-1]
+    tmp = node.get("{http://www.w3.org/1999/xlink}href")
+    if tmp: rf["use"] = tmp[1:]
+    tmp = node.get("{http://www.inkscape.org/namespaces/inkscape}path-effect")
+    if tmp: rf["path-effect"] = tmp[1:]
+    return rf

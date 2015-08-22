@@ -54,7 +54,7 @@ def rarify(f, opts):
     outf.close()
     end = time.perf_counter()
     before, after = os.path.getsize(f), os.path.getsize(outfn)
-    print("{}: {:.3f} s, {} -> {} B ({:.2%})".format(f, end - begin, before, after, after / before))
+    print("{}: {:.3f}, {} -> {} ({:.2%})".format(f, end - begin, before, after, after / before))
 
 t.register_namespace("", "http://www.w3.org/2000/svg")
 t.register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")

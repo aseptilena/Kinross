@@ -2,11 +2,12 @@
 # Rarify, the uncouth SVG optimiser
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-import sys, argparse
+import os, time, argparse
 from kinback.svgattrstyle import *
 tr, rn = None, None
 
 def rarify(f, opts):
+    begin = time.perf_counter()
     # Phase 0: trivial but optional things
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv) # Yes, this is fine (as long as nm is imported)
     if opts[0]:
@@ -46,10 +47,14 @@ def rarify(f, opts):
         for z in ud: df.remove(z)
         if not len(list(df)): rn.remove(df)
     # Final output
-    outf = open("{0}-rarified.svg".format(f[:-4]), 'w')
+    outfn = "{0}-rarified.svg".format(f[:-4])
+    outf = open(outfn, 'w')
     if opts[2]: outf.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n")
     tr.write(outf, "unicode")
     outf.close()
+    end = time.perf_counter()
+    before, after = os.path.getsize(f), os.path.getsize(outfn)
+    print("{}: {:.3f} s, {} -> {} B ({:.2%})".format(f, end - begin, before, after, after / before))
 
 t.register_namespace("", "http://www.w3.org/2000/svg")
 t.register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")

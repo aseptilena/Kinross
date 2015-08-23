@@ -8,12 +8,11 @@ tr, rn = None, None
 
 def rarify(f, opts):
     begin = time.perf_counter()
-    # Phase 0: trivial but optional things
-    for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv) # Yes, this is fine (as long as nm is imported)
+    # Phase 1: semantic node operations
+    for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
     if opts[0]:
         for md in rn.findall("svg:metadata", nm): rn.remove(md)
     if opts[1]: dmrn(rn.attrib, {"height": None, "width": None, "viewBox": None})
-    # Phase 1: the nodes themselves
     # Isolated clipping paths can be stripped of all style except for clip-rule:evenodd
     for clips in rn.findall(".//svg:clipPath/svg:path", nm):
         if "clip-rule:evenodd" in clips.get("style", ""): clips.set("style", "clip-rule:evenodd")
@@ -24,9 +23,8 @@ def rarify(f, opts):
     actual = set([rn] + rn.findall(".//*")) - templates - mdelem
     for n in actual: nwhack(n)
     for t in templates: streamsty(t)
-    # Phase 2: unused definitions and redundant ID removal
+    # Phase 2: reference tree pruning
     # 2a: reference map with temporary IDs
-    # Dictionary pairs are {id: {uses, fills, strokes, etc. referenced by that ID}}
     rd, cnt, reob = {}, 0, set()
     for k in rn.findall(".//*"):
         cits, irk = refnodes(k), k.get("id")
@@ -36,10 +34,10 @@ def rarify(f, opts):
             k.set("id", irk)
         rd[irk] = cits
         for i in cits: reob.add(cits[i])
-    # 2b: unreferenced ID removal
+    # 2b: unreferenced IDs
     for rm in set(rd.keys()) - reob: del rn.find(".//*[@id='{0}']".format(rm), nm).attrib["id"]
     if rn.get("id") != None: del rn.attrib["id"]
-    # 2c: removal of unused <defs>
+    # 2c: unused <defs>
     df, ud = rn.find(".//svg:defs", nm), []
     if df != None:
         for dlm in df:

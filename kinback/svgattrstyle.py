@@ -103,7 +103,6 @@ defattrb = [("path", {"d": None}, {"inkscape:original-d": None}), # This is the 
             
             (None, {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None}, {}),
             ("svg", {"version": None, "inkscape:version": None, "sodipodi:docname": None, "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None}, {})]
-
 # Colour properties and their corresponding opacities
 colp = {"fill": "fill-opacity",
         "stroke": "stroke-opacity",
@@ -113,13 +112,12 @@ colp = {"fill": "fill-opacity",
         "flood-color": "flood-opacity",
         "lighting-color": None,
         "text-decoration-color": None}
-
 # Preclusions
 precld = {"stroke-dasharray": ("stroke-dashoffset"),
           "stroke": ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset")}
+
 # Namespace map
 nm = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
-
 def nmsify(t):
     a = t.split(':')
     if len(a) == 1: return "{http://www.w3.org/2000/svg}" + t
@@ -134,12 +132,10 @@ def collapse(a):
     for m in nm:
         if nm[m] == z[0][1:]: return (m + ":" if m != "d" else "") + z[2]
     return a
-
 # terse() returns the shortest representation of the input with opacity explicitly stated.
 def terse(s, a):
     if s[0] == "u" or s == "none": return (s, a)
     else: return repr2col(col2repr(s, a))
-
 # Dictionary match and remove with namespaces.
 # pr is the list of pairs to remove; ! prefix removes non-matchings (key is there but value is not the one specified).
 # cond gives pairs which must all be there; !-prefixing works similarly.
@@ -165,32 +161,31 @@ def collsty(node, preserve = False):
     if sp: sd.update(dict([a.split(':') for a in sp if a]))
     if not preserve: node.set("style", "")
     return sd
-# Sets the style while minimising the number of bytes used (collstyle will always leave a stub so del is OK)
+# Sets the style while minimising the number of bytes used
 def locksty(node, sd):
     if len(sd) < 1: del node.attrib["style"]
     elif len(sd) < 4:
         del node.attrib["style"]
         for p in sd: node.set(p, sd[p])
     else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
-    
 # Phases 1 and 2 of the old (standalone) Rarify script on the node level
 def nwhack(node):
     sd = collsty(node)
     for aset in defattrb:
         if aset[0] == None or node.tag == nmsify(aset[0]): dmrn(node.attrib, aset[1], aset[2])
-    # Colour aliasing TODO handle opacities?
     for c in colp:
-        if c in sd: sd[c] = terse(sd[c], None)[0]
-    
+        if c not in sd: sd[c] = defstyle[c]
+        if colp[c] != None and colp[c] not in sd: sd[colp[c]] = defstyle[colp[c]]
+        tersed = terse(sd[c], sd[colp[c]] if colp[c] else None)
+        sd[c] = tersed[0]
+        if colp[c]: sd[colp[c]] = tersed[1]
     for p in precld:
         if p not in sd: sd[p] = defstyle[p]
         dmrn(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
     dmrn(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
     dmrn(sd, defstyle)
     locksty(node, sd)
-
 def streamsty(node): locksty(node, collsty(node))
-
 # The nodes a node references (via "URLs" and hashes)
 def refnodes(node):
     rf, sd = {}, collsty(node, True)

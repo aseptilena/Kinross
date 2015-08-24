@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: affine (SVG) transformations
+# Helper functions for Kinross: affine transformations
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 
@@ -37,3 +37,5 @@ def skew(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
 # The following function decomposes any transformation into the collapsable and uncollapsable parts; reduction can be done if the latter is zero.
 # Even if it isn't, we can still proceed if none of the shapes has any fill.
 # TODO
+def decompose(t):
+    pass

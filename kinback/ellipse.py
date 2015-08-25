@@ -15,13 +15,12 @@ class ellipse:
         if self.tilt > hpi: self.tilt -= pi
     def __str__(self): return "Ellipse centred on {0} with axes {1} and {2}, the first axis tilted by {3}".format(ppp(self.centre), self.rx, self.ry, self.tilt)
     def __repr__(self): return "ellipse(point{0}, {1}, {2}, {3})".format(ppp(self.centre), self.rx, self.ry, self.tilt)
-    def a(self): return max(self.rx, self.ry) # semi-major axis length
-    def b(self): return min(self.rx, self.ry) # semi-minor axis length
-    
-    def smaj(self): return rect(self.a(), self.tilt + hpi * (self.rx <  self.ry))
-    def smin(self): return rect(self.b(), self.tilt + hpi * (self.rx >= self.ry))
-    def f(self): return sqrt(abs(self.rx * self.rx - self.ry * self.ry)) # distance from centre to either focus
-    def e(self): return self.f() / self.a()
+    def a(self): return max(self.rx, self.ry) # Semi-major axis length
+    def b(self): return min(self.rx, self.ry) # Semi-minor axis length
+    def a_vect(self): return rect(self.a(), self.tilt + hpi * (self.rx <  self.ry)) # Semi-major axis vector
+    def b_vect(self): return rect(self.b(), self.tilt + hpi * (self.rx >= self.ry)) # Semi-minor axis vector
+    def f(self): return sqrt(abs(self.rx * self.rx - self.ry * self.ry)) # Distance from centre to either focus, sqrt(a ^ 2 - b ^ 2)
+    def e(self): return self.f() / self.a() # Eccentricity, f / a
     def foci(self):
         fv = rect(self.f(), self.tilt + hpi * (self.rx < self.ry))
         return (self.centre + fv, self.centre - fv)
@@ -34,6 +33,6 @@ def rytz(centre, a, b):
         c = rturn(a, centre)
         m = between(b, c)
         d = abs(m - centre)
-        mb, mc = lhat(b, d, m), lhat(c, d, m)
-        v1, v2 = lhat(mb, abs(mc - b), centre), lhat(mc, abs(mb - b), centre)
+        mb, mc = lenvec(b, d, m), lenvec(c, d, m)
+        v1, v2 = lenvec(mb, abs(mc - b), centre), lenvec(mc, abs(mb - b), centre)
         return ellipse(centre, abs(v1 - centre), abs(v2 - centre), phase(v1 - centre))

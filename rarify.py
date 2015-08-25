@@ -12,22 +12,22 @@ def rarify(f, opts):
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
     if opts[0]:
         for md in rn.findall("svg:metadata", nm): rn.remove(md)
-    if opts[1]: dmrn(rn.attrib, {"height": None, "width": None, "viewBox": None})
+    if opts[1]: matchrm(rn.attrib, {"height": None, "width": None, "viewBox": None})
     # Isolated clipping paths can be stripped of all style except for clip-rule:evenodd
     for clips in rn.findall(".//svg:clipPath/svg:path", nm):
         if "clip-rule:evenodd" in clips.get("style", ""): clips.set("style", "clip-rule:evenodd")
-        else: dmrn(clips.attrib, {"style": None})
+        else: matchrm(clips.attrib, {"style": None})
     # Bespokely placed paths and metadata are processed differently
     templates = set(rn.findall(".//svg:defs/svg:path", nm))
     mdelem = set(rn.findall(".//svg:title", nm) + rn.findall(".//svg:metadata", nm) + rn.findall(".//svg:metadata//*", nm))
     actual = set([rn] + rn.findall(".//*")) - templates - mdelem
-    for n in actual: nwhack(n)
-    for t in templates: streamsty(t)
+    for n in actual: whack(n)
+    for t in templates: weakwhack(t)
     # Phase 2: reference tree pruning
     # 2a: reference map with temporary IDs
     rd, cnt, reob = {}, 0, set()
     for k in rn.findall(".//*"):
-        cits, irk = refnodes(k), k.get("id")
+        cits, irk = refsof(k), k.get("id")
         if irk == None:
             while "q" + str(cnt) in rd: cnt += 1
             irk = "q" + str(cnt)

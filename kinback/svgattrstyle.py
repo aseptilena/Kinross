@@ -118,39 +118,34 @@ precld = {"stroke-dasharray": ("stroke-dashoffset"),
 
 # Namespace map
 nm = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
-def nmsify(t):
+def prependnms(t):
     a = t.split(':')
     if len(a) == 1: return "{http://www.w3.org/2000/svg}" + t
     return "{{{0}}}{1}".format(nm[a[0]], a[1])
-# How is this different from the above function? It doesn't add the default namespace, which is useful for attributes.
-def expand(t):
+# The function below will not add the default namespace (to handle attributes).
+def expandnms(t):
     a = t.split(':')
     if len(a) == 1: return t
     return "{{{0}}}{1}".format(nm[a[0]], a[1])
-def collapse(a):
-    z = a.partition("}")
-    for m in nm:
-        if nm[m] == z[0][1:]: return (m + ":" if m != "d" else "") + z[2]
-    return a
-# terse() returns the shortest representation of the input with opacity explicitly stated.
-def terse(s, a):
+# Returns the shortest representation of the input with opacity.
+def tersecol(s, a):
     if s[0] == "u" or s == "none": return (s, a)
     else: return repr2col(col2repr(s, a))
 # Dictionary match and remove with namespaces.
 # pr is the list of pairs to remove; ! prefix removes non-matchings (key is there but value is not the one specified).
 # cond gives pairs which must all be there; !-prefixing works similarly.
-def dmrn(d, pr, cond = {}):
+def matchrm(d, pr, cond = {}):
     rute = True
     for c in cond:
         negate, term = c[0] == '!', c.lstrip("!")
-        rute &= expand(term) in d and negate ^ (cond[c] in (d[expand(term)], None))
+        rute &= expandnms(term) in d and negate ^ (cond[c] in (d[expandnms(term)], None))
     if rute:
         for p in pr:
             negate, term = p[0] == '!', p.lstrip("!")
-            if expand(term) in d and negate ^ (pr[p] in (d[expand(term)], None)): del d[expand(term)]
+            if expandnms(term) in d and negate ^ (pr[p] in (d[expandnms(term)], None)): del d[expandnms(term)]
 
 # Returns the style dictionary. If the second argument is False (the default), also wipes the style out.
-def collsty(node, preserve = False):
+def styledict(node, preserve = False):
     sd, sa = {}, []
     for p in node.attrib:
         if p in defstyle:
@@ -161,34 +156,36 @@ def collsty(node, preserve = False):
     if sp: sd.update(dict([a.split(':') for a in sp if a]))
     if not preserve: node.set("style", "")
     return sd
-# Sets the style while minimising the number of bytes used
-def locksty(node, sd):
+# Sets the style, minimising the number of bytes used (three or less single properties trump a style property)
+def stylesplit(node, sd):
     if len(sd) < 1: del node.attrib["style"]
     elif len(sd) < 4:
         del node.attrib["style"]
         for p in sd: node.set(p, sd[p])
     else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
-# Phases 1 and 2 of the old (standalone) Rarify script on the node level
-def nwhack(node):
-    sd = collsty(node)
+# Phases 1 and 2 of the old (standalone) Rarify script on the node level.
+# The function's name comes from the early perception that the script "whacks" the node's redundant attributes/properties.
+def whack(node):
+    sd = styledict(node)
     for aset in defattrb:
-        if aset[0] == None or node.tag == nmsify(aset[0]): dmrn(node.attrib, aset[1], aset[2])
+        if aset[0] == None or node.tag == prependnms(aset[0]): matchrm(node.attrib, aset[1], aset[2])
     for c in colp:
         if c not in sd: sd[c] = defstyle[c]
         if colp[c] != None and colp[c] not in sd: sd[colp[c]] = defstyle[colp[c]]
-        tersed = terse(sd[c], sd[colp[c]] if colp[c] else None)
+        tersed = tersecol(sd[c], sd[colp[c]] if colp[c] else None)
         sd[c] = tersed[0]
         if colp[c]: sd[colp[c]] = tersed[1]
     for p in precld:
         if p not in sd: sd[p] = defstyle[p]
-        dmrn(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
-    dmrn(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
-    dmrn(sd, defstyle)
-    locksty(node, sd)
-def streamsty(node): locksty(node, collsty(node))
+        matchrm(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
+    matchrm(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
+    matchrm(sd, defstyle)
+    stylesplit(node, sd)
+# In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties)
+def weakwhack(node): stylesplit(node, styledict(node))
 # The nodes a node references (via "URLs" and hashes)
-def refnodes(node):
-    rf, sd = {}, collsty(node, True)
+def refsof(node):
+    rf, sd = {}, styledict(node, True)
     for a in ["fill", "stroke", "clip-path", "mask", "filter"]:
         if a in sd and sd[a][0] == 'u': rf[a] = sd[a][5:-1]
     tmp = node.get("{http://www.w3.org/1999/xlink}href")

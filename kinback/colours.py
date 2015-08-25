@@ -191,15 +191,15 @@ def repr2col(tups, four = False):
         if nm == None or len(code) <= len(nm): nm = code
         return (nm, decs[round(tups[3] * 255)]) # Alpha is rounded to the smallest possible display differential, 1 / 255
 
-# Conversions between colour spaces: r = sRGB, x = CIEXYZ, l = CIELAB
-def x2r(c):
+# Conversions between colour spaces: sRGB, CIEXYZ, CIELAB
+def xyz2rgb(c):
     def delinearise(k): return 12.92 * k if k <= .0031308 else 1.055 * k ** (1 / 2.4) - 0.055
     cc = [3.2406 * c[0] - 1.5372 * c[1] -  .4986 * c[2],
           -.9689 * c[0] + 1.8758 * c[1] +  .0415 * c[2],
            .0557 * c[0] -  .2040 * c[1] + 1.0570 * c[2]]
     z = [delinearise(k) for k in cc]
     return (z[0], z[1], z[2], c[3])
-def r2x(c):
+def rgb2xyz(c):
     def linearise(k): return k / 12.92 if k <= .04045 else ((k + .055) / 1.055) ** 2.4
     cc = [linearise(k) for k in c[:3]]
     z = [.4124 * cc[0] + .3576 * cc[1] + .1805 * cc[2],
@@ -207,13 +207,13 @@ def r2x(c):
          .0193 * cc[0] + .1192 * cc[1] + .9505 * cc[2]]
     return (z[0], z[1], z[2], c[3])
 xn, yn, zn = .95047, 1., 1.08883 # D65 tristimulus values
-def x2l(c):
+def xyz2lab(c):
     def cise(k): return k ** (1 / 3) if k > 216 / 24389 else k * 841 / 108 + 4 / 29
     z = [116 * cise(c[1] / yn) - 16,
          500 * (cise(c[0] / xn) - cise(c[1] / yn)),
          200 * (cise(c[1] / yn) - cise(c[2] / zn))]
     return (z[0], z[1], z[2], c[3])
-def l2x(c):
+def lab2xyz(c):
     def icise(k): return k ** 3 if k > 6 / 29 else 108 / 841 * (k - 4 / 29)
     l0 = (c[0] + 16) / 116
     z = [xn * icise(l0 + c[1] / 500),

@@ -11,9 +11,6 @@ def stamp(fn, s):
         if fn.endswith(ext): return fn[:-len(ext)] + "-" + s + ext
     return fn + "-" + s
 
-# Classic timestamp (with Unix time)
-def timestamp(fn): return stamp(fn, str(int(time.time())))
-
 # Stamp with the date
 def datestamp(fn): return stamp(fn, time.strftime("%d-%m-%y"))
 

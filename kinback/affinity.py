@@ -40,4 +40,5 @@ def skewmat(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
 # 4. Combined rotation/translation (three-argument rotation)
 # The first two cannot be factored ("collapsed") into SVG elements without much more computation;
 # the following function determines if the transformation doesn't contain them.
-def iscollapsible(t): return t[0] == t[3] and t[1] == -t[2] or t[0] == -t[3] and t[1] == t[2]
+# Equivalent to preservesAngles() in dgeom (https://github.com/vector-d/dgeom/blob/master/source/geom/affine.d#L448).
+def iscollapsible(t): return near(t[0], t[3]) and near(t[1], -t[2]) or near(t[0], -t[3]) and near(t[1], t[2])

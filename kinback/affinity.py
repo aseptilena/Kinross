@@ -33,9 +33,11 @@ def rotmat(th, o = None):
 def scalemat(x, y = None): return (float(x), 0., 0., float(x if y == None else y), 0., 0.)
 def skewmat(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
 
-# Scaling by unequal factors and skewing are un-collapsable transformations, in the sense that they cannot be reasonably "pushed" down the group hierarchy.
-# The following function decomposes any transformation into the collapsable and uncollapsable parts; reduction can be done if the latter is zero.
-# Even if it isn't, we can still proceed if none of the shapes has any fill.
-# TODO
-def decompose(t):
-    pass
+# Transformations here are separated into the following components applied in sequence:
+# 1. Scaling only in the y-axis
+# 2. Shearing in the x-axis
+# 3. Uniform scaling
+# 4. Combined rotation/translation (three-argument rotation)
+# The first two cannot be factored ("collapsed") into SVG elements without much more computation;
+# the following function determines if the transformation doesn't contain them.
+def iscollapsible(t): return t[0] == t[3] and t[1] == -t[2] or t[0] == -t[3] and t[1] == t[2]

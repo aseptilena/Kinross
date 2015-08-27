@@ -4,9 +4,12 @@
 # http://parclytaxel.tumblr.com
 import os, time, argparse
 from kinback.svgattrstyle import *
-tr, rn = None, None
+t, tr, rn = xml.etree.ElementTree, None, None
 
 def rarify(f, opts):
+    global t
+    tr = t.parse(f)
+    rn = tr.getroot()
     begin = time.perf_counter()
     # Phase 1: semantic node operations
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
@@ -71,7 +74,4 @@ cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XM
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()
 opts = (flags.metadata, flags.dimens, flags.scripts, flags.xml)
-for f in flags.files:
-    tr = t.parse(f)
-    rn = tr.getroot()
-    rarify(f, opts)
+for f in flags.files: rarify(f, opts)

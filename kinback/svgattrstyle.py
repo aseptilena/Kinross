@@ -2,7 +2,7 @@
 # Helper functions for Kinross: SVG node processing and simplification (Rarify's "Sweetie Belle")
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-import xml.etree.ElementTree as t
+import xml.etree.ElementTree
 from .colours import repr2col, col2repr
 
 # Default style properties

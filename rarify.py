@@ -6,17 +6,17 @@ import os, time, argparse
 from kinback.svgattrstyle import *
 t, tr, rn = xml.etree.ElementTree, None, None
 
-def rarify(f, opts):
+def rarify(f):
     global t
     tr = t.parse(f)
     rn = tr.getroot()
     begin = time.perf_counter()
     # Phase 1: semantic node operations
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
-    if opts[0]:
+    if flags.metadata:
         for md in rn.findall("svg:metadata", nm): rn.remove(md)
-    if opts[1]: matchrm(rn.attrib, {"height": None, "width": None, "viewBox": None})
-    if opts[2]:
+    if flags.dimens: matchrm(rn.attrib, {"height": None, "width": None, "viewBox": None})
+    if flags.scripts:
         for sc in rn.findall("svg:script", nm): rn.remove(sc)
     # Isolated clipping paths can be stripped of all style except for clip-rule:evenodd
     for clips in rn.findall(".//svg:clipPath/svg:path", nm):
@@ -52,7 +52,7 @@ def rarify(f, opts):
     # Final output
     outfn = "{0}-rarified.svg".format(f[:-4])
     outf = open(outfn, 'w')
-    if opts[3]: outf.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
+    if flags.xml: outf.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
     tr.write(outf, "unicode")
     outf.close()
     end = time.perf_counter()
@@ -73,5 +73,4 @@ cdl.add_argument("-s", "--scripts", action="store_true", default=False, help="re
 cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()
-opts = (flags.metadata, flags.dimens, flags.scripts, flags.xml)
-for f in flags.files: rarify(f, opts)
+for f in flags.files: rarify(f)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Flevobezier: an Inkscape extension fitting Bezier curves
-# Parcly Taxel / Jeremy Tan, 2015 | http://parclytaxel.tumblr.com / @Parcly_Taxel
-# GPLv2 / CC BY-SA 4.0 / FAL 1.3
+# Parcly Taxel / Jeremy Tan, 2015
+# http://parclytaxel.tumblr.com
 from __future__ import division
 from math import *
 from bezmisc import bezierpointatt

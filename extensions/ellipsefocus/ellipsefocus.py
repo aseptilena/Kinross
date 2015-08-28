@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# When given an ellipse, prints the two foci as a line
+# Parcly Taxel / Jeremy Tan, 2015
+# http://parclytaxel.tumblr.com
 from __future__ import division
 import sys, inkex, gettext, math
 sys.path.append('/usr/share/inkscape/extensions')

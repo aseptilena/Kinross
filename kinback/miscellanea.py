@@ -2,7 +2,7 @@
 # Helper functions for Kinross: timestamps for files
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-import time, hashlib
+import time, hashlib, webbrowser
 
 exts = (".svg", ".png", ".jpg", ".jpeg", ".txt", ".tar.gz", ".tar.bz2", ".tar", ".gz", ".bz2", ".7z", ".zip", ".py")
 # Stamp a filename with a given string, separated by a hyphen
@@ -37,3 +37,6 @@ def taxellogo(n = 20):
     d = [p, -q, l, -l, q, -p]
     c = [str(round(i * (Decimal(2) / Decimal(3)).sqrt() + 4, n // 2)) for i in d]
     return '<svg><rect fill="#230f38" width="8" height="8"/><path style="fill:none;stroke:#6dc6fb;stroke-width:.2109375;stroke-linecap:round;stroke-linejoin:round" d="M1 1 {0} 7 7"/></svg>'.format(" ".join(c))
+
+# Opens Derpibooru image #n
+def derpipic(n): webbrowser.open("https://derpiboo.ru/" + str(n), 2)

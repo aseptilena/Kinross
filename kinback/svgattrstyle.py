@@ -83,6 +83,9 @@ defstyle = {"display": "inline",
             "word-spacing": "normal",
             "writing-mode": "lr-tb",
             "-inkscape-font-specification": "Sans"}
+# Inkscape aliases the following default style properties as such
+styleplus = {"letter-spacing": "0px",
+             "word-spacing": "0px"}
 # Default attributes of projects; None denotes any string
 defattrb = [("path", {"d": None}, {"inkscape:original-d": None}), # This is the very reason this script was written
             (None, {"inkscape:connector-curvature": "0"}, {}),
@@ -100,6 +103,7 @@ defattrb = [("path", {"d": None}, {"inkscape:original-d": None}), # This is the 
             ("use", {"x": "0", "y": "0", "height": "100%", "width": "100%"}, {}),
             ("clipPath", {"clipPathUnits": "userSpaceOnUse"}, {}),
             ("mask", {"maskUnits": "userSpaceOnUse"}, {}),
+            ("text", {"sodipodi:linespacing": "125%"}, {}),
             
             (None, {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None}, {}),
             ("svg", {"version": None, "inkscape:version": None, "sodipodi:docname": None, "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None}, {})]
@@ -180,6 +184,7 @@ def whack(node):
         matchrm(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
     matchrm(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
     matchrm(sd, defstyle)
+    matchrm(sd, styleplus)
     stylesplit(node, sd)
 # In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties)
 def weakwhack(node): stylesplit(node, styledict(node))

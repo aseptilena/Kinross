@@ -20,8 +20,6 @@ Points (nodes and handles alike) are complex numbers, exploiting Python's native
 * **M/L/H/V**: one point (one at a subpath's start is compulsory and understood only as M)
 * **Q/T**: two points
 * **C/S**: three points
-* **A**: four points (explained below)
+* **A**: four points
 
-For example, "M8 3" is the first rhythm of a subpath containing the point (8, 3). Every rhythm but the last is a straight transcription of specification syntax. (The elliptical arc movement, however, represents the arc whose centre is the first point going from the current pen position to the second point, the boolean indicating counterclockwise movement around the centre if false and vice versa.)
-
-(OY OY OY)
+Every rhythm is a straight transcription of specification syntax – except the last one which describes the centre as its first point, two conjugate radii as its next two and the endpoint as its last. The signed (positive-angle/clockwise) angle from second to first to third point determines the arc's direction, while the underlying ellipse itself can be determined from Rytz's construction; the arc itself is delineated by rays from the centre to the two endpoints.

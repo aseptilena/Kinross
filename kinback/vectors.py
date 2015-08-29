@@ -16,8 +16,11 @@ def lenvec(p, l, o = 0j): return o if near(p, o) else (p - o) / abs(p - o) * l +
 def turn(p, th, o = 0j): return (p - o) * complex(cos(th), sin(th)) + o
 def lturn(p, o = 0j): return (o - p) * 1j + o
 def rturn(p, o = 0j): return (p - o) * 1j + o
+def reflect(p, o = 0j): return 2 * o - p
+
 def dot(a, b, o = 0j): return (a.real - o.real) * (b.real - o.real) + (a.imag - o.imag) * (b.imag - o.imag)
 def angle(a, b, o = 0j): return acos(dot(a, b, o) / abs(a - o) / abs(b - o)) # Lesser angle between the vectors, in [0, pi]
 def signedangle(p, base, o = 0j): return phase((p - o) / (base - o)) # In [-pi, pi]
+
 def between(p, q): return (p + q) / 2
 def linterp(p, q, t): return t * (q - p) + p

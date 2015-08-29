@@ -36,7 +36,7 @@ def skewmat(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
 # Transformations here are separated into the following components applied in sequence:
 # 1. Scaling only in the y-axis
 # 2. Shearing in the x-axis
-# 3. Uniform scaling
+# 3. Uniform scaling and flipping
 # 4. Combined rotation/translation (three-argument rotation)
 # The first two cannot be factored ("collapsed") into SVG elements without much more computation;
 # the following function determines if the transformation doesn't contain them.

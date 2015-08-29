@@ -3,6 +3,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import re
+from math import hypot, sqrt, pi
 from .vectors import * # local
 # There is pretty much only one way to write the real number regex; accordingly this is spliced from Scour
 number = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
@@ -59,10 +60,20 @@ def parserhythm(p):
         rhtype = prevailing.lower()
         if rhtype == "h": params.append(cursor.imag)
         elif rhtype == "v": params.insert(0, cursor.real)
-        if rhtype == "a":
-            pass # TODO; this will not be processed in the next snippet (i.e. is final)
+        if rhtype == "a": # This is taken from the implementation notes of the SVG specs. Not sure if there's a better way.
+            rx, ry, phi = abs(params[0]), abs(params[1]), params[2] * pi / 180
+            large, sweep = bool(params[3]), bool(params[4])
+            endpoint = point(params[5], params[6])
+            tfc = turn((cursor - endpoint) / 2, -phi)
+            Lambda = hypot(tfc.real / rx, tfc.imag / ry)
+            if Lambda > 1: rx, ry = rx * Lambda, ry * Lambda
+            inter = point(rx * tfc.imag / ry, -ry * tfc.real / rx)
+            centre = sqrt(rx * rx * ry * ry / (rx * rx * tfc.imag * tfc.imag + ry * ry * tfc.real * tfc.real) - 1) * inter * (-1 if large == sweep else 1)
+            centre = turn(centre, phi) + midpoint(cursor, endpoint)
+            xvec = centre + rect(rx, phi)
+            yvec = centre + rect(ry, phi + (pi / 2 if sweep else -pi / 2)
+            nextpts = [centre, xvec, yvec, endpoint]
         else: nextpts = [point(params[2 * i], params[2 * i + 1]) for i in range((take + 1) // 2)]
-        
         if rhtype == "s":   nextpts.insert(0, reflect(lastrh[1], lastrh[2]) if len(lastrh) == 3 else cursor)
         elif rhtype == "t": nextpts.insert(0, reflect(lastrh[0], lastrh[1]) if len(lastrh) == 2 else cursor)
         if rhtype != "m" and not out[-1][-1]: out.append([[out[-1][0][0]]])

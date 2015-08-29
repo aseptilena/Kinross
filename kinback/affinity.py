@@ -10,7 +10,7 @@
 # Compositions of transformations are stored in the order they would be written down to denote matrix multiplication of a point, as per the SVG specifications.
 from .vectors import * # local
 from math import sin, cos, tan
-def transform(mat, p): return point(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
+def tf(mat, p): return point(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
 def compose(p, *q):
     for m in q:
         p = (p[0] * m[0] + p[2] * m[1],
@@ -25,7 +25,7 @@ def inversemat(mat):
     return (mat[3] / det, -mat[1] / det, -mat[2] / det, mat[0] / det,
             (mat[2] * mat[5] - mat[3] * mat[4]) / det,
             (mat[1] * mat[4] - mat[0] * mat[5]) / det)
-def detransform(mat, p): return tf(inversemat(mat), p) # inverse transform
+def detf(mat, p): return tf(inversemat(mat), p) # inverse transform
 def transmat(x, y = 0.): return (1., 0., 0., 1., float(x), float(y))
 def rotmat(th, o = None):
     if o == None: return (cos(th), sin(th), -sin(th), cos(th), 0., 0.)

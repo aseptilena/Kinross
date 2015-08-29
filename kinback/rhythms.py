@@ -71,7 +71,7 @@ def parserhythm(p):
             centre = sqrt(rx * rx * ry * ry / (rx * rx * tfc.imag * tfc.imag + ry * ry * tfc.real * tfc.real) - 1) * inter * (-1 if large == sweep else 1)
             centre = turn(centre, phi) + midpoint(cursor, endpoint)
             xvec = centre + rect(rx, phi)
-            yvec = centre + rect(ry, phi + (pi / 2 if sweep else -pi / 2)
+            yvec = centre + rect(ry, phi + (pi / 2 if sweep else -pi / 2))
             nextpts = [centre, xvec, yvec, endpoint]
         else: nextpts = [point(params[2 * i], params[2 * i + 1]) for i in range((take + 1) // 2)]
         if rhtype == "s":   nextpts.insert(0, reflect(lastrh[1], lastrh[2]) if len(lastrh) == 3 else cursor)

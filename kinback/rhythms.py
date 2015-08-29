@@ -4,7 +4,6 @@
 # http://parclytaxel.tumblr.com
 import re
 from .vectors import * # local
-# P.S. To get a free shiny Rayquaza, say this out loud: F5A28RYWKG5D78ET
 # There is pretty much only one way to write the real number regex; accordingly this is spliced from Scour
 number = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
 spacing = re.compile(r"[ ,]*")
@@ -32,7 +31,6 @@ def parserhythm(p):
     #     ...
     #     [rhythm Z] ] <- sub-path N
     #                  ]
-    # The last added rhythm is p[-1][-1].
     while pos < len(t):
         # Two phases. First obtain the command and its parameters...
         val = t[pos]
@@ -67,8 +65,6 @@ def parserhythm(p):
         
         if rhtype == "s":   nextpts.insert(0, reflect(lastrh[1], lastrh[2]) if len(lastrh) == 3 else cursor)
         elif rhtype == "t": nextpts.insert(0, reflect(lastrh[0], lastrh[1]) if len(lastrh) == 2 else cursor)
-        # Add to out, update cursor
-        # This handles the cases of z l, z c, ... (add the previous path's start point)
         if rhtype != "m" and not out[-1][-1]: out.append([[out[-1][0][0]]])
         if rhtype == "m": out.append([nextpts])
         else: out[-1].append(nextpts)

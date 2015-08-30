@@ -230,7 +230,7 @@ def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)
 # R_R = (S_R * S_A + B_R * B_A * (1 - S_A)) / R_A, 0 if R_A = 0, same for the other two primaries
 def alphacomp(back, tint): # tint over back = comp
     resa = back[3] * (1 - tint[3]) + tint[3]
-    if near(resa, 0.): return (0., 0., 0., 0.)
+    if near(resa): return (0., 0., 0., 0.)
     else: return clip01([(tint[i] * tint[3] + back[i] * back[3] * (1 - tint[3])) / resa for i in range(3)] + [resa])
 # B_A = (R_A - S_A) / (1 - S_A)
 # B_R = (R_R * R_A - S_R * S_A) / (R_A - S_A)
@@ -264,7 +264,7 @@ def alphatint(back1, comp1, back2, comp2):
             ta += (k2 - k1) / (back1[i] - back2[i])
     if p == 0: return (0., 0., 0., .5)
     ta /= p
-    if near(ta, 0.): return (0., 0., 0., 0.)
+    if near(ta): return (0., 0., 0., 0.)
     for i in range(3):
         c1 = kval[i][0] / ta + back1[i]
         c2 = kval[i][1] / ta + back2[i]

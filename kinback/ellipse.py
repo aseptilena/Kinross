@@ -13,8 +13,8 @@ class ellipse:
         self.tilt = tilt - pi * int(tilt / pi) # (-pi, pi)
         if self.tilt <= -hpi: self.tilt += pi
         if self.tilt > hpi: self.tilt -= pi
-    def __str__(self): return "Ellipse centred on {0} with axes {1} and {2}, the first axis tilted by {3}".format(ppp(self.centre), self.rx, self.ry, self.tilt)
-    def __repr__(self): return "ellipse(point{0}, {1}, {2}, {3})".format(ppp(self.centre), self.rx, self.ry, self.tilt)
+    def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(ppp(self.centre), self.rx, self.ry, self.tilt)
+    def __repr__(self): return "ellipse(point{}, {}, {}, {})".format(printpoint(self.centre), self.rx, self.ry, self.tilt)
     def a(self): return max(self.rx, self.ry) # Semi-major axis length
     def b(self): return min(self.rx, self.ry) # Semi-minor axis length
     def a_vect(self): return rect(self.a(), self.tilt + hpi * (self.rx <  self.ry)) # Semi-major axis vector
@@ -32,7 +32,7 @@ class ellipse:
 # Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
 # Used to remove the transformation matrix from SVG ellipses.
 def rytz(centre, a, b):
-    if near(dot(a, b, centre), 0.): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
+    if near(dot(a, b, centre)): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
     else:
         c = rturn(a, centre)
         m = between(b, c)

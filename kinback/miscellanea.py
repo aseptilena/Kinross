@@ -39,4 +39,4 @@ def taxellogo(n = 20):
     return '<svg><rect fill="#230f38" width="8" height="8"/><path style="fill:none;stroke:#6dc6fb;stroke-width:.2109375;stroke-linecap:round;stroke-linejoin:round" d="M1 1 {0} 7 7"/></svg>'.format(" ".join(c))
 
 # Opens Derpibooru image #n
-def derpipic(n): webbrowser.open("https://derpiboo.ru/" + str(n), 2)
+def derpipic(n, canonical = True): webbrowser.open("https://derpiboo{}/".format("ru.org" if canonical else ".ru") + str(n), 2)

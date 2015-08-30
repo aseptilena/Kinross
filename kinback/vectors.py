@@ -18,9 +18,12 @@ def lturn(p, o = 0j): return (o - p) * 1j + o
 def rturn(p, o = 0j): return (p - o) * 1j + o
 def reflect(p, o = 0j): return 2 * o - p
 
+# Unsigned angles, in [0, pi]; dot product maximum if points collinear and 0 if AOB perpendicular
 def dot(a, b, o = 0j): return (a.real - o.real) * (b.real - o.real) + (a.imag - o.imag) * (b.imag - o.imag)
-def angle(a, b, o = 0j): return acos(dot(a, b, o) / abs(a - o) / abs(b - o)) # Lesser angle between the vectors, in [0, pi]
-def signedangle(p, base, o = 0j): return phase((p - o) / (base - o)) # In [-pi, pi]
+def angle(a, b, o = 0j): return acos(dot(a, b, o) / abs(a - o) / abs(b - o))
+# Signed angles, in [-pi, pi]; (planar) cross product maximum if A>O>B = +90 degs, minimum if = -90 degs and 0 if points collinear
+def cross(a, b, o = 0j): return (a.real - o.real) * (b.imag - o.imag) - (a.imag - o.imag) * (b.real - o.real)
+def signedangle(p, base, o = 0j): return phase((p - o) / (base - o))
 
 def between(p, q): return (p + q) / 2
 def linterp(p, q, t): return t * (q - p) + p

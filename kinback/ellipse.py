@@ -24,6 +24,10 @@ class ellipse:
     def foci(self):
         fv = rect(self.f(), self.tilt + hpi * (self.rx < self.ry))
         return (self.centre + fv, self.centre - fv)
+    # Suppose there is a celestial body at one end, then:
+    def periap(self): return (1 - self.e()) * self.a()
+    def apoap(self): return (1 + self.e()) * self.a()
+    def semilatrect(self): return self.b() * self.b() / self.a()
 
 # Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
 # Used to remove the transformation matrix from SVG ellipses.

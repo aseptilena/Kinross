@@ -25,8 +25,8 @@ class ellipse:
         fv = rect(self.f(), self.tilt + hpi * (self.rx < self.ry))
         return (self.centre + fv, self.centre - fv)
     # Suppose there is a celestial body at one end, then:
-    def periap(self): return (1 - self.e()) * self.a()
-    def apoap(self): return (1 + self.e()) * self.a()
+    def periapsis(self): return (1 - self.e()) * self.a()
+    def apoapsis(self): return (1 + self.e()) * self.a()
     def semilatrect(self): return self.b() * self.b() / self.a()
 
 # Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
@@ -40,3 +40,6 @@ def rytz(centre, a, b):
         mb, mc = lenvec(b, d, m), lenvec(c, d, m)
         v1, v2 = lenvec(mb, abs(mc - b), centre), lenvec(mc, abs(mb - b), centre)
         return ellipse(centre, abs(v1 - centre), abs(v2 - centre), phase(v1 - centre))
+
+def ellipsefrom5(a, b, c, d, e):
+    pass # TODO

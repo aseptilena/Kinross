@@ -5,35 +5,21 @@
 import re
 from math import hypot, sqrt, pi
 from .vectors import * # local
+from copy import deepcopy as dup
 # There is pretty much only one way to write the real number regex; accordingly this is spliced from Scour
 number = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
 spacing = re.compile(r"[ ,]*")
 
 def parserhythm(p):
+    """Converts SVG paths to Kinross paths; see the readme for specifications."""
     out, pos, cursor = [], 0, point(0., 0.)
     take, prevailing, params = 2, "M", []
     t, tokens = [], [c for c in number.split(p) if not spacing.fullmatch(c)]
     for v in tokens:
         if " " in v or v.isalpha(): t.extend(v.replace(" ", ""))
         else: t.append(float(v))
-    # The Kinross path format looks like this:
-    # [
-    #   [ [rhythm 1]
-    #     [rhythm 2]
-    #     ...
-    #     [rhythm P] ] <- sub-path 1
-    #   [ [rhythm 1]
-    #     [rhythm 2]
-    #     ...
-    #     [rhythm Q] ] <- sub-path 2
-    #   ...
-    #   [ [rhythm 1]
-    #     [rhythm 2]
-    #     ...
-    #     [rhythm Z] ] <- sub-path N
-    #                  ]
     while pos < len(t):
-        # Two phases. First obtain the command and its parameters...
+        # Two phases. First obtain the rhythm and its parameters...
         val = t[pos]
         if type(val) == str:
             if val in "Cc": take = 6
@@ -70,9 +56,9 @@ def parserhythm(p):
             inter = point(rx * tfc.imag / ry, -ry * tfc.real / rx)
             centre = sqrt(rx * rx * ry * ry / (rx * rx * tfc.imag * tfc.imag + ry * ry * tfc.real * tfc.real) - 1) * inter * (-1 if large == sweep else 1)
             centre = turn(centre, phi) + midpoint(cursor, endpoint)
-            xvec = centre + rect(rx, phi)
-            yvec = centre + rect(ry, phi + (pi / 2 if sweep else -pi / 2))
-            nextpts = [centre, xvec, yvec, endpoint]
+            startray = centre + rect(rx, phi)
+            endray = centre + rect(ry, phi + (pi / 2 if sweep else -pi / 2))
+            nextpts = [centre, startray, endray, endpoint]
         else: nextpts = [point(params[2 * i], params[2 * i + 1]) for i in range((take + 1) // 2)]
         if rhtype == "s":   nextpts.insert(0, reflect(lastrh[1], lastrh[2]) if len(lastrh) == 3 else cursor)
         elif rhtype == "t": nextpts.insert(0, reflect(lastrh[0], lastrh[1]) if len(lastrh) == 2 else cursor)
@@ -82,5 +68,21 @@ def parserhythm(p):
         if rhtype != "z": cursor = nextpts[-1]
     return out
 
-# def outputrhythm(k):
-#     pass TODO
+def reverserhythm(r):
+    """Reverses a Kinross path."""
+    s = dup(r)[::-1]
+    for sp in s:
+        sp.reverse()
+        for rh in sp: rh.reverse()
+        cpen = bool(sp[0])
+        if cpen: sp.insert(0, [])
+        for i in range(len(sp) - 1):
+            if len(sp[i + 1]) == 4: sp[i + 1].insert(1, sp[i + 1].pop())
+            sp[i].append(sp[i + 1].pop(0))
+        if cpen: sp.pop()
+    return s
+
+# TODO
+def outputrhythm(k):
+    """Converts Kinross paths into *short* SVG paths. It may not be the shortest, but it gets close."""
+    pass

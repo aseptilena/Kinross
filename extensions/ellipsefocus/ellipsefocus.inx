@@ -1,8 +1,0 @@
-<inkscape-extension>
-  <_name>Ellipse foci</_name>
-  <id>org.parclytaxel.inkscape.ellipsefocus</id>
-  <script><command reldir="extensions" interpreter="python">ellipsefocus.py</command></script>
-  <dependency type="executable" location="extensions">ellipsefocus.py</dependency>
-  <dependency type="executable" location="extensions">inkex.py</dependency>
-  <effect><object-type>path</object-type><effects-menu><submenu _name="Generate from Path"/></effects-menu></effect>
-</inkscape-extension>

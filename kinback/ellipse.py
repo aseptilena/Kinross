@@ -1,11 +1,11 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: ellipses
+# Helper functions for Kinross: circles and ellipses
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import * # local
 from math import pi, sqrt, fabs
-
 hpi = pi / 2
+
 # Ellipses have a centre, two axis lengths and the signed angle from +x to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
 class ellipse:
     def __init__(self, centre, rx, ry, tilt = 0.):
@@ -13,8 +13,8 @@ class ellipse:
         self.tilt = tilt - pi * int(tilt / pi) # (-pi, pi)
         if self.tilt <= -hpi: self.tilt += pi
         if self.tilt > hpi: self.tilt -= pi
-    def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(ppp(self.centre), self.rx, self.ry, self.tilt)
-    def __repr__(self): return "ellipse(point{}, {}, {}, {})".format(printpoint(self.centre), self.rx, self.ry, self.tilt)
+    def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(printpoint(self.centre), self.rx, self.ry, self.tilt)
+    def __repr__(self): return "ellipse({}, {}, {}, {})".format(self.centre, self.rx, self.ry, self.tilt)
     def a(self): return max(self.rx, self.ry) # Semi-major axis length
     def b(self): return min(self.rx, self.ry) # Semi-minor axis length
     def a_vect(self): return rect(self.a(), self.tilt + hpi * (self.rx <  self.ry)) # Semi-major axis vector
@@ -29,9 +29,15 @@ class ellipse:
     def apoapsis(self): return (1 + self.e()) * self.a()
     def semilatrect(self): return self.b() * self.b() / self.a()
 
-# Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
-# Used to remove the transformation matrix from SVG ellipses.
+# Circles are the same thing, only with one radius and no tilt.
+class circle:
+    def __init__(self, centre, r): self.centre, self.r = centre, fabs(r)
+    def __str__(self): return "Circle with centre {} and radius {}".format(printpoint(self.centre), self.r)
+    def __repr__(self): return "circle({}, {})".format(self.centre, self.r)
+
 def rytz(centre, a, b):
+    """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
+    Used to remove the transformation matrix from SVG ellipses."""
     if near(dot(a, b, centre)): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
     else:
         c = rturn(a, centre)
@@ -41,5 +47,5 @@ def rytz(centre, a, b):
         v1, v2 = lenvec(mb, abs(mc - b), centre), lenvec(mc, abs(mb - b), centre)
         return ellipse(centre, abs(v1 - centre), abs(v2 - centre), phase(v1 - centre))
 
-def ellipsefrom5(a, b, c, d, e):
+def ell5pts(a, b, c, d, e):
     pass # TODO

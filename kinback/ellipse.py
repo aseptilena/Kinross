@@ -3,7 +3,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import * # local
-from math import pi, sqrt, fabs
+from math import pi, sqrt, fabs, hypot
 hpi = pi / 2
 
 # Ellipses have a centre, two axis lengths and the signed angle from +x to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
@@ -28,13 +28,17 @@ class ellipse:
     def periapsis(self): return (1 - self.e()) * self.a()
     def apoapsis(self): return (1 + self.e()) * self.a()
     def semilatrect(self): return self.b() * self.b() / self.a()
+    
+    def anglepoint(self, th = 0.): return self.centre + rect(self.rx, self.tilt + th) # When th is left out this returns the "zero vertex", from which angles can be measured.
+    def raypoint(self, p):
+        """Intersection of the ray from the centre to the specified point with the ellipse.
+        The Kinross elliptical arc representation uses this to determine endpoints."""
+        if near(p, self.centre): return self.anglepoint()
+        a = signedangle(p, self.anglepoint(), self.centre)
+        r = self.rx * self.ry / hypot(self.ry * cos(a), self.rx * sin(a))
+        return lenvec(p, r, self.centre)
 
-# Circles are the same thing, only with one radius and no tilt.
-class circle:
-    def __init__(self, centre, r): self.centre, self.r = centre, fabs(r)
-    def __str__(self): return "Circle with centre {} and radius {}".format(printpoint(self.centre), self.r)
-    def __repr__(self): return "circle({}, {})".format(self.centre, self.r)
-
+def newcircle(centre, r): return ellipse(centre, r, r) # Circles are the same thing, only with one radius and no tilt.
 def rytz(centre, a, b):
     """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
     Used to remove the transformation matrix from SVG ellipses."""

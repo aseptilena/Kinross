@@ -1,12 +1,16 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: numeric functions and linear algebra
+# Helper functions for Kinross: numeric functions and classical algebra
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 
-# If the second number is not given, defaults to 0. Which would be expected anyway!
-def near(a, b = 0., e = 1e-5): return abs(b - a) <= e
-# ax + by = p; cx + dy = q; returns (x, y)
+# Numeric functions
+def near(a, b = 0., e = 1e-5):
+    """Checks if the difference between two numbers is within the given tolerance (using the L2 metric for a more natural treatment of complex numbers).
+    The second argument can be left out to represent zero."""
+    return abs(b - a) <= e
+# Algebraic functions
 def lineareq2(a, b, p, c, d, q):
+    """ax + by = p; cx + dy = q; returns (x, y)."""
     det = a * d - b * c
     if near(det): return (None, None)
     return ((p * d - q * b) / det, (a * q - c * p) / det)

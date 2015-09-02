@@ -8,7 +8,7 @@
 # Modulus, argument and polar constructors are provided by the native abs, phase and rect respectively.
 from math import sin, cos, acos
 from cmath import phase, rect
-from .numbers import near # local
+from .numbers import * # local
 point = complex
 def printpoint(p): return "({}, {})".format(p.real, p.imag)
 def hat(p, o = 0j): return o if near(p, o) else (p - o) / abs(p - o) + o

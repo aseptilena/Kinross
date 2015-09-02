@@ -11,7 +11,7 @@
 from .vectors import * # local
 from math import sin, cos, tan
 def tf(mat, p): return point(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
-def compose(p, *q):
+def composetf(p, *q):
     for m in q:
         p = (p[0] * m[0] + p[2] * m[1],
              p[1] * m[0] + p[3] * m[1],

@@ -2,7 +2,7 @@
 # Helper functions for Kinross: circles and ellipses
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from .vectors import * # local
+from .affinity import * # local
 from math import pi, sqrt, fabs, hypot
 hpi = pi / 2
 
@@ -37,11 +37,17 @@ class ellipse:
         a = signedangle(p, self.anglepoint(), self.centre)
         r = self.rx * self.ry / hypot(self.ry * cos(a), self.rx * sin(a))
         return lenvec(p, r, self.centre)
+    def unitcircletf(self):
+        """The transformation that maps this ellipse to the centred unit circle."""
+        return composetf(scalemat(1 / self.rx, 1 / self.ry), rotmat(-self.tilt), transmat(-self.centre.real, -self.centre.imag))
+    def tf(self, m):
+        """Transforms the ellipse by the given matrix."""
+        return rytz(tf(m, self.centre()), tf(m, self.anglepoint()), tf(m, self.anglepoint(hpi)))
 
 def newcircle(centre, r): return ellipse(centre, r, r) # Circles are the same thing, only with one radius and no tilt.
 def rytz(centre, a, b):
     """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
-    Used to remove the transformation matrix from SVG ellipses."""
+    Used to remove the transformation matrix from SVG ellipses (and a lot of other things)."""
     if near(dot(a, b, centre)): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
     else:
         c = rturn(a, centre)

@@ -22,8 +22,7 @@ def intersect_ee(c, d):
     dp = d.tf(m)
     dpp = dp.tf(rotmat(-dp.tilt))
     # dpp's parametric equation is (cx + rx * cos(t), cy + ry * sin(t)).
-    # Yet the unit circle has parametrisation (cos(u), sin(u)).
-    # Thus: cx + rx * cos(t) = cos(u)
-    #       cy + ry * sin(t) = sin(u)
+    # Thus: cx^2 + 2 * cx * rx * cos(t) + rx^2 * cos^2(t) +
+    #       cy^2 + 2 * cy * ry * sin(t) + ry^2 * sin^2(t) = 1
     # and how to solve this set of equations?
     pass # TODO

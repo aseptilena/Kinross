@@ -28,7 +28,7 @@ class ellipse:
     def periapsis(self): return (1 - self.e()) * self.a()
     def apoapsis(self): return (1 + self.e()) * self.a()
     def semilatrect(self): return self.b() * self.b() / self.a()
-    
+    # TODO the below is actually wrong
     def anglepoint(self, th = 0.): return self.centre + rect(self.rx, self.tilt + th) # When th is left out this returns the "zero vertex", from which angles can be measured.
     def raypoint(self, p):
         """Intersection of the ray from the centre to the specified point with the ellipse.
@@ -37,14 +37,27 @@ class ellipse:
         a = signedangle(p, self.anglepoint(), self.centre)
         r = self.rx * self.ry / hypot(self.ry * cos(a), self.rx * sin(a))
         return lenvec(p, r, self.centre)
-    def unitcircletf(self):
-        """The transformation that maps this ellipse to the centred unit circle."""
-        return composetf(scalemat(1 / self.rx, 1 / self.ry), rotmat(-self.tilt), transmat(-self.centre.real, -self.centre.imag))
-    def tf(self, m):
+    def tf(self, *m):
         """Transforms the ellipse by the given matrix."""
         return rytz(tf(m, self.centre()), tf(m, self.anglepoint()), tf(m, self.anglepoint(hpi)))
+    def unitcircletf(self):
+        """The transformation that maps this ellipse to a centred unit circle."""
+        return composetf(scalemat(1 / self.rx, 1 / self.ry), rotmat(-self.tilt), transmat(-self.centre.real, -self.centre.imag))
 
-def newcircle(centre, r): return ellipse(centre, r, r) # Circles are the same thing, only with one radius and no tilt.
+class circle:
+    """Circles are the same as ellipses, only with one radius and no tilt."""
+    def __init__(self, centre, r): self.centre, self.r = centre, fabs(r)
+    def __str__(self): return "Circle with centre {} and radius {}".format(printpoint(self.centre), self.r)
+    def __repr__(self): return "circle({}, {})".format(self.centre, self.r)
+    def toellipse(self): return ellipse(self.centre, self.r, self.r) # A coercing function
+    
+    def anglepoint(self, th = 0.): return self.centre + rect(self.r, th) # from the +x-axis
+    def raypoint(self, p): return lenvec(p, self.r, self.centre)
+    def invertpoint(self, p):
+        """The inversion of a point in this circle. None signifies the point at infinity."""
+        if near(p, centre): return None
+        return lenvec(p, self.r * self.r / abs(p - self.centre), self.centre)
+
 def rytz(centre, a, b):
     """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
     Used to remove the transformation matrix from SVG ellipses (and a lot of other things)."""

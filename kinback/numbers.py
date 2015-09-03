@@ -15,13 +15,31 @@ def lineareq2(a, b, p, c, d, q):
     if near(det): return (None, None)
     return ((p * d - q * b) / det, (a * q - c * p) / det)
 def quadreq(a, b, c, real = True):
-    """a * x ^ 2 + b * x + c = 0; real excludes complex roots"""
+    """Numerically stable a * x ^ 2 + b * x + c = 0; real excludes complex roots.
+    See https://people.csail.mit.edu/bkph/articles/Quadratics.pdf for the derivation."""
     d = b * b - 4 * a * c
-    r, i = -b / (2 * a), sqrt(abs(d)) / (2 * a)
+    e = sqrt(abs(d))
     if d < 0:
-        if not real: return (complex(r, -i), complex(r, i))
-    else: return (r - i, r + i)
-    return ()
+        if not real:
+            r, i = -b / (2 * a), e / (2 * a)
+            return (complex(r, -i), complex(r, i))
+        return ()
+    if b < 0: return (2 * c / (-b + e), (-b + e) / 2 / a)
+    return ((-b - e) / 2 / a, 2 * c / (-b - e))
+# To solve higher-order polynomials, we need to implement a class for them.
+class polynomial:
+    """A polynomial stores a list of coefficients [a0, a1, a2, ...]
+    where a0 is the constant term, a1 is the x term and so on."""
+    def __init__(self, coeffs):
+        self.a = tuple(coeffs)
+    def __str__(self): pass # TODO
+    def __repr__(self): return "polynomial([" + ",".join(a) + "])"
+
+def hornereval(p, x):
+    res = 0.
+    for i in range(len(p) - 1, -1, -1): res = p[i] + res * x
+    return res
+
 def cubeq(a, b, c, d, real = True):
     """Vieta's method, real is again self-explanatory"""
     pass # TODO

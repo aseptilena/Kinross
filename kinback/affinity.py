@@ -7,7 +7,8 @@
 # [c0 c2 c4]
 # [c1 c3 c5]
 # [0  0  1 ]
-# Compositions of transformations are stored in the order they would be written down to denote matrix multiplication of a point, as per the SVG specifications.
+# Compositions of transformations are stored last-applied to first-applied, corresponding to how the actual matrix multiplication operates.
+# This is also how the SVG specifications specify their notation in files.
 from .vectors import * # local
 from math import sin, cos, tan
 def tf(mat, p): return point(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
@@ -31,7 +32,7 @@ def rotmat(th, o = None):
     if o == None: return (cos(th), sin(th), -sin(th), cos(th), 0., 0.)
     else: return compose(transmat(o.real, o.imag), rotmat(th), transmat(-o.real, -o.imag))
 def scalemat(x, y = None): return (float(x), 0., 0., float(x if y == None else y), 0., 0.)
-def skewmat(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
+def skewmat(x, y = 0.): return (1., tan(x), tan(y), 1., 0., 0.)
 
 # Transformations here are separated into the following components applied in sequence:
 # 1. Scaling only in the y-axis

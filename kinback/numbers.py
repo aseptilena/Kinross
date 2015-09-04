@@ -2,7 +2,7 @@
 # Helper functions for Kinross: numeric functions and classical algebra
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from math import sqrt
+from math import sqrt, copysign
 # Numeric functions
 def near(a, b = 0., e = 1e-5):
     """Checks if the difference between two numbers is within the given tolerance (using the L2 metric for a more natural treatment of complex numbers).
@@ -14,27 +14,19 @@ def lineareq2(a, b, p, c, d, q):
     det = a * d - b * c
     if near(det): return (None, None)
     return ((p * d - q * b) / det, (a * q - c * p) / det)
-def quadreq(a, b, c, real = True):
-    """Numerically stable a * x ^ 2 + b * x + c = 0; real excludes complex roots.
-    See https://people.csail.mit.edu/bkph/articles/Quadratics.pdf for the derivation."""
-    d = b * b - 4 * a * c
-    e = sqrt(abs(d))
-    if d < 0:
-        if not real:
-            r, i = -b / (2 * a), e / (2 * a)
-            return (complex(r, -i), complex(r, i))
-        return ()
-    if b < 0: return (2 * c / (-b + e), (-b + e) / 2 / a)
-    return ((-b - e) / 2 / a, 2 * c / (-b - e))
-# To solve higher-order polynomials, we need to implement a class for them.
+
+# Polynomial class; includes root-finding algorithms
 class polynomial:
     """A polynomial stores a list of coefficients [a0, a1, a2, ...]
     where a0 is the constant term, a1 is the x term and so on."""
-    def __init__(self, coeffs = [0.]): self.a = list(coeffs)
+    def __init__(self, coeffs = [0.]):
+        if type(coeffs) in (int, float, complex): self.a = [coeffs]
+        else: self.a = list(coeffs[:])
     def __str__(self): return " + ".join([str(self.a[i]) + "*x^" + str(i) for i in self.poweriter()])
     def __repr__(self): return "polynomial([" + ",".join([str(c) for c in self.a]) + "])"
-    def __getitem__(self, n): return self.a[n] # The coefficient associated with the n-th power
-    def __len__(self): return len(self.a) # To get the degree, use len(p) - 1
+    def __getitem__(self, n): return self.a[n] # The coefficient associated with the n-th power; leading coefficient is self[-1]
+    def __len__(self): return len(self.a)
+    def deg(self): return len(self) - 1
     def poweriter(self, up = False):
         """An iterator over the powers of the polynomial; defaults to counting towards the constant term but can be reversed."""
         return range(len(self)) if up else range(len(self) - 1, -1, -1)
@@ -63,7 +55,69 @@ class polynomial:
             for i in q.poweriter(True): r += (self * q[i]).addzeroroots(i)
             return r
     def __rmul__(self, q): return self * q
-
-def cubeq(a, b, c, d, real = True):
-    """Vieta's method, real is again self-explanatory"""
-    pass # TODO
+    def __divmod__(self, b):
+        # Euclidean algorithm for polynomials
+        q, r, d, c = polynomial(), polynomial(self.a), b.deg(), b[-1]
+        while r.deg() >= d:
+            s = polynomial(r[-1] / c).addzeroroots(r.deg() - d)
+            q += s
+            r -= s * b
+            r.a.pop()
+        return (q, r)
+    def __floordiv__(self, b): return divmod(self, b)[0]
+    def __mod__(self, b): return divmod(self, b)[1]
+    def __truediv__(self, b): return self // b
+    def ruffini(self, r):
+        """Divides the polynomial by x - r using the Ruffini scheme, ignoring remainder."""
+        res = []
+        for i in self.poweriter():
+            if i == self.deg(): res.append(self[i])
+            else: res = [res[0] * r + self[i]] + res
+            return polynomial(res[1:])
+    def deriv(self): return polynomial([i * self[i] for i in range(1, len(self))])
+    def antideriv(self): return polynomial([0.] + [self[i] / (i + 1) for i in self.poweriter(True)])
+    
+    def striplead(self, prec = 1e-10):
+        while near(self[-1], 0., prec): self.pop()
+    def roots(self, prec = 1e-10):
+        """Finds all the roots of the polynomial, returning the list of [[real roots], [complex roots]].
+        The quadratic evaluation is numerically stable; see https://people.csail.mit.edu/bkph/articles/Quadratics.pdf for the derivation.
+        The Illinois algorithm (false position + kicking out of stuck cases) is used for cubics and Bairstow's method for all higher orders."""
+        self.striplead(prec)
+        if self.deg() == 0: return [[], []]
+        elif self.deg() == 1: return [[-self[0] / self[1]], []]
+        elif self.deg() == 2:
+            a, b, c = self[2], self[1], self[0]
+            d = b * b - 4 * a * c
+            e = sqrt(abs(d))
+            if d < 0:
+                r, i = -b / (2 * a), e / (2 * a)
+                return [[], [complex(r, -i), complex(r, i)]]
+            if b < 0: return [[2 * c / (-b + e), (-b + e) / 2 / a], []]
+            return [[(-b - e) / 2 / a, 2 * c / (-b - e)], []]
+        elif self.deg() == 3:
+            # Take the constant term. If it's zero, you win instantly.
+            d = self[0]
+            if near(d, 0., prec):
+                q = polynomial((self[1], self[2], self[3])).roots()
+                q[0].append(0.)
+                return q
+            else: # A period-doubling mechanism is used to find the other point.
+                a = self[3]
+                z, fz = -copysign(0.5, d * a), copysign(1, d)
+                while d * fz > 0:
+                    z *= 2
+                    fz = self.at(z)
+                    if near(fz, 0., prec):
+                        q = self.ruffini(z).roots()
+                        q[0].append(z)
+                        return q
+                lower, higher = (z, 0.) if d * a > 0 else (0., z) # a, b
+                flower, fire = self.at(lower), self.at(higher) # f(a), f(b)
+                while not near(lower, higher, prec):
+                    denom, k = fire - flower, 1.
+                    # Scale denom up to avoid floating-point follies
+                    while near(denom, 0., prec * 1000): denom, k = denom * 2, k * 2
+                    sec = higher - fire * k * (higher - lower) / denom
+                    # TODO the rest of the Illinois algorithm
+        else: return "I failed..."

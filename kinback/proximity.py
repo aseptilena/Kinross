@@ -3,7 +3,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import * # local
-from .ellipse import *
+from .ellipse import * # affinity is imported via ellipse
 # The names of intersection-finding functions here are named intersect_ + two letters for the objects it handles.
 # l = line, c = circle, e = ellipse, r = rhythm; non-trivial solutions are returned as a tuple.
 
@@ -26,18 +26,24 @@ def intersect_cl(c, l):
 
 def intersect_cc(c, d):
     """A common problem in 2D video gaming."""
-    z, plus, minus = sqdist(c.centre, d.centre), c.r + d.r, c.r - d.r
+    sep = d.centre - c.centre
+    z, plus, minus = sqdist(sep), c.r + d.r, c.r - d.r
     if z > plus * plus or z <= minus * minus: return ()
-    s = abs(d.centre - c.centre)
-    # Now projecct the radius of the first circle onto the inter-centre line to obtain the central point.
-    a = (c.r * c.r - d.r * d.r + z) / (2 * s)
-    h = sqrt(c.r * c.r - a * a)
-    y = lenvec(d.centre, a, c.centre)
-    bar = lenvec(lturn(d.centre - c.centre), h)
-    return (y + h, y - h)
-    # TODO
+    k = (plus * minus + sqdist(d.centre) - sqdist(c.centre)) / 2
+    # x * sep.real + y * sep.imag = k is the radical line of c and d, through which both intersections pass.
+    # Since at least one of sep.real and sep.imag is non-zero, we can take two points, one where x = y and another where one is zero.
+    s = k / (sep.real + sep.imag)
+    p1 = point(s, s)
+    p2 = point(k / sep.real, 0.) if sep.real != 0 else (0., k / sep.imag)
+    return intersect_cl(c, (p1, p2))
 
 # Then ellipses (though they can always be transformed to the cases below or above).
+def intersect_el(e, l):
+    """Transform the ellipse to a unit circle and work from there."""
+    ll = tuple(tf(e.unitcircletf(), p) for p in l)
+    ii = intersect_cl(circle(), ll)
+    return tuple(tf(e.unitcircleinvtf(), i) for i in ii)
+
 def intersect_ee(e, f):
     """Finds the intersections of two ellipses via a transformation that maps the first one to a unit circle and aligns the second's axes with the coordinate axes.
     This leads to a quartic equation which is solved numerically to obtain the actual intersections."""

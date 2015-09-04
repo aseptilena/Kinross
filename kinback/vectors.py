@@ -30,7 +30,7 @@ def signedangle(p, base, o = 0j): return phase((p - o) / (base - o))
 # Lines are 2-tuples of points (start, end). Since they are so closely associated with vectors, they come in the same script.
 # If a line needs to be used with a point-based function passing l[0] and l[1] will suffice.
 def printline(l): return "Line from {} to {}".format(l[0], l[1])
-def sqdist(p, q): return (q.real - p.real) * (q.real - p.real) + (q.imag - p.imag) * (q.imag - p.imag)
+def sqdist(p, q = 0j): return (p.real - q.real) * (p.real - q.real) + (p.imag - q.imag) * (p.imag - q.imag)
 def between(p, q): return (p + q) / 2
 def linterp(p, q, t): return t * (q - p) + p
 def footperp(p, l): return vecproject(p, l[1], l[0])

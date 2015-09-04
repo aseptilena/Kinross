@@ -9,9 +9,8 @@
 # [0  0  1 ]
 # Compositions of transformations are stored last-applied to first-applied, corresponding to how the actual matrix multiplication operates.
 # This is also how the SVG specifications specify their notation in files.
-from .vectors import * # local
 from math import sin, cos, tan
-def tf(mat, p): return point(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
+def tf(mat, p): return complex(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
 def composetf(p, *q):
     for m in q:
         p = (p[0] * m[0] + p[2] * m[1],

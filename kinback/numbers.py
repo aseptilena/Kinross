@@ -3,12 +3,11 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from math import sqrt, copysign
-# Numeric functions
+
 def near(a, b = 0., e = 1e-5):
     """Checks if the difference between two numbers is within the given tolerance (using the L2 metric for a more natural treatment of complex numbers).
     The second argument can be left out to represent zero."""
     return abs(b - a) <= e
-# Algebraic functions
 def lineareq2(a, b, p, c, d, q):
     """ax + by = p; cx + dy = q; returns (x, y)."""
     det = a * d - b * c
@@ -73,16 +72,17 @@ class polynomial:
         for i in self.poweriter():
             if i == self.deg(): res.append(self[i])
             else: res = [res[0] * r + self[i]] + res
-            return polynomial(res[1:])
+        return polynomial(res[1:])
     def deriv(self): return polynomial([i * self[i] for i in range(1, len(self))])
     def antideriv(self): return polynomial([0.] + [self[i] / (i + 1) for i in self.poweriter(True)])
-    
     def striplead(self, prec = 1e-10):
-        while near(self[-1], 0., prec): self.pop()
+        """Strips leading zeros of the polynomial in-place to the specified precision."""
+        while near(self[-1], 0., prec): self.a.pop()
+        
     def roots(self, prec = 1e-10):
-        """Finds all the roots of the polynomial, returning the list of [[real roots], [complex roots]].
+        """Finds all the roots of the polynomial, returning the list of [[real roots], [complex roots]]. Leading zeros are stripped first.
         The quadratic evaluation is numerically stable; see https://people.csail.mit.edu/bkph/articles/Quadratics.pdf for the derivation.
-        The Illinois algorithm (false position + kicking out of stuck cases) is used for cubics and Bairstow's method for all higher orders."""
+        Higher polynomials are handled by bisecting on odd degrees and Bairstow's method on even degrees."""
         self.striplead(prec)
         if self.deg() == 0: return [[], []]
         elif self.deg() == 1: return [[-self[0] / self[1]], []]
@@ -95,15 +95,14 @@ class polynomial:
                 return [[], [complex(r, -i), complex(r, i)]]
             if b < 0: return [[2 * c / (-b + e), (-b + e) / 2 / a], []]
             return [[(-b - e) / 2 / a, 2 * c / (-b - e)], []]
-        elif self.deg() == 3:
-            # Take the constant term. If it's zero, you win instantly.
+        elif self.deg() % 2:
             d = self[0]
             if near(d, 0., prec):
-                q = polynomial((self[1], self[2], self[3])).roots()
+                q = self.ruffini(0.).roots()
                 q[0].append(0.)
                 return q
-            else: # A period-doubling mechanism is used to find the other point.
-                a = self[3]
+            else:
+                a = self[-1]
                 z, fz = -copysign(0.5, d * a), copysign(1, d)
                 while d * fz > 0:
                     z *= 2
@@ -112,12 +111,29 @@ class polynomial:
                         q = self.ruffini(z).roots()
                         q[0].append(z)
                         return q
-                lower, higher = (z, 0.) if d * a > 0 else (0., z) # a, b
-                flower, fire = self.at(lower), self.at(higher) # f(a), f(b)
-                while not near(lower, higher, prec):
-                    denom, k = fire - flower, 1.
-                    # Scale denom up to avoid floating-point follies
-                    while near(denom, 0., prec * 1000): denom, k = denom * 2, k * 2
-                    sec = higher - fire * k * (higher - lower) / denom
-                    # TODO the rest of the Illinois algorithm
-        else: return "I failed..."
+                lower, higher = (z, 0.) if d * a > 0 else (0., z)
+                flower, fire = self.at(lower), self.at(higher)
+                N = 0
+                while not near(lower, higher, prec) and N < 100:
+                    mid = (lower + higher) / 2
+                    fmid = self.at(mid)
+                    if abs(fmid) == 0.:
+                        q = self.ruffini(mid).roots()
+                        q[0].append(mid)
+                        return q
+                    if fmid * flower > 0: lower, flower = mid, fmid
+                    else: higher, fire = mid, fmid
+                    N += 1
+                res = (higher + lower) / 2
+                q = self.ruffini(res).roots()
+                q[0].append(res)
+                return q
+        else:
+            # TODO
+            return "???"
+
+def bairstowconstants(p, u, v):
+    """Calculates the constants c, d, g and h for Bairstow's method from u and v with respect to a polynomial p.
+    divmod(p, polynomial(v, u, 1)) = (q, polynomial(d, c));
+    divmod(q, polynomial(v, u, 1)) = (r, polynomial(h, g))."""
+    pass # TODO

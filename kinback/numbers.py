@@ -37,8 +37,8 @@ class polynomial:
     def __repr__(self): return "polynomial([" + ",".join([repr(c) for c in self.a]) + "])"
     def __call__(self, x):
         """The Horner scheme for polynomial evaluation. Since this is what polynomials are all about it seemed natural to assign this method as such."""
-        res, dx = zero, D(x)
-        for i in self.powers(): res = res.fma(dx, self[i])
+        res = zero
+        for i in self.powers(): res = res.fma(x, self[i])
         return res
     def __add__(self, q):
         res = []

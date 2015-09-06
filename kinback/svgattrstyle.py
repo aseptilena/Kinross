@@ -52,11 +52,12 @@ defstyle = {"display": "inline",
             "clip-path": "none",
             "clip-rule": "nonzero",
             "mask": "none",
-            # Text
-            "baseline-shift": "baseline",
+            "text-decoration-color": "#000"}
+# Text styling only properly belongs on text and tspan tags!
+dstytext = {"baseline-shift": "baseline",
             "block-progression": "tb",
             "direction": "ltr",
-            "font-family": "Sans",
+            "font-family": "sans-serif",
             "font-feature-settings": "normal",
             "font-size": "medium",
             "font-stretch": "normal",
@@ -69,7 +70,7 @@ defstyle = {"display": "inline",
             "font-variant-position": "normal",
             "font-weight": "normal",
             "letter-spacing": "normal",
-            "line-height": "125%",
+            "line-height": "normal",
             "shape-padding": "0",
             "text-align": "start",
             "text-anchor": "start",
@@ -83,9 +84,12 @@ defstyle = {"display": "inline",
             "word-spacing": "normal",
             "writing-mode": "lr-tb",
             "-inkscape-font-specification": "Sans"}
-# Inkscape aliases the following default style properties as such
+rstytext = {a: None for a in dstytext}
+# Inkscape aliases the following default style properties for text as such. There is no corresponding "None-dictionary" as above because all its keys are in dstytext.
 styleplus = {"letter-spacing": "0px",
-             "word-spacing": "0px"}
+             "word-spacing": "0px",
+             "line-height": "125%",
+             "font-weight": "500"}
 # Default attributes of projects; None denotes any string
 defattrb = [("path", {"d": None}, {"inkscape:original-d": None}), # This is the very reason this script was written
             (None, {"inkscape:connector-curvature": "0"}, {}),
@@ -184,14 +188,17 @@ def whack(node):
         matchrm(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
     matchrm(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
     matchrm(sd, defstyle)
-    matchrm(sd, styleplus)
+    if node.tag in ("{http://www.w3.org/2000/svg}text", "{http://www.w3.org/2000/svg}tspan"):
+        matchrm(sd, dstytext)
+        matchrm(sd, styleplus)
+    else: matchrm(sd, rstytext)
     stylesplit(node, sd)
 # In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties)
 def weakwhack(node): stylesplit(node, styledict(node))
 # The nodes a node references (via "URLs" and hashes)
 def refsof(node):
     rf, sd = {}, styledict(node, True)
-    for a in ["fill", "stroke", "clip-path", "mask", "filter"]:
+    for a in ("fill", "stroke", "clip-path", "mask", "filter"):
         if a in sd and sd[a][0] == 'u': rf[a] = sd[a][5:-1]
     tmp = node.get("{http://www.w3.org/1999/xlink}href")
     if tmp: rf["use"] = tmp[1:]

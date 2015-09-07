@@ -134,12 +134,15 @@ class polynomial:
                     else: higher, fire = mid, fmid
                     N += 1
                 N = 0
-                # ...then proceed with Newton's method to TWICE the precision
+                # ...then proceed with Newton's method to twice the precision
                 val, step, dp = mid, 1, self.deriv()
-                while not near(step, 0, nprec) and N < 64:
-                    step = self(val) / dp(val)
-                    val -= step
-                    N += 1
+                try:
+                    while not near(step, 0, nprec) and N < 64:
+                        step = self(val) / dp(val)
+                        val -= step
+                        N += 1
+                except ZeroDivisionError:
+                    pass
                 q = self.ruffini(val).roots()
                 q[0].append(val)
                 return q

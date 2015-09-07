@@ -21,7 +21,7 @@ def lineareq2(a, b, p, c, d, q):
 
 # Polynomial class; includes root-finding algorithms
 class polynomial:
-    """A polynomial stores a list of Decimal coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on.
+    """A polynomial stores a list of decimal coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on.
     Note that because of this only real coefficients are supported."""
     def __init__(self, coeffs = 0):
         if type(coeffs) in (int, float, D): self.a = [D(coeffs)]
@@ -84,6 +84,11 @@ class polynomial:
             if i == self.deg(): res.append(self[i])
             else: res.insert(0, res[0].fma(r, self[i]))
         return polynomial(res[1:])
+    def quadruffini(self, u, v):
+        """Divides the polynomial by x^2 + ux + v with a Ruffini-like scheme, returning a tuple (quotient, c, d) where the remainder is cx + d."""
+        q = [zero, zero]
+        for i in range(self.deg(), 1, -1): q.append(self[i] - u * q[-1] - v * q[-2])
+        return (polynomial(q[:1:-1]), self[1] - u * q[-1] - v * q[-2], self[0] - v * q[-1])
     def deriv(self): return polynomial([i * self[i] for i in range(1, len(self))])
     def antideriv(self): return polynomial([0.] + [self[i] / (i + 1) for i in range(len(self))])
     def striplead(self, prec = 1e-10):
@@ -91,7 +96,7 @@ class polynomial:
         while near(self[-1], 0, prec): self.a.pop()
         
     def roots(self, prec = 1e-10):
-        """Finds all the roots of the polynomial, returning a list of [[real roots] and [complex roots]] to the specified precision.
+        """Finds all roots of the polynomial to the specified precision, returning the [[real roots] and [complex roots as [real part, complex part]]].
         The quadratic evaluation is numerically stable; see https://people.csail.mit.edu/bkph/articles/Quadratics.pdf for the derivation.
         Higher polynomials are handled by bisecting/Newton's method on odd degrees and Bairstow's method on even degrees."""
         self.striplead(prec)
@@ -108,9 +113,9 @@ class polynomial:
             return [[(-b - e) / (2 * a), (2 * c) / (-b - e)], []]
         elif self.deg() % 2: # Odd-degree polynomials always have at least one real root by the intermediate value theorem
             d = self[0]
-            if near(d, 0, prec):
-                q = self.ruffini(0.).roots()
-                q[0].append(0.)
+            if abs(d) == zero:
+                q = self.ruffini(zero).roots()
+                q[0].append(zero)
                 return q
             else:
                 a = self[-1]
@@ -118,31 +123,33 @@ class polynomial:
                 while d * fz > 0:
                     z *= 2
                     fz = self(z)
-                    if near(fz, 0, prec):
+                    if abs(fz) == zero:
                         q = self.ruffini(z).roots()
                         q[0].append(z)
                         return q
                 lower, higher = (z, zero) if d * a > 0 else (zero, z)
                 flower, fire = self(lower), self(higher)
                 N, bprec, nprec = 0, D(prec).sqrt(), D(prec * prec)
-                # Bisect until half the desired precision...
+                # Bisect until half the desired precision
                 while not near(lower, higher, bprec) and N < 64:
                     mid = (lower + higher) / 2
                     fmid = self(mid)
-                    if abs(fmid) == zero: break
+                    if abs(fmid) == zero:
+                        q = self.ruffini(mid).roots()
+                        q[0].append(val)
+                        return q
                     if fmid * flower > 0: lower, flower = mid, fmid
                     else: higher, fire = mid, fmid
                     N += 1
                 N = 0
-                # ...then proceed with Newton's method to twice the precision
+                # Then proceed with Newton's method to twice the precision
                 val, step, dp = mid, 1, self.deriv()
                 try:
                     while not near(step, 0, nprec) and N < 64:
                         step = self(val) / dp(val)
                         val -= step
                         N += 1
-                except ZeroDivisionError:
-                    pass
+                except ZeroDivisionError: pass # step has encountered a stationary root
                 q = self.ruffini(val).roots()
                 q[0].append(val)
                 return q
@@ -150,7 +157,7 @@ class polynomial:
             # TODO
             return "???"
 
-def bairstowconstants(p, u, v):
+def bairstowstep(p, u, v):
     """Calculates the constants c, d, g and h for Bairstow's method from u and v with respect to a polynomial p.
     divmod(p, polynomial(v, u, 1)) = (q, polynomial(d, c));
     divmod(q, polynomial(v, u, 1)) = (r, polynomial(h, g))."""

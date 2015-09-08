@@ -103,16 +103,14 @@ class polynomial:
             p.a.pop(0)
             N += 1
         return (p, N)
-        
     def roots(self, prec = 1e-10):
-        """Finds all roots of the polynomial to the specified precision, returning the [[real roots] and [complex roots as [real part, complex part]]].
-        The quadratic evaluation is numerically stable; see https://people.csail.mit.edu/bkph/articles/Quadratics.pdf for the derivation.
-        Higher polynomials are handled by bisecting/Newton's method on odd degrees and Bairstow's method on even degrees.
-        In practice this method would be used as part of the coercing function polynomroot()."""
+        """Finds all roots to the specified precision, returning the [[real roots] and [complex roots as [real part, complex part]]].
+        Cubic and higher polynomials are handled by Bairstow's method; in practice this function would be used as part of polynomroot()."""
         p, nz = self.minusendzeros(prec)
         if p.deg() == 0: res = [[], []]
         elif p.deg() == 1: res = [[-p[0] / p[1]], []]
         elif p.deg() == 2:
+            # See https://people.csail.mit.edu/bkph/articles/Quadratics.pdf for the derivation.
             a, b, c = p[2], p[1], p[0]
             d = b * b - 4 * a * c
             e = abs(d).sqrt()
@@ -122,40 +120,15 @@ class polynomial:
             else:
                 if b < 0: res = [[(2 * c) / (-b + e), (-b + e) / (2 * a)], []]
                 else: res = [[(-b - e) / (2 * a), (2 * c) / (-b - e)], []]
-        elif p.deg() % 2: # Odd-degree polynomials always have at least one real root by the intermediate value theorem
-            d, a = p[0], p[-1]
-            z, fz = D(0.5).copy_sign(-d * a), D(1).copy_sign(d)
-            while d * fz >= 0:
-                z *= 2
-                fz = p(z)
-            lower, higher = (z, zero) if d * a > 0 else (zero, z)
-            flower, fire = p(lower), p(higher)
-            N, bprec, nprec = 0, D(prec).sqrt(), D(prec * prec)
-            # Bisect until half the desired precision
-            while not near(lower, higher, bprec) and N < 64:
-                mid = (lower + higher) / 2
-                fmid = p(mid)
-                if abs(fmid) == zero: break
-                if fmid * flower > 0: lower, flower = mid, fmid
-                else: higher, fire = mid, fmid
-                N += 1
-            N = 0
-            # Then proceed with Newton's method to twice the precision
-            val, step, dp = mid, 1, p.deriv()
-            try:
-                while not near(step, 0, prec * prec) and N < 64:
-                    step = p(val) / dp(val)
-                    val -= step
-                    N += 1
-            except decimal.InvalidOperation: pass # val has encountered a stationary root
-            res = p.ruffini(val).roots()
-            res[0].append(val)
         else:
+            odd = p.deg() % 2
+             # Bairstow's method is ill-behaved on odd-degree polynomials; "salt" with a factor of x - 1 and catch later
+            if odd: p *= polynomial((-1, 1))
             res = [[], []]
             while p.deg() > 2:
                 u, v = self[-2] / self[-1], self[-3] / self[-1]
                 x, y, N, bairprec = D(3), D(4), 0, D(prec * prec * prec)
-                while not near((x * x + y * y).sqrt(), 0, bairprec) and N < 24:
+                while not near((x * x + y * y).sqrt(), 0, bairprec) and N < 256:
                     x, y = bairstowstep(p, u, v)
                     u, v = u + x, v + y
                     N += 1
@@ -166,12 +139,24 @@ class polynomial:
             last = p.roots()
             res[0].extend(last[0])
             res[1].extend(last[1])
+            if odd:
+                notr = True
+                for r in res[0]:
+                    if near(r, 1, prec):
+                        res[0].remove(r)
+                        notr = False
+                        break
+                if notr:
+                    for c in res[1]:
+                        if near(c[0], 1, prec):
+                            res[1].remove(c)
+                            break
         # At the end the previously found number of "trivial" zeros are appended to res.
         res[0].extend([zero for i in range(nz)])
         return res
 
 def bairstowstep(p, u, v):
-    """Calculates one step of Bairstow's method for the given polynomial and constants (divisor is x^2 + ux + v); this is to be added to the current guess rather than subtracted."""
+    """Calculates one step of Bairstow's method for the given polynomial and constants (divisor is x^2 + ux + v) to be added to the current guess."""
     q, c, d = p.quadruffini(u, v)
     g, h = q.quadruffini(u, v)[1:]
     K, L = -g * v, g.fma(u, -h)
@@ -180,12 +165,13 @@ def bairstowstep(p, u, v):
     return (x, y)
 
 def polynomroot(coeffs, precdigits = 10):
-    """Finds all the roots of the polynomial determined by coeffs to the given number of decimal places, coercing to floats.
-    The first element of coeffs is the constant term as in the polynomial class;
-    the returned list is also identical but complex numbers are reconstituted."""
+    """Finds all the roots of polynomial(coeffs) to [precdigits] decimal places.
+    This function not only saves the need for creating a new instance, it also coerces to floats/complexes and suppresses small complex components."""
     prec = D("1e-{}".format(precdigits))
     raw = polynomial(coeffs).roots(prec)
     out = [[], []]
     for rn in raw[0]: out[0].append(float(round(rn, precdigits)))
-    for cn in raw[1]: out[1].append(complex(round(cn[0], precdigits), round(cn[1], precdigits)))
+    for cn in raw[1]:
+        if near(cn[1], 0, prec): out[0].append(float(round(cn[0], precdigits)))
+        else: out[1].append(complex(round(cn[0], precdigits), round(cn[1], precdigits)))
     return out

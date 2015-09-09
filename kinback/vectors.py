@@ -14,8 +14,6 @@ def near(a, b, e = 1e-5):
 # ...except for what follows.
 # Points in Kinross are complex numbers, but for the purposes of SVG +y is downwards and +angle is clockwise.
 # For modulus, argument and polar constructors use abs, phase and rect respectively.
-from math import sin, cos, acos
-from cmath import phase, rect
 point = complex
 # Single-vector operations
 def sqabs(p, q = 0j): return (p.real - q.real) * (p.real - q.real) + (p.imag - q.imag) * (p.imag - q.imag)

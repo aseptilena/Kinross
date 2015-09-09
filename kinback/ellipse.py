@@ -2,8 +2,7 @@
 # Helper functions for Kinross: circles and ellipses
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from .vectors import * # local
-from .affinity import *
+from .vectors import *
 from math import pi, sqrt, fabs, hypot
 hpi = pi / 2
 
@@ -42,10 +41,10 @@ class ellipse:
         return rytz(tf(mat, self.centre), tf(mat, self.zerovertex()), tf(mat, self.hpivertex()))
     def unitcircletf(self):
         """The transformation that maps this ellipse to the centred unit circle."""
-        return composetf(scalemat(1 / self.rx, 1 / self.ry), rotmat(-self.tilt), transmat(-self.centre.real, -self.centre.imag))
+        return composition(scaling(1 / self.rx, 1 / self.ry), rotation(-self.tilt), translation(-self.centre.real, -self.centre.imag))
     def unitcircleinvtf(self):
         """The inverse of unitcircletf() (i.e. the transformation from the unit circle to this ellipse). This is calculated separately to reduce floating-point error."""
-        return composetf(transmat(self.centre.real, self.centre.imag), rotmat(self.tilt), scalemat(self.rx, self.ry))
+        return composition(translation(self.centre.real, self.centre.imag), rotation(self.tilt), scaling(self.rx, self.ry))
 
 class circle:
     """Circles are the same as ellipses, only with one radius and no tilt."""

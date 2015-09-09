@@ -1,25 +1,13 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: numeric functions and classical algebra
+# Helper functions for Kinross: polynomials and their roots
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-# Exact decimal arithmetic is used in the polynomial class to mitigate floating-point follies.
-import decimal
+# Decimal arithmetic is used in this class to mitigate floating-point follies.
 from decimal import Decimal as D, getcontext
 getcontext().prec = 60
-zero = D(0)
+zero, one = D(0), D(1)
+from .vectors import near
 
-def near(a, b = 0., e = 1e-5):
-    """Checks if the difference between two numbers is within the given tolerance (using the L2 metric for a more natural treatment of complex numbers).
-    The second argument can be left out to represent zero."""
-    if type(a) == D or type(b) == D: return abs(D(a) - D(b)) <= e
-    return abs(b - a) <= e
-def lineareq2(a, b, p, c, d, q):
-    """ax + by = p; cx + dy = q; returns (x, y)."""
-    det = a * d - b * c
-    if near(det): return (None, None)
-    return ((p * d - q * b) / det, (a * q - c * p) / det)
-
-# Polynomial class; includes root-finding algorithms
 class polynomial:
     """A polynomial stores a list of decimal coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on.
     Note that because of this only real coefficients are supported."""
@@ -81,12 +69,12 @@ class polynomial:
     def __mod__(self, b): return divmod(self, b)[1]
     def __truediv__(self, b): return self // b
     def ruffini(self, r):
-        """Divides the polynomial by x - r using the Ruffini scheme, ignoring remainder."""
+        """Divides the polynomial by x - r using the Ruffini scheme, returning the remainder in a tuple."""
         res = []
         for i in self.powers():
             if i == self.deg(): res.append(self[i])
             else: res.insert(0, res[0].fma(r, self[i]))
-        return polynomial(res[1:])
+        return (polynomial(res[1:]), res[0])
     def quadruffini(self, u, v):
         """Divides the polynomial by x^2 + ux + v with a Ruffini-like scheme, returning a tuple (quotient, c, d) where the remainder is cx + d."""
         q = [zero, zero]
@@ -97,12 +85,20 @@ class polynomial:
     def minusendzeros(self, prec = 1e-10):
         """Returns the polynomial with leading and trailing zeros to the specified precision stripped along with the number of trailing zeros (or equivalently zero roots)."""
         p = self.dup()
-        while near(p[-1], 0, prec): p.a.pop()
+        while near(p[-1], zero, prec): p.a.pop()
         N = 0
-        while near(p[0], 0, prec):
+        while near(p[0], zero, prec):
             p.a.pop(0)
             N += 1
         return (p, N)
+    def bairstowstep(self, u, v):
+        """Calculates one step of Bairstow's method for the given constants (divisor is x^2 + ux + v) to be added to the current guess."""
+        q, c, d = self.quadruffini(u, v)
+        g, h = q.quadruffini(u, v)[1:]
+        K, L = -g * v, g.fma(u, -h)
+        frac = g * K + h * L
+        x, y = (d * g - c * h) / frac, (c * K + d * L) / frac
+        return (x, y)
     def roots(self, prec = 1e-10):
         """Finds all roots to the specified precision, returning the [[real roots] and [complex roots as [real part, complex part]]].
         Cubic and higher polynomials are handled by Bairstow's method; in practice this function would be used as part of polynomroot()."""
@@ -128,8 +124,8 @@ class polynomial:
             while p.deg() > 2:
                 u, v = self[-2] / self[-1], self[-3] / self[-1]
                 x, y, N, bairprec = D(3), D(4), 0, D(prec * prec * prec)
-                while not near((x * x + y * y).sqrt(), 0, bairprec) and N < 256:
-                    x, y = bairstowstep(p, u, v)
+                while not near((x * x + y * y).sqrt(), zero, bairprec) and N < 256:
+                    x, y = p.bairstowstep(u, v)
                     u, v = u + x, v + y
                     N += 1
                 p = p.quadruffini(u, v)[0]
@@ -142,27 +138,18 @@ class polynomial:
             if odd:
                 notr = True
                 for r in res[0]:
-                    if near(r, 1, prec):
+                    if near(r, one, prec):
                         res[0].remove(r)
                         notr = False
                         break
                 if notr:
                     for c in res[1]:
-                        if near(c[0], 1, prec):
+                        if near(c[0], one, prec):
                             res[1].remove(c)
                             break
         # At the end the previously found number of "trivial" zeros are appended to res.
         res[0].extend([zero for i in range(nz)])
         return res
-
-def bairstowstep(p, u, v):
-    """Calculates one step of Bairstow's method for the given polynomial and constants (divisor is x^2 + ux + v) to be added to the current guess."""
-    q, c, d = p.quadruffini(u, v)
-    g, h = q.quadruffini(u, v)[1:]
-    K, L = -g * v, g.fma(u, -h)
-    frac = g * K + h * L
-    x, y = (d * g - c * h) / frac, (c * K + d * L) / frac
-    return (x, y)
 
 def polynomroot(coeffs, precdigits = 10):
     """Finds all the roots of polynomial(coeffs) to [precdigits] decimal places.
@@ -172,6 +159,6 @@ def polynomroot(coeffs, precdigits = 10):
     out = [[], []]
     for rn in raw[0]: out[0].append(float(round(rn, precdigits)))
     for cn in raw[1]:
-        if near(cn[1], 0, prec): out[0].append(float(round(cn[0], precdigits)))
+        if near(cn[1], zero, prec): out[0].append(float(round(cn[0], precdigits)))
         else: out[1].append(complex(round(cn[0], precdigits), round(cn[1], precdigits)))
     return out

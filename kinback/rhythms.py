@@ -3,9 +3,9 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import re
+from copy import deepcopy as dup
 from math import hypot, sqrt, pi
 from .vectors import * # local
-from copy import deepcopy as dup
 # There is pretty much only one way to write the real number regex; accordingly this is spliced from Scour
 number = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
 spacing = re.compile(r"[ ,]*")

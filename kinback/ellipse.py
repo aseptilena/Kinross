@@ -15,19 +15,26 @@ class ellipse:
         if self.tilt > hpi: self.tilt -= pi
     def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(printpoint(self.centre), self.rx, self.ry, self.tilt)
     def __repr__(self): return "ellipse({}, {}, {}, {})".format(self.centre, self.rx, self.ry, self.tilt)
+    def geogebrarepr(self):
+        """Returns the GeoGebra representation of this ellipse."""
+        ff = self.foci()
+        return "Ellipse[({},{}),({},{}),{}]".format(ff[0].real, ff[0].imag, ff[1].real, ff[1].imag, self.a())
     
     def a(self): return max(self.rx, self.ry) # Semi-major axis length
     def b(self): return min(self.rx, self.ry) # Semi-minor axis length
     def a_vect(self): return rect(self.a(), self.tilt + hpi * (self.rx <  self.ry)) # Semi-major axis vector
     def b_vect(self): return rect(self.b(), self.tilt + hpi * (self.rx >= self.ry)) # Semi-minor axis vector
-    def zerovertex(self): return self.centre + rect(self.rx, self.tilt) # This vertex is considered the zero point for angles
-    def hpivertex(self): return self.centre + rect(self.ry, self.tilt + hpi) # The point perpendicular to the zero vertex
     def f(self): return sqrt(abs(self.rx * self.rx - self.ry * self.ry)) # Distance from centre to either focus
     def e(self): return self.f() / self.a() # Eccentricity
     def foci(self):
         fv = rect(self.f(), self.tilt + hpi * (self.rx < self.ry))
         return (self.centre + fv, self.centre - fv)
     
+    def parampoint(self, th):
+        """The point on this ellipse with eccentric anomaly (or parameter of the classic parametric form) th relative to the zero vertex."""
+        return self.centre + affine(rotation(self.tilt), point(self.rx * cos(th), self.ry * sin(th)))
+    def zerovertex(self): return self.centre + rect(self.rx, self.tilt) # This vertex is considered the zero point for angles
+    def hpivertex(self): return self.centre + rect(self.ry, self.tilt + hpi) # The point at +90 degrees to the zero vertex
     def raypoint(self, p):
         """Intersection of the ray from the centre to the specified point with the ellipse.
         The Kinross elliptical arc representation uses this to determine endpoints."""
@@ -35,10 +42,12 @@ class ellipse:
         a = signedangle(p, self.zerovertex(), self.centre)
         r = self.rx * self.ry / hypot(self.ry * cos(a), self.rx * sin(a))
         return lenvec(p, r, self.centre)
-    def anglepoint(self, th = 0.): return self.raypoint(turn(self.zerovertex(), th, self.centre))
+    def anglepoint(self, th = 0.):
+        """The point on this ellipse at an actual angle of th to the zero vertex."""
+        return self.raypoint(turn(self.zerovertex(), th, self.centre))
     def tf(self, mat):
         """Transforms the ellipse by the given matrix."""
-        return rytz(tf(mat, self.centre), tf(mat, self.zerovertex()), tf(mat, self.hpivertex()))
+        return rytz(affine(mat, self.centre), affine(mat, self.zerovertex()), affine(mat, self.hpivertex()))
     def unitcircletf(self):
         """The transformation that maps this ellipse to the centred unit circle."""
         return composition(scaling(1 / self.rx, 1 / self.ry), rotation(-self.tilt), translation(-self.centre.real, -self.centre.imag))
@@ -63,7 +72,7 @@ class circle:
 def rytz(centre, a, b):
     """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
     Used to remove the transformation matrix from SVG ellipses (and a lot of other things)."""
-    if near(dot(a, b, centre)): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
+    if near(dot(a, b, centre), 0.): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
     else:
         c = rturn(a, centre)
         m = between(b, c)

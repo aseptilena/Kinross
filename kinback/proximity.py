@@ -47,7 +47,7 @@ def intersect_el(e, l):
 def intersect_ee(e, f):
     """Transform the first ellipse to a unit circle, align the second's axes to coordinate axes and crunch numbers."""
     # TODO there must be a better way
-    from .polynomial import polynomroot, D
+    from .polynomial import polynomroot
     fp = f.tf(e.unitcircletf())
     fpp = fp.tf(rotation(-fp.tilt))
     # The transform to get back is composition(e.unitcircleinvtf(), rotation(fp.tilt)).

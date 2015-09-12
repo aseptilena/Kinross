@@ -1,10 +1,12 @@
 #!/usr/bin/env python3.4
-# A starfield generator - insanely good for something almost looking bootstrapped.
+# Starfield generator with circles, meant primarily for MLPFIM but generalisable to other areas
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import random
 from kinback.miscellanea import datestamp
 import xml.etree.ElementTree as t
+z = t.ElementTree(t.fromstring("<svg><g/></svg>"))
+sg = z.find("g")
 
 def star(d, m, b, s):
     # d = decay rate (how many times less frequent the next lower magnitude of star is)
@@ -29,8 +31,10 @@ c = input("Colour of stars (default #b4a8fe)? ")
 c, p = "b4a8fe" if c == "" else c, 255
 if len(c) == 8: p = int(c[-2:], 16)
 with open(datestamp("starfield.svg"), 'w') as out:
-    rn = t.Element("svg")
-    cont = t.SubElement(rn, "g", {"fill": "#" + c[:6]})
-    if p != 255: cont.set("fill-opacity", p / 255)
-    for i in range(r): cont.append(star(d, m, b, s))
-    t.ElementTree(rn).write(out, "unicode")
+    sg.set("fill", "#" + c[:6])
+    for i in range(r): sg.append(star(d, m, b, s))
+    j = t.tostring(z.getroot(), "unicode")
+    # Now quickly import DOM and pretty-print
+    import xml.dom.minidom as x
+    y = x.parseString(j).toprettyxml("  ")
+    out.write(y)

@@ -49,6 +49,13 @@ def lineareq2(a, b, p, c, d, q):
     det = a * d - b * c
     if near(det, 0.): return (None, None)
     return ((p * d - q * b) / det, (a * q - c * p) / det)
+def intersect_ll(l, m, real = True):
+    """Finds the intersection of two lines. real restricts to "real" intersections on both line segments that define the lines."""
+    v, w = l[1] - l[0], m[1] - m[0]
+    if not near(cross(v, w)):
+        p, q = lineareq2(v.real, -w.real, (m[0] - l[0]).real, v.imag, -w.imag, (m[0] - l[0]).imag)
+        if not real or 0. <= p <= 1. and 0. <= q <= 1.: return linterp(l[0], l[1], p)
+    return None
 
 # Affine transformations are 6-tuples of floats corresponding to the following matrix (if the name is c):
 # [c0 c2 c4]

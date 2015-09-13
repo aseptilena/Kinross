@@ -23,9 +23,8 @@ def rarify(f):
             for nd in list(par):
                 if nd in sel: continue
                 if nd.tag == "{http://www.w3.org/2000/svg}g" and not list(nd): torm.append(nd)
-            for degen in torm:
-                par.remove(degen)
-                N += 1
+            for degen in torm: par.remove(degen)
+            N += len(torm)
     if flags.metadata:
         for md in rn.findall("svg:metadata", nm): rn.remove(md)
     if flags.scripts:

@@ -8,15 +8,8 @@ from .ellipse import *
 # The names of intersection-finding functions here are named intersect_ + two letters for the objects it handles.
 # l = line, c = circle, e = ellipse, r = rhythm; non-trivial solutions are returned as a tuple.
 # Categorising the different solutions in order of "hardness", lines come first.
-def intersect_ll(l, m, ext = False):
-    """Finds the intersection of two lines. The ext parameter, if true, allows intersections not falling on both line segments."""
-    v, w = l[1] - l[0], m[1] - m[0]
-    if not near(cross(v, w)):
-        p, q = lineareq2(v.real, -w.real, (m[0] - l[0]).real, v.imag, -w.imag, (m[0] - l[0]).imag)
-        if ext or 0. <= p <= 1. and 0. <= q <= 1.: return linterp(l[0], l[1], p)
-    return ()
 
-# Then circles.
+# Circles
 def intersect_cl(c, l):
     z = perpdist(c.centre, l)
     if z > c.r: return ()
@@ -37,7 +30,7 @@ def intersect_cc(c, d):
     p2 = point(k / sep.real, 0.) if sep.real != 0 else (0., k / sep.imag)
     return intersect_cl(c, (p1, p2))
 
-# Then ellipses (though they can always be transformed to the cases below or above).
+# Ellipses (though they can always be transformed to the cases below or above).
 def intersect_el(e, l):
     """Transform the ellipse to a unit circle and work from there."""
     ll = tuple(affine(e.unitcircletf(), p) for p in l)

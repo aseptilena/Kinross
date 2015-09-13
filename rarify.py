@@ -11,13 +11,26 @@ def rarify(f):
     tr = t.parse(f)
     rn = tr.getroot()
     begin = time.perf_counter()
-    # Phase 1: semantic node operations
+    # Phase 1: node tree operations
     for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
+    # Embrittlement of zero-length groups
+    N = 1
+    while N:
+        N = 0
+        sel = rn.findall(".//svg:g/..", nm)
+        for par in sel:
+            torm = []
+            for nd in list(par):
+                if nd in sel: continue
+                if nd.tag == "{http://www.w3.org/2000/svg}g" and not list(nd): torm.append(nd)
+            for degen in torm:
+                par.remove(degen)
+                N += 1
     if flags.metadata:
         for md in rn.findall("svg:metadata", nm): rn.remove(md)
-    if flags.dimens: matchrm(rn.attrib, {"height": None, "width": None, "viewBox": None})
     if flags.scripts:
         for sc in rn.findall("svg:script", nm): rn.remove(sc)
+    # Phase 2: individual node attribute/style property processing
     # Isolated clipping paths can be stripped of all style except for clip-rule:evenodd
     for clips in rn.findall(".//svg:clipPath/svg:path", nm):
         if "clip-rule:evenodd" in clips.get("style", ""): clips.set("style", "clip-rule:evenodd")
@@ -28,8 +41,9 @@ def rarify(f):
     actual = set([rn] + rn.findall(".//*")) - templates - mdelem
     for n in actual: whack(n)
     for t in templates: weakwhack(t)
-    # Phase 2: reference tree pruning
-    # 2a: reference map with temporary IDs
+    if flags.dimens: matchrm(rn.attrib, {"height": None, "width": None, "viewBox": None})
+    # Phase 3: reference tree pruning
+    # 3a: reference map with temporary IDs
     rd, cnt, reob = {}, 0, set()
     for k in rn.findall(".//*"):
         cits, irk = refsof(k), k.get("id")
@@ -39,10 +53,10 @@ def rarify(f):
             k.set("id", irk)
         rd[irk] = cits
         for i in cits: reob.add(cits[i])
-    # 2b: unreferenced IDs
+    # 3b: unreferenced IDs
     for rm in set(rd.keys()) - reob: del rn.find(".//*[@id='{0}']".format(rm), nm).attrib["id"]
     if rn.get("id") != None: del rn.attrib["id"]
-    # 2c: unused <defs>
+    # 3c: unused <defs>
     df, ud = rn.find(".//svg:defs", nm), []
     if df != None:
         for dlm in df:
@@ -69,7 +83,7 @@ t.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncouth SVG optimiser")
 cdl.add_argument("-m", "--metadata", action="store_false", default=True, help="don't remove metadata")
 cdl.add_argument("-d", "--dimens", action="store_true", default=False, help="remove dimensions")
-cdl.add_argument("-s", "--scripts", action="store_true", default=False, help="remove scripts")
+cdl.add_argument("-s", "--scripts", action="store_false", default=True, help="don't remove scripts")
 cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()

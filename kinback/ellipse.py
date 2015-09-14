@@ -32,7 +32,7 @@ class ellipse:
     
     def parampoint(self, th):
         """The point on this ellipse with eccentric anomaly (or parameter of the classic parametric form) th relative to the zero vertex."""
-        return self.centre + affine(rotation(self.tilt), point(self.rx * cos(th), self.ry * sin(th)))
+        return self.centre + turn(point(self.rx * cos(th), self.ry * sin(th)), self.tilt)
     def zerovertex(self): return self.centre + rect(self.rx, self.tilt) # This vertex is considered the zero point for angles
     def hpivertex(self): return self.centre + rect(self.ry, self.tilt + hpi) # The point at +90 degrees to the zero vertex
     def raypoint(self, p):
@@ -82,4 +82,32 @@ def rytz(centre, a, b):
         return ellipse(centre, abs(v1 - centre), abs(v2 - centre), phase(v1 - centre))
 
 def ell5pts(a, b, c, d, e):
+    """Constructs the ellipse passing through the five points."""
     pass # TODO
+
+def intersect_cl(c, l):
+    """Circle/line intersection, uses the notion of perpendicular distance.
+    Note that this and higher intersection functions always return a tuple due to multiple solutions."""
+    z = perpdist(c.centre, l)
+    if z > c.r: return ()
+    f = footperp(c.centre, l)
+    dv = lenvec(l[1] - l[0], sqrt(c.r * c.r - z * z))
+    return (f + dv, f - dv)
+
+def radicalline(c, d):
+    """Radical line of two circles; if the circles intersect this line passes through both of them."""
+    pass # TODO
+
+def intersect_cc(c, d):
+    """Circle/circle intersection, a common problem in 2D video gaming."""
+    sep = d.centre - c.centre
+    z, plus, minus = sqabs(sep), c.r + d.r, c.r - d.r
+    if z > plus * plus or z <= minus * minus: return ()
+    k = (plus * minus + sqabs(d.centre) - sqabs(c.centre)) / 2
+    # x * sep.real + y * sep.imag = k is the radical line of c and d, through which both intersections pass.
+    # Since at least one of sep.real and sep.imag is non-zero, we can take two points, one where x = y and another where one is zero.
+    # TODO this may actually divide by zero if sep.real + sep.imag = 0
+    s = k / (sep.real + sep.imag)
+    p1 = point(s, s)
+    p2 = point(k / sep.real, 0.) if sep.real != 0 else (0., k / sep.imag)
+    return intersect_cl(c, (p1, p2))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: proximities (intersections and nearest distance)
+# Helper functions for Kinross: proximities (nearest distances of points to shapes)
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
@@ -8,27 +8,6 @@ from .ellipse import *
 # The names of intersection-finding functions here are named intersect_ + two letters for the objects it handles.
 # l = line, c = circle, e = ellipse, r = rhythm; non-trivial solutions are returned as a tuple.
 # Categorising the different solutions in order of "hardness", lines come first.
-
-# Circles
-def intersect_cl(c, l):
-    z = perpdist(c.centre, l)
-    if z > c.r: return ()
-    f = footperp(c.centre, l)
-    d = sqrt(c.r * c.r - z * z)
-    return (lenvec(l[1] - l[0], d) + f, lenvec(l[0] - l[1], d) + f)
-
-def intersect_cc(c, d):
-    """A common problem in 2D video gaming."""
-    sep = d.centre - c.centre
-    z, plus, minus = sqabs(sep), c.r + d.r, c.r - d.r
-    if z > plus * plus or z <= minus * minus: return ()
-    k = (plus * minus + sqabs(d.centre) - sqabs(c.centre)) / 2
-    # x * sep.real + y * sep.imag = k is the radical line of c and d, through which both intersections pass.
-    # Since at least one of sep.real and sep.imag is non-zero, we can take two points, one where x = y and another where one is zero.
-    s = k / (sep.real + sep.imag)
-    p1 = point(s, s)
-    p2 = point(k / sep.real, 0.) if sep.real != 0 else (0., k / sep.imag)
-    return intersect_cl(c, (p1, p2))
 
 # Ellipses (though they can always be transformed to the cases below or above).
 def intersect_el(e, l):

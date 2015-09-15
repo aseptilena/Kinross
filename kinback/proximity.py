@@ -10,11 +10,6 @@ from .ellipse import *
 # Categorising the different solutions in order of "hardness", lines come first.
 
 # Ellipses (though they can always be transformed to the cases below or above).
-def intersect_el(e, l):
-    """Transform the ellipse to a unit circle and work from there."""
-    ll = tuple(affine(e.unitcircletf(), p) for p in l)
-    ii = intersect_cl(circle(), ll)
-    return tuple(affine(e.unitcircleinvtf(), i) for i in ii)
 
 def intersect_ee(e, f):
     """Transform the first ellipse to a unit circle, align the second's axes to coordinate axes and crunch numbers."""

@@ -111,3 +111,10 @@ def intersect_cc(c, d):
     p1 = point(s, s)
     p2 = point(k / sep.real, 0.) if sep.real != 0 else (0., k / sep.imag)
     return intersect_cl(c, (p1, p2))
+
+# The same intersection functions, only for ellipses
+def intersect_el(e, l):
+    """Transform the ellipse to a unit circle and work from there."""
+    ll = tuple(affine(e.unitcircletf(), p) for p in l)
+    ii = intersect_cl(circle(), ll)
+    return tuple(affine(e.unitcircleinvtf(), i) for i in ii)

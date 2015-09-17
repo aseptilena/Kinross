@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: rhythms (SVG path processing)
+# Helper functions for Kinross: rhythms (quadratic + cubic Bezier curves) and SVG path processing
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import re
@@ -82,12 +82,29 @@ def reverserhythm(r):
         if cpen: sp.pop()
     return s
 
-def segments(r):
-    """Returns an iterator over all segments in the rhythm; useful if operations need to be performed on said segments."""
-    pass # TODO
+def segments(p):
+    """Returns the path with endpoints explicitly stated in each rhythm (i.e. a segmented path); useful if operations need to be performed on the segments."""
+    res = []
+    for sp in p:
+        spsegs = []
+        for rhi in range(1, len(sp)):
+            bn = sp[rhi - 1][-1]
+            if not sp[rhi]:
+                f = sp[0][0]
+                if not near(f, bn): spsegs.append([bn, f])
+                spsegs.append([]) # This indicates that the path is closed
+            else: spsegs.append([bn] + sp[rhi])
+        res.append(spsegs)
+    return res
 
 def outputrhythm(r):
     """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close.
-    Inkscape's default handling of numbers keeps 8 significant digits, at most 6 after the decimal point and rounds down in case of ties.
-    The minimum smallest positive and largest negative values in long-term storage are +- 1e-6."""
+    Inkscape's default handling of numbers keeps 8 significant digits (at most 6 after the decimal point) and rounds down in case of ties."""
+    # First work out the shortest number representations as strings
+    pass # TODO
+
+# When written in segment form lines, quadratics, cubics and arcs are lists of 2, 3, 4 and 5 points respectively.
+# Each of these can be written as a parametric function with t from 0 to 1.
+# For the first three the parametrisation is obvious; arcs are parametrised with the classic equation (parampoint) and the t-values at the endpoints linearly scaled to 0 and 1.
+def segmentparam(s, t):
     pass # TODO

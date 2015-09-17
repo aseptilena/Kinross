@@ -1,12 +1,12 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: circles and ellipses
+# Helper functions for Kinross: circles, ellipses and arcs
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
 from math import pi, sqrt, fabs, hypot
 hpi = pi / 2
 
-# Ellipses have a centre, two axis lengths and the signed angle from +x to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
+# Ellipses have a centre, two axis lengths and the signed angle of +x relative to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
 class ellipse:
     def __init__(self, centre, rx, ry, tilt = 0.):
         self.centre, self.rx, self.ry = centre, fabs(rx), fabs(ry)
@@ -35,16 +35,16 @@ class ellipse:
         return self.centre + turn(point(self.rx * cos(th), self.ry * sin(th)), self.tilt)
     def zerovertex(self): return self.centre + rect(self.rx, self.tilt) # This vertex is considered the zero point for angles
     def hpivertex(self): return self.centre + rect(self.ry, self.tilt + hpi) # The point at +90 degrees to the zero vertex
+    def anglepoint(self, th = 0.):
+        """The point on this ellipse at an actual angle of th to the zero vertex."""
+        r = self.rx * self.ry / hypot(self.ry * cos(a), self.rx * sin(a))
+        return self.centre + turn(rect(r, th), self.tilt)
     def raypoint(self, p):
         """Intersection of the ray from the centre to the specified point with the ellipse.
         The Kinross elliptical arc representation uses this to determine endpoints."""
-        if near(p, self.centre): return self.anglepoint()
-        a = signedangle(p, self.zerovertex(), self.centre)
-        r = self.rx * self.ry / hypot(self.ry * cos(a), self.rx * sin(a))
-        return lenvec(p, r, self.centre)
-    def anglepoint(self, th = 0.):
-        """The point on this ellipse at an actual angle of th to the zero vertex."""
-        return self.raypoint(turn(self.zerovertex(), th, self.centre))
+        if near(p, self.centre): return self.zerovertex()
+        return self.anglepoint(signedangle(p, self.zerovertex(), self.centre))
+    
     def tf(self, mat):
         """Transforms the ellipse by the given matrix."""
         return rytz(affine(mat, self.centre), affine(mat, self.zerovertex()), affine(mat, self.hpivertex()))
@@ -64,7 +64,7 @@ class circle:
     
     def raypoint(self, p): return lenvec(p, self.r, self.centre)
     def anglepoint(self, th = 0.): return self.centre + rect(self.r, th) # from the +x-axis
-    def invertpoint(self, p):
+    def pinversion(self, p):
         """The inversion of a point in this circle. None signifies the point at infinity."""
         if near(p, centre): return None
         return lenvec(p, self.r * self.r / abs(p - self.centre), self.centre)
@@ -86,8 +86,7 @@ def ell5pts(a, b, c, d, e):
     pass # TODO
 
 def intersect_cl(c, l):
-    """Circle/line intersection, uses the notion of perpendicular distance.
-    Note that this and higher intersection functions always return a tuple due to multiple solutions."""
+    """Circle/line intersection. This and higher intersection functions always return a tuple due to the possibility of multiple solutions."""
     z = perpdist(c.centre, l)
     if z > c.r: return ()
     f = footperp(c.centre, l)
@@ -95,26 +94,21 @@ def intersect_cl(c, l):
     return (f + dv, f - dv)
 
 def radicalline(c, d):
-    """Radical line between two circles; if the circles intersect this line passes through both of them."""
-    pass # TODO
+    """Radical line between two circles; if the circles intersect this line passes through both of them.
+    This is also a separate function to help with the problem of Apollonius."""
+    d0 = d.centre - c.centre
+    d1 = ((c.r * c.r - d.r * d.r) / abs(d0) + abs(d0)) / 2
+    rc = c.centre + lenvec(d0, d1)
+    return (rc + lturn(d0), rc + rturn(d0))
 
 def intersect_cc(c, d):
     """Circle/circle intersection, a common problem in 2D video gaming."""
-    sep = d.centre - c.centre
-    z, plus, minus = sqabs(sep), c.r + d.r, c.r - d.r
+    z, plus, minus = sqabs(d.centre, c.centre), c.r + d.r, c.r - d.r
     if z > plus * plus or z <= minus * minus: return ()
-    k = (plus * minus + sqabs(d.centre) - sqabs(c.centre)) / 2
-    # x * sep.real + y * sep.imag = k is the radical line of c and d, through which both intersections pass.
-    # Since at least one of sep.real and sep.imag is non-zero, we can take two points, one where x = y and another where one is zero.
-    # TODO this may actually divide by zero if sep.real + sep.imag = 0
-    s = k / (sep.real + sep.imag)
-    p1 = point(s, s)
-    p2 = point(k / sep.real, 0.) if sep.real != 0 else (0., k / sep.imag)
-    return intersect_cl(c, (p1, p2))
+    return intersect_cl(c, radicalline(c, d))
 
-# The same intersection functions, only for ellipses
 def intersect_el(e, l):
-    """Transform the ellipse to a unit circle and work from there."""
+    """Ellipse/line intersection; transform the ellipse to a unit circle and work from there."""
     ll = tuple(affine(e.unitcircletf(), p) for p in l)
     ii = intersect_cl(circle(), ll)
     return tuple(affine(e.unitcircleinvtf(), i) for i in ii)

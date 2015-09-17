@@ -8,7 +8,8 @@ from cmath import phase, rect
 # This file (and especially this function) underpins the ENTIRE Kinback library. Yet it is so plain and simple...
 def near(a, b, e = 1e-5):
     """Checks if the difference between two numbers is within the given epsilon. For complex numbers this implements an L2 norm.
-    a and b must be either both decimals or both ints/floats/complexes."""
+    a and b must be either both decimals or both ints/floats/complexes.
+    When Python 3.5 becomes widely available this will be replaced by the cmath.isclose() function."""
     return abs(a - b) <= e
 
 # ...except for what follows.

@@ -95,7 +95,7 @@ def intersect_cl(c, l):
     return (f + dv, f - dv)
 
 def radicalline(c, d):
-    """Radical line of two circles; if the circles intersect this line passes through both of them."""
+    """Radical line between two circles; if the circles intersect this line passes through both of them."""
     pass # TODO
 
 def intersect_cc(c, d):

@@ -27,7 +27,7 @@ def lturn(p, o = 0j): return (o - p) * 1j + o
 def rturn(p, o = 0j): return (p - o) * 1j + o
 def reflect(p, o = 0j): return 2 * o - p
 # Dot and cross products
-# Unsigned angles, in [0, pi]; dot product maximum if points collinear and 0 if AOB perpendicular
+# Unsigned angles, in [0, pi]; dot product maximum if OAB/OBA collinear, 0 if AOB perpendicular, minimum if AOB collinear
 def dot(a, b, o = 0j): return (a.real - o.real) * (b.real - o.real) + (a.imag - o.imag) * (b.imag - o.imag)
 def angle(a, b, o = 0j): return acos(dot(a, b, o) / (abs(a - o) * abs(b - o)))
 def vecproject(p, base, o = 0j): return (p - o).real if near(base, o) else dot(p, base, o) / dot(base, base, o) * (base - o) + o 

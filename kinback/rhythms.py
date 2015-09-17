@@ -69,7 +69,7 @@ def parserhythm(p):
     return out
 
 def reverserhythm(r):
-    """Reverses a Kinross path."""
+    """Reverses a Kinross path. To make an independent copy, use dup(r)."""
     s = dup(r)[::-1]
     for sp in s:
         sp.reverse()
@@ -82,7 +82,12 @@ def reverserhythm(r):
         if cpen: sp.pop()
     return s
 
-# TODO
-def outputrhythm(k):
-    """Converts Kinross paths into *short* SVG paths. It may not be the shortest, but it gets close."""
-    pass
+def segments(r):
+    """Returns an iterator over all segments in the rhythm; useful if operations need to be performed on said segments."""
+    pass # TODO
+
+def outputrhythm(r):
+    """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close.
+    Inkscape's default handling of numbers keeps 8 significant digits, at most 6 after the decimal point and rounds down in case of ties.
+    The minimum smallest positive and largest negative values in long-term storage are +- 1e-6."""
+    pass # TODO

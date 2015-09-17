@@ -1,15 +1,10 @@
 #!/usr/bin/env python3.4
-# Helper functions for Kinross: proximities (nearest distances of points to shapes)
+# Helper functions for Kinross: proximity (nearest distances of points to shapes)
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
 from .ellipse import *
-
-# The names of intersection-finding functions here are named intersect_ + two letters for the objects it handles.
-# l = line, c = circle, e = ellipse, r = rhythm; non-trivial solutions are returned as a tuple.
-# Categorising the different solutions in order of "hardness", lines come first.
-
-# Ellipses (though they can always be transformed to the cases below or above).
+# The names of intersection-finding functions here are named intersect_ + two letters for the objects it handles. Non-trivial solutions are returned as a tuple.
 
 def intersect_ee(e, f):
     """Transform the first ellipse to a unit circle, align the second's axes to coordinate axes and crunch numbers."""
@@ -38,5 +33,17 @@ def intersect_ee(e, f):
 
 def intersect_ec(e, c):
     """Once the two-ellipse problem is solved, this becomes trivial to implement."""
-    ce = c.toellipse()
-    return intersect_ee(e, ce)
+    return intersect_ee(e, c.toellipse())
+
+def nearesttoline(p, l, real = True):
+    """Returns the shortest distance from a point to a line (real = False) or the corresponding line segment (True).
+    Note that the line, circle and ellipse are all convex functions, which makes searching for the nearest point easier."""
+    if not real or dot(l[1], p, l[0]) > 0 and dot(l[0], p, l[1]) > 0: return perpdist(p, l)
+    return min(abs(p - l[0]), abs(p - l[1]))
+
+def nearesttocircle(p, c):
+    """What? This is so easy?"""
+    return abs(abs(p - c.centre) - c.r)
+
+def nearesttoellipse(p, e):
+    pass # TODO

@@ -3,7 +3,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
-from math import pi, sqrt, fabs, hypot
+from math import pi, sqrt, fabs, hypot, copysign
 hpi = pi / 2
 
 # Ellipses have a centre, two axis lengths and the signed angle of +x relative to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
@@ -44,6 +44,12 @@ class ellipse:
         The Kinross elliptical arc representation uses this to determine endpoints."""
         if near(p, self.centre): return self.zerovertex()
         return self.anglepoint(signedangle(p, self.zerovertex(), self.centre))
+    def sideof(self, p):
+        """-1 if p is inside the ellipse, 0 if on and 1 if outside."""
+        pins = self.foci()
+        z = abs(p - pins[0]) + abs(p - pins[1]) - 2 * self.a()
+        if near(z, 0., 1e-12): return 0
+        return int(copysign(1, z))
     
     def tf(self, mat):
         """Transforms the ellipse by the given matrix."""
@@ -86,7 +92,7 @@ def ell5pts(a, b, c, d, e):
     pass # TODO
 
 def intersect_cl(c, l):
-    """Circle/line intersection. This and higher intersection functions always return a tuple due to the possibility of multiple solutions."""
+    """Circle/line intersection. Intersection functions beyond line/line like this one always return a tuple due to multiple solutions."""
     z = perpdist(c.centre, l)
     if z > c.r: return ()
     f = footperp(c.centre, l)
@@ -95,7 +101,7 @@ def intersect_cl(c, l):
 
 def radicalline(c, d):
     """Radical line between two circles; if the circles intersect this line passes through both of them.
-    This is also a separate function to help with the problem of Apollonius."""
+    This is a separate function to help with the problem of Apollonius."""
     d0 = d.centre - c.centre
     d1 = ((c.r * c.r - d.r * d.r) / abs(d0) + abs(d0)) / 2
     rc = c.centre + lenvec(d0, d1)
@@ -112,3 +118,28 @@ def intersect_el(e, l):
     ll = tuple(affine(e.unitcircletf(), p) for p in l)
     ii = intersect_cl(circle(), ll)
     return tuple(affine(e.unitcircleinvtf(), i) for i in ii)
+
+def intersect_ee(e, f):
+    """Ellipse/ellipse intersection; sample at many points and refine with bisection. See http://mathforum.org/library/drmath/view/66877.html for the derivation."""
+    N, res = 256, []
+    sides = [f.sideof(e.parampoint(2 * pi * i / N)) for i in range(N)]
+    for i in range(N):
+        if not sides[i]: res.append(e.parampoint(2 * pi * i / N))
+        if sides[i] * sides[i - 1] == -1:
+            lower, higher = 2 * pi * (i - 1) / N, 2 * pi * i / N
+            nadded, lside, hside = True, sides[i - 1], sides[i]
+            while higher - lower > 1e-12:
+                mid = (lower + higher) / 2
+                mside = f.sideof(e.parampoint(mid))
+                if not mside:
+                    res.append(e.parampoint(mid))
+                    nadded = False
+                    break
+                if lside * mside == 1: lower = mid
+                else: higher = mid
+            if nadded: res.append(e.parampoint((lower + higher) / 2))
+    return tuple(res)
+
+def intersect_ec(e, c):
+    """Once the two-ellipse problem is solved this becomes trivial to implement."""
+    return intersect_ee(e, c.toellipse())

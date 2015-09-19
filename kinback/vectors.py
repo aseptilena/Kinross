@@ -40,6 +40,10 @@ def between(p, q): return (p + q) / 2
 def linterp(p, q, t): return t * (q - p) + p
 def footperp(p, l): return vecproject(p, l[1], l[0])
 def perpdist(p, l): return abs(cross(p, l[1], l[0]) / (l[1] - l[0]))
+def perpbisect(a, b):
+    m = between(a, b)
+    return (lturn(a, m), rturn(a, m))
+def collinear(a, b, c): return near(cross(b - a, c - a), 0.)
 # Pretty printing of points and lines
 def printpoint(p): return "({}, {})".format(p.real, p.imag)
 def printline(l): return "Line from {} to {}".format(l[0], l[1])

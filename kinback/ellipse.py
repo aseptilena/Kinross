@@ -44,7 +44,7 @@ class ellipse:
         The Kinross elliptical arc representation uses this to determine endpoints."""
         if near(p, self.centre): return self.zerovertex()
         return self.anglepoint(signedangle(p, self.zerovertex(), self.centre))
-    def sideof(self, p):
+    def psideof(self, p):
         """-1 if p is inside the ellipse, 0 if on and 1 if outside."""
         pins = self.foci()
         z = abs(p - pins[0]) + abs(p - pins[1]) - 2 * self.a()
@@ -87,6 +87,12 @@ def rytz(centre, a, b):
         v1, v2 = lenvec(mb, abs(mc - b), centre), lenvec(mc, abs(mb - b), centre)
         return ellipse(centre, abs(v1 - centre), abs(v2 - centre), phase(v1 - centre))
 
+def circ3pts(a, b, c):
+    """Constructs the circle passing through the three points."""
+    if collinear(a, b, c): return None
+    centre = intersect_ll(perpbisect(a, b), perpbisect(a, c), False)
+    return circle(centre, abs(a - centre))
+
 def ell5pts(a, b, c, d, e):
     """Constructs the ellipse passing through the five points."""
     pass # TODO
@@ -122,7 +128,7 @@ def intersect_el(e, l):
 def intersect_ee(e, f):
     """Ellipse/ellipse intersection; sample at many points and refine with bisection. See http://mathforum.org/library/drmath/view/66877.html for the derivation."""
     N, res = 256, []
-    sides = [f.sideof(e.parampoint(2 * pi * i / N)) for i in range(N)]
+    sides = [f.psideof(e.parampoint(2 * pi * i / N)) for i in range(N)]
     for i in range(N):
         if not sides[i]: res.append(e.parampoint(2 * pi * i / N))
         if sides[i] * sides[i - 1] == -1:
@@ -130,7 +136,7 @@ def intersect_ee(e, f):
             nadded, lside, hside = True, sides[i - 1], sides[i]
             while higher - lower > 1e-12:
                 mid = (lower + higher) / 2
-                mside = f.sideof(e.parampoint(mid))
+                mside = f.psideof(e.parampoint(mid))
                 if not mside:
                     res.append(e.parampoint(mid))
                     nadded = False

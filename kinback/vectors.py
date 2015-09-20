@@ -27,6 +27,7 @@ def turn(p, th, o = 0j): return (p - o) * complex(cos(th), sin(th)) + o
 def lturn(p, o = 0j): return (o - p) * 1j + o
 def rturn(p, o = 0j): return (p - o) * 1j + o
 def reflect(p, o = 0j): return 2 * o - p
+
 # Dot and cross products
 # Unsigned angles, in [0, pi]; dot product maximum if OAB/OBA collinear, 0 if AOB perpendicular, minimum if AOB collinear
 def dot(a, b, o = 0j): return (a.real - o.real) * (b.real - o.real) + (a.imag - o.imag) * (b.imag - o.imag)
@@ -35,6 +36,8 @@ def vecproject(p, base, o = 0j): return (p - o).real if near(base, o) else dot(p
 # Signed angles, in [-pi, pi]; planar cross product maximum if A>O>B = +90 degs, minimum if = -90 degs and 0 if points collinear
 def cross(a, b, o = 0j): return (a.real - o.real) * (b.imag - o.imag) - (a.imag - o.imag) * (b.real - o.real)
 def signedangle(p, base, o = 0j): return phase((p - o) / (base - o))
+def collinear(a, b, c): return near(cross(b - a, c - a), 0.)
+
 # Line functions; lines are 2-tuples of points
 def between(p, q): return (p + q) / 2
 def linterp(p, q, t): return t * (q - p) + p
@@ -43,7 +46,7 @@ def perpdist(p, l): return abs(cross(p, l[1], l[0]) / (l[1] - l[0]))
 def perpbisect(a, b):
     m = between(a, b)
     return (lturn(a, m), rturn(a, m))
-def collinear(a, b, c): return near(cross(b - a, c - a), 0.)
+
 # Pretty printing of points and lines
 def printpoint(p): return "({}, {})".format(p.real, p.imag)
 def printline(l): return "Line from {} to {}".format(l[0], l[1])

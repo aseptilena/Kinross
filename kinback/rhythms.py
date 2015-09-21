@@ -68,20 +68,6 @@ def parserhythm(p):
         if rhtype != "z": cursor = nextpts[-1]
     return out
 
-def reverserhythm(r):
-    """Reverses a Kinross path. To make an independent copy, use dup(r)."""
-    s = dup(r)[::-1]
-    for sp in s:
-        sp.reverse()
-        for rh in sp: rh.reverse()
-        cpen = bool(sp[0])
-        if cpen: sp.insert(0, [])
-        for i in range(len(sp) - 1):
-            if len(sp[i + 1]) == 4: sp[i + 1].insert(1, sp[i + 1].pop())
-            sp[i].append(sp[i + 1].pop(0))
-        if cpen: sp.pop()
-    return s
-
 def segments(p):
     """Returns the path with endpoints explicitly stated in each rhythm (i.e. a segmented path); useful if operations need to be performed on the segments."""
     res = []
@@ -97,14 +83,27 @@ def segments(p):
         res.append(spsegs)
     return res
 
+def reconstitute(s):
+    """Inverse of segments(), stitches a path together from its segments."""
+    pass # TODO
+
 def outputrhythm(r):
     """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close.
     Inkscape's default handling of numbers keeps 8 significant digits (at most 6 after the decimal point) and rounds down in case of ties."""
     # First work out the shortest number representations as strings
     pass # TODO
 
-# When written in segment form lines, quadratics, cubics and arcs are lists of 2, 3, 4 and 5 points respectively.
-# Each of these can be written as a parametric function with t from 0 to 1.
-# For the first three the parametrisation is obvious; arcs are parametrised with the classic equation (parampoint) and the t-values at the endpoints linearly scaled to 0 and 1.
-def segmentparam(s, t):
-    pass # TODO
+
+def reverserhythm(r):
+    """Reverses a Kinross path. To make an independent copy, use dup(r)."""
+    s = dup(r)[::-1]
+    for sp in s:
+        sp.reverse()
+        for rh in sp: rh.reverse()
+        cpen = bool(sp[0])
+        if cpen: sp.insert(0, [])
+        for i in range(len(sp) - 1):
+            if len(sp[i + 1]) == 4: sp[i + 1].insert(1, sp[i + 1].pop())
+            sp[i].append(sp[i + 1].pop(0))
+        if cpen: sp.pop()
+    return s

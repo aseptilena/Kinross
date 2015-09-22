@@ -83,16 +83,23 @@ def segments(p):
         res.append(spsegs)
     return res
 
-def reconstitute(s):
-    """Inverse of segments(), stitches a path together from its segments."""
-    pass # TODO
+def stitchpath(s):
+    """The inverse of segments(); stitches a path together from its segments."""
+    pass
+
+import decimal
+def floatinkrep(f):
+    """Intermediate function for outputrhythm, returning the shortest representation of f according to
+    Inkscape's default precision (8 significant digits + at most 6 after the decimal point)."""
+    fd = round(decimal.Decimal(f), 6)
+    if fd == 0: return "0"
+    else: pass # Some non-zero digits! TODO
+    return fd
 
 def outputrhythm(r):
-    """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close.
-    Inkscape's default handling of numbers keeps 8 significant digits (at most 6 after the decimal point) and rounds down in case of ties."""
+    """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close."""
     # First work out the shortest number representations as strings
-    pass # TODO
-
+    pass
 
 def reverserhythm(r):
     """Reverses a Kinross path. To make an independent copy, use dup(r)."""

@@ -49,7 +49,7 @@ class ellipse:
         pins = self.foci()
         z = abs(p - pins[0]) + abs(p - pins[1]) - 2 * self.a()
         if near(z, 0., 1e-12): return 0
-        return int(copysign(1, z))
+        return copysign(1, z)
     
     def tf(self, mat):
         """Transforms the ellipse by the given matrix."""
@@ -88,7 +88,7 @@ def rytz(centre, a, b):
         return ellipse(centre, abs(v1 - centre), abs(v2 - centre), phase(v1 - centre))
 
 def circ3pts(a, b, c):
-    """Constructs the circle passing through the three points."""
+    """Constructs the circle passing through the three points. Equivalently, the circumcircle of the triangle defined by the three points."""
     if collinear(a, b, c): return None
     centre = intersect_ll(perpbisect(a, b), perpbisect(a, c), False)
     return circle(centre, abs(a - centre))

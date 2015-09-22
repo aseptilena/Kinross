@@ -36,7 +36,7 @@ def vecproject(p, base, o = 0j): return (p - o).real if near(base, o) else dot(p
 # Signed angles, in [-pi, pi]; planar cross product maximum if A>O>B = +90 degs, minimum if = -90 degs and 0 if points collinear
 def cross(a, b, o = 0j): return (a.real - o.real) * (b.imag - o.imag) - (a.imag - o.imag) * (b.real - o.real)
 def signedangle(p, base, o = 0j): return phase((p - o) / (base - o))
-def collinear(a, b, c): return near(cross(b - a, c - a), 0.)
+def collinear(a, b, c): return near(cross(a, b, c), 0.)
 
 # Line functions; lines are 2-tuples of points
 def between(p, q): return (p + q) / 2
@@ -60,7 +60,7 @@ def lineareq2(a, b, p, c, d, q):
 def intersect_ll(l, m, real = True):
     """Finds the intersection of two lines. real restricts to "real" intersections on both line segments that define the lines."""
     v, w = l[1] - l[0], m[1] - m[0]
-    if not near(cross(v, w)):
+    if not near(cross(v, w), 0.):
         p, q = lineareq2(v.real, -w.real, (m[0] - l[0]).real, v.imag, -w.imag, (m[0] - l[0]).imag)
         if not real or 0. <= p <= 1. and 0. <= q <= 1.: return linterp(l[0], l[1], p)
     return None

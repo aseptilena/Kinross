@@ -87,14 +87,19 @@ def stitchpath(s):
     """The inverse of segments(); stitches a path together from its segments."""
     pass
 
-import decimal
-def floatinkrep(f):
-    """Intermediate function for outputrhythm, returning the shortest representation of f according to
+def floatinkrep(he):
+    """Intermediate function for outputrhythm, returning the shortest string representation of he with respect to
     Inkscape's default precision (8 significant digits + at most 6 after the decimal point)."""
-    fd = round(decimal.Decimal(f), 6)
-    if fd == 0: return "0"
-    else: pass # Some non-zero digits! TODO
-    return fd
+    ilen = len(str( abs(int(he)) )) # This is a joke
+    dec = str(round(he, min(6, 8 - ilen)))
+    if dec in ("-0.0", "0.0", "0"): return "0"
+    if dec[:2] == "0.": dec = dec[1:]
+    if dec[:3] == "-0.": dec = "-" + dec[2:]
+    if dec[-2:] == ".0": dec = dec[:-2]
+    # dec is the shortest representation of the number in non-exponential form.
+    # The exponential form is shorter if there are at least three straight zeros on either side of the decimal point.
+    # e.g. 123e-6 < .000123 and 123e3 < 123000. Numbers straddling the point can never have their exponential form shorter.
+    return dec
 
 def outputrhythm(r):
     """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close."""

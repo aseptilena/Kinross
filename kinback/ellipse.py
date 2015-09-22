@@ -88,14 +88,22 @@ def rytz(centre, a, b):
         return ellipse(centre, abs(v1 - centre), abs(v2 - centre), phase(v1 - centre))
 
 def circ3pts(a, b, c):
-    """Constructs the circle passing through the three points. Equivalently, the circumcircle of the triangle defined by the three points."""
+    """Constructs the (circum)circle passing through the three points."""
     if collinear(a, b, c): return None
     centre = intersect_ll(perpbisect(a, b), perpbisect(a, c), False)
     return circle(centre, abs(a - centre))
 
-def ell5pts(a, b, c, d, e):
-    """Constructs the ellipse passing through the five points."""
-    pass # TODO
+def ell5pts(q, r, s, t, u):
+    """Constructs the ellipse passing through the five points. The algorithms are from the equivalent Pernsteiner extension (http://pernsteiner.org/inkscape/ellipse_5pts)."""
+    pmat, coeffs = [[p.real * p.real, p.real * p.imag, p.imag * p.imag, p.real, p.imag, 1.] for p in (q, r, s, t, u)], []
+    rmat = tuple(zip(*pmat))
+    for i in range(6):
+        sqmat = [rmat[j] for j in range(6) if i != j]
+        coeffs.append(matdeterm(sqmat) * (-1 if i % 2 else 1))
+    a, b, c, d, e, f = coeffs
+    # coeffs now has the things as we need.
+    if near(matdeterm([[a, b / 2, d / 2],[b / 2, c, e / 2], [d / 2, e / 2, f]]), 0., 1e-9) or a * c - b * b / 4 <= 0.: return None
+    # TODO now wring out the ellipse params
 
 def intersect_cl(c, l):
     """Circle/line intersection. Intersection functions beyond line/line like this one always return a tuple due to multiple solutions."""
@@ -126,7 +134,7 @@ def intersect_el(e, l):
     return tuple(affine(e.unitcircleinvtf(), i) for i in ii)
 
 def intersect_ee(e, f):
-    """Ellipse/ellipse intersection; sample at many points and refine with bisection. See http://mathforum.org/library/drmath/view/66877.html for the derivation."""
+    """Ellipse/ellipse intersection; sample at many points and refine with bisection. See mathforum.org/library/drmath/view/66877.html for the derivation."""
     N, res = 256, []
     sides = [f.psideof(e.parampoint(2 * pi * i / N)) for i in range(N)]
     for i in range(N):

@@ -9,6 +9,9 @@ from .vectors import * # local
 # There is pretty much only one way to write the real number regex; accordingly this is spliced from Scour
 number = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
 spacing = re.compile(r"[ ,]*")
+# Two more regexes for floatinkrep
+huge0 = re.compile(r"0{3,}$")
+tiny0 = re.compile(r"(-?)\.(0{3,})")
 
 def parserhythm(p):
     """Converts SVG paths to Kinross paths; see the readme for specifications."""
@@ -88,17 +91,19 @@ def stitchpath(s):
     pass
 
 def floatinkrep(he):
-    """Intermediate function for outputrhythm, returning the shortest string representation of he with respect to
-    Inkscape's default precision (8 significant digits + at most 6 after the decimal point)."""
+    """Intermediate function for outputrhythm, returning the shortest string representation of he
+    with respect to Inkscape's default precision (8 significant digits + 6 after decimal point)."""
     ilen = len(str( abs(int(he)) )) # This is a joke
     dec = str(round(he, min(6, 8 - ilen)))
+    if "e" in dec: dec = "{0:f}".format(he).rstrip("0")
     if dec in ("-0.0", "0.0", "0"): return "0"
     if dec[:2] == "0.": dec = dec[1:]
-    if dec[:3] == "-0.": dec = "-" + dec[2:]
-    if dec[-2:] == ".0": dec = dec[:-2]
-    # dec is the shortest representation of the number in non-exponential form.
-    # The exponential form is shorter if there are at least three straight zeros on either side of the decimal point.
-    # e.g. 123e-6 < .000123 and 123e3 < 123000. Numbers straddling the point can never have their exponential form shorter.
+    elif dec[:3] == "-0.": dec = "-" + dec[2:]
+    elif dec[-2:] == ".0": dec = dec[:-2]
+    em = huge0.search(dec)
+    sm = tiny0.search(dec)
+    if em: dec = "{}e{}".format(dec[:em.start()], len(em.group()))
+    elif sm: dec = "{}{}e-{}".format(sm.group(1), dec[sm.end():], len(dec) - len(sm.group(1)) - 1)
     return dec
 
 def outputrhythm(r):

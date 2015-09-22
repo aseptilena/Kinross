@@ -51,7 +51,7 @@ def perpbisect(a, b):
 def printpoint(p): return "({}, {})".format(p.real, p.imag)
 def printline(l): return "Line from {} to {}".format(l[0], l[1])
 
-# INTERMISSION: 2-variable linear equation solver
+# INTERMISSION: 2-variable linear equation solver and line/line intersection
 def lineareq2(a, b, p, c, d, q):
     """ax + by = p; cx + dy = q; returns (x, y)."""
     det = a * d - b * c
@@ -102,3 +102,20 @@ def skewing(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
 # The first two cannot be factored ("collapsed") into SVG elements without much more computation; the following function determines if the transformation doesn't contain them.
 # Equivalent to preservesAngles() in dgeom (https://github.com/vector-d/dgeom/blob/master/source/geom/affine.d#L448).
 def iscollapsible(t): return near(t[0], t[3]) and near(t[1], -t[2]) or near(t[0], -t[3]) and near(t[1], t[2])
+
+# As a helper for the ellipse-by-5-points function Bareiss's determinant algorithm is placed here.
+# The input list of lists corresponds to the actual matrix as
+# [ [x ... x],
+#   [x ... x],
+#   ...      ,
+#   [x ... x] ]
+# and the algorithm is given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
+def matdeterm(m):
+    a, N = [list(r[:]) for r in m], len(m)
+    for k in range(1, N):
+        kk = k - 1
+        denom = 1. if not kk else a[k - 2][k - 2]
+        if near(denom, 0., 1e-10): return None
+        for i in range(k, N):
+            for j in range(k, N): a[i][j] = (a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j]) / denom
+    return a[-1][-1]

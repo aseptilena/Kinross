@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.4
 from kinback.ellipse import *
 from kinback.rhythms import *
-from decimal import Decimal as D, getcontext
 
 b = "m 209.76779,421.91548 c -16.7391,-4.19875 -31.71488,-11.27917 -45.20441,-27.31132 7.40155,20.02501 22.76158,30.92624 42.6733,35.80322 z m -4.57861,20.09552 c -17.7874,-2.29116 -33.76131,-8.51292 -47.93312,-22.55389 9.76068,20.04871 25.97659,28.61786 46.81246,31.25988 z m 144.6519,156.84104 c 36.0799,-257.7036 -149.67943,-280.37221 -150.81365,-137.08689 -16.00624,-0.69543 -28.75225,-4.54928 -45.93591,-16.96195 11.33117,18.62421 31.06699,27.04651 55.62079,27.40517 -3.90829,-137.38122 156.52457,-127.24989 141.12877,126.64367 z"
 a = parserhythm(b)
@@ -11,18 +10,11 @@ print()
 print(intersect_ee(ellipse(3+3j, 4, 5, 0.6), ellipse(3+4j, 7, 2, -0.2)))
 # ((-0.5801753182779774+6.403206599624836j), (-1.2858815280829052+3.2027085369818975j), (7.325416619694055+1.6143915515721436j), (6.37498063919398+5.148446618730812j))
 print(circ3pts(4+7j, 1, 3-1j)) # Circle with centre (3.735294117647059, 2.9705882352941178) and radius 4.038097122866465
-
-print(floatinkrep(-12345678901))
-print(floatinkrep(-1234567890.1234))
-print(floatinkrep(-123456789.01234))
-print(floatinkrep(-12345678.901234))
-print(floatinkrep(-1234567.8901234))
-print(floatinkrep(-123456.78901234))
-print(floatinkrep(-12345.678901234))
-print(floatinkrep(-1234.5678901234))
-print(floatinkrep(-123.45678901234))
-print(floatinkrep(-12.345678901234))
-print(floatinkrep(-1.2345678901234))
-print(floatinkrep(-.12345678901234))
-print(floatinkrep(-0.5000005))
-print(floatinkrep(-0))
+print()
+print(floatinkrep(16000000000.442)) # 16e9
+print(floatinkrep(197.310048)) # 197.31005
+print(floatinkrep(-0.00001051)) # -11e-6
+print(floatinkrep(0.0000105)) # 1e-5
+print(floatinkrep(-0.00012)) # -12e-5
+print(floatinkrep(0.0012)) # .0012
+print(floatinkrep(-0.0000005)) # 0

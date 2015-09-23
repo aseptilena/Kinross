@@ -3,6 +3,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
+from .polynomial import polynomroot
 from math import pi, sqrt, fabs, hypot, copysign
 hpi = pi / 2
 
@@ -101,8 +102,9 @@ def ell5pts(q, r, s, t, u):
         sqmat = [rmat[j] for j in range(6) if i != j]
         coeffs.append(matdeterm(sqmat) * (-1 if i % 2 else 1))
     a, b, c, d, e, f = coeffs
-    # coeffs now has the things as we need.
-    if near(matdeterm([[a, b / 2, d / 2],[b / 2, c, e / 2], [d / 2, e / 2, f]]), 0., 1e-9) or a * c - b * b / 4 <= 0.: return None
+    qd = 4 * a * c - b * b
+    if near(matdeterm([[a, b / 2, d / 2], [b / 2, c, e / 2], [d / 2, e / 2, f]]), 0., 1e-9) or qd <= 0.: return None
+    centre = point((b * e - 2 * c * d) / qd, (b * d - 2 * a * e) / qd)
     # TODO now wring out the ellipse params
 
 def intersect_cl(c, l):

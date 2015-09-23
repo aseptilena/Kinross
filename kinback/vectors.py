@@ -112,10 +112,12 @@ def iscollapsible(t): return near(t[0], t[3]) and near(t[1], -t[2]) or near(t[0]
 # and the algorithm is given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
 def matdeterm(m):
     a, N = [list(r[:]) for r in m], len(m)
+    # TODO pivot so the main diagonal is non-zero
     for k in range(1, N):
         kk = k - 1
-        denom = 1. if not kk else a[k - 2][k - 2]
-        if near(denom, 0., 1e-10): return None
         for i in range(k, N):
-            for j in range(k, N): a[i][j] = (a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j]) / denom
+            for j in range(k, N):
+                denom = 1 if not kk else a[k - 2][k - 2]
+                if near(denom, 0., 1e-10): return None
+                a[i][j] = (a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j]) / denom
     return a[-1][-1]

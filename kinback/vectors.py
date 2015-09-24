@@ -102,13 +102,7 @@ def skewing(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
 # Equivalent to preservesAngles() in dgeom (https://github.com/vector-d/dgeom/blob/master/source/geom/affine.d#L448).
 def iscollapsible(t): return near(t[0], t[3]) and near(t[1], -t[2]) or near(t[0], -t[3]) and near(t[1], t[2])
 
-# As a helper for the ellipse-by-5-points function Bareiss's determinant algorithm is placed here.
-# The input list of lists corresponds to the actual matrix as
-# [ [x ... x],
-#   [x ... x],
-#   ...      ,
-#   [x ... x] ]
-# and the algorithm is given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
+# The Bareiss determinant algorithm as given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
 # Note that this gives exact results for integer matrices, so an exact option is there if needed.
 def matdeterm(m, exact = False):
     import operator
@@ -120,13 +114,13 @@ def matdeterm(m, exact = False):
         if not near(a[counter][counter], 0, 1e-9):
             counter += 1
             continue
-        added = False
+        nadded = True
         for z in range(N):
             if not near(a[z][counter], 0, 1e-9) and z != counter:
                 a[counter] = [sum(pair) for pair in zip(a[counter], a[z])]
-                added = True
+                nadded = False
                 break
-        if not added: return 0. # The determinant of a matrix with a row or column of 0's is 0
+        if nadded: return 0 # The determinant of a matrix with a row or column of 0's is 0
         counter += 1
     for k in range(1, N):
         kk = k - 1

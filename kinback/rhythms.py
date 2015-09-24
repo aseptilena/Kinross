@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.4
 # Helper functions for Kinross: rhythms (quadratic + cubic Bezier curves) and SVG path processing
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
@@ -88,7 +87,7 @@ def segments(p):
 
 def stitchpath(s):
     """The inverse of segments(); stitches a path together from its segments."""
-    pass
+    pass # TODO
 
 def floatinkrep(he):
     """Intermediate function for outputrhythm, returning the shortest string representation of he
@@ -109,7 +108,7 @@ def floatinkrep(he):
 def outputrhythm(r):
     """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close."""
     # First work out the shortest number representations as strings
-    pass
+    pass # TODO
 
 def reverserhythm(r):
     """Reverses a Kinross path. To make an independent copy, use dup(r)."""

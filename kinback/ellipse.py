@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.4
 # Helper functions for Kinross: circles, ellipses and arcs
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
@@ -103,9 +102,18 @@ def ell5pts(q, r, s, t, u):
         coeffs.append(matdeterm(sqmat) * (-1 if i % 2 else 1))
     a, b, c, d, e, f = coeffs
     qd = 4 * a * c - b * b
-    if near(matdeterm([[a, b / 2, d / 2], [b / 2, c, e / 2], [d / 2, e / 2, f]]), 0., 1e-9) or qd <= 0.: return None
+    if near(matdeterm([[a * 2, b, d], [b, c * 2, e], [d, e, f * 2]]), 0., 1e-9) or qd <= 0.: return None
     centre = point((b * e - 2 * c * d) / qd, (b * d - 2 * a * e) / qd)
-    # TODO now wring out the ellipse params
+    cx, cy = centre.real, centre.imag
+    axes = [1., 1j] if near(b, 0., 1e-9) else [hat(point(b / 2, l - a)) for l in polynomroot((qd, -(a + c) * 4, 4))[0]]
+    lens = [0., 0.]
+    for i in (0, 1):
+        dx, dy = axes[i].real, axes[i].imag
+        qa = a * dx * dx + b * dx * dy + c * dy * dy
+        qb = 2 * a * cx * dx + b * (cx * dy + cy * dx) + 2 * c * cy * dy + d * dx + e * dy
+        qc = a * cx * cx + b * cx * cy + c * cy * cy + d * cx + e * cy + f
+        lens[i] = max(polynomroot((qc, qb, qa))[0])
+    return ellipse(centre, lens[0], lens[1], phase(axes[0]))
 
 def intersect_cl(c, l):
     """Circle/line intersection. Intersection functions beyond line/line like this one always return a tuple due to multiple solutions."""

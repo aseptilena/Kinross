@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.4
 # Helper functions for Kinross: polynomials and their roots
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
@@ -151,7 +150,7 @@ class polynomial:
         res[0].extend([zero for i in range(nz)])
         return res
 
-def polynomroot(coeffs, precdigits = 10):
+def polynomroot(coeffs, precdigits = 20):
     """Finds all the roots of polynomial(coeffs) to [precdigits] decimal places.
     This function not only saves the need for creating a new instance, it also coerces to floats/complexes and suppresses small complex components."""
     prec = D("1e-{}".format(precdigits))

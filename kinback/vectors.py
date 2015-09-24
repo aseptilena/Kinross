@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.4
 # Helper functions for Kinross: vector functions and affine transformations
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
@@ -110,14 +109,27 @@ def iscollapsible(t): return near(t[0], t[3]) and near(t[1], -t[2]) or near(t[0]
 #   ...      ,
 #   [x ... x] ]
 # and the algorithm is given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
-def matdeterm(m):
+# Note that this gives exact results for integer matrices, so an exact option is there if needed.
+def matdeterm(m, exact = False):
+    import operator
+    divf = operator.floordiv if exact else operator.truediv
     a, N = [list(r[:]) for r in m], len(m)
-    # TODO pivot so the main diagonal is non-zero
+    # Add rows until the main diagonal is all non-zero; this does not change the determinant
+    counter = 0
+    while counter < N:
+        if not near(a[counter][counter], 0, 1e-9):
+            counter += 1
+            continue
+        added = False
+        for z in range(N):
+            if not near(a[z][counter], 0, 1e-9) and z != counter:
+                a[counter] = [sum(pair) for pair in zip(a[counter], a[z])]
+                added = True
+                break
+        if not added: return 0. # The determinant of a matrix with a row or column of 0's is 0
+        counter += 1
     for k in range(1, N):
         kk = k - 1
         for i in range(k, N):
-            for j in range(k, N):
-                denom = 1 if not kk else a[k - 2][k - 2]
-                if near(denom, 0., 1e-10): return None
-                a[i][j] = (a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j]) / denom
+            for j in range(k, N): a[i][j] = divf(a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j], 1 if not kk else a[k - 2][k - 2])
     return a[-1][-1]

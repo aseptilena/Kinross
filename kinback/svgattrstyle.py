@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.4
 # Helper functions for Kinross: SVG node processing and simplification (Rarify's "Sweetie Belle")
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com

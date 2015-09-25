@@ -100,7 +100,25 @@ def skewing(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
 # 4. Combined rotation/translation (three-argument rotation)
 # The first two cannot be factored ("collapsed") into SVG elements without much more computation; the following function determines if the transformation doesn't contain them.
 # Equivalent to preservesAngles() in dgeom (https://github.com/vector-d/dgeom/blob/master/source/geom/affine.d#L448).
-def iscollapsible(t): return near(t[0], t[3]) and near(t[1], -t[2]) or near(t[0], -t[3]) and near(t[1], t[2])
+def collapsibility(t):
+    """Returns 1 if the function is a scaling + rotation + translation, -1 for the same but with flipping and 0 otherwise."""
+    if near(t[0], t[3]) and near(t[1], -t[2]): return 1
+    if near(t[0], -t[3]) and near(t[1], t[2]): return -1
+    return 0
+
+def collapsetransform(t):
+    """If the transform is collapsible, returns the tuple-tuple ((float z, int flip) (float th, complex o))
+    corresponding to scale(z, flip * z) rotate(th, o), otherwise None. z is any non-zero number; flip = 1 or -1.
+    
+    If the first tuple is empty, this indicates that no scaling/flipping is present. For the second:
+    * (complex l) indicates translate(l) (i.e. no rotation)
+    * (float th) indicates rotate(th) (i.e. rotation around origin)
+    * () indicates no rotation or translation (i.e. pure scaling)
+    Normally the function will put as much of the transformation as possible into the second tuple.
+    However, the case of ((float z, 1), (float pi / 2)) - a pure negative scaling - is coerced to ((float -z, 1), ())."""
+    flip = collapsibility(t)
+    if not flip: return t
+    return 774 # TODO
 
 # The Bareiss determinant algorithm as given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
 # Note that this gives exact results for integer matrices, so an exact option is there if needed.

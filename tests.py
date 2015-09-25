@@ -19,5 +19,3 @@ print(floatinkrep(16000000000.442)) # 16e9
 print(floatinkrep(0.00001051)) # -11e-6
 print(floatinkrep(0.0000105)) # 1e-5
 print(floatinkrep(-0.0012)) # -.0012
-
-

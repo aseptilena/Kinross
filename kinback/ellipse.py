@@ -51,14 +51,14 @@ class ellipse:
         if near(z, 0., 1e-12): return 0
         return copysign(1, z)
     
-    def tf(self, mat):
+    def affine(self, mat):
         """Transforms the ellipse by the given matrix."""
         return rytz(affine(mat, self.centre), affine(mat, self.zerovertex()), affine(mat, self.hpivertex()))
-    def unitcircletf(self):
+    def uc_affine(self):
         """The transformation that maps this ellipse to the centred unit circle."""
         return composition(scaling(1 / self.rx, 1 / self.ry), rotation(-self.tilt), translation(-self.centre.real, -self.centre.imag))
-    def unitcircleinvtf(self):
-        """The inverse of unitcircletf() (i.e. the transformation from the unit circle to this ellipse). This is calculated separately to reduce floating-point error."""
+    def uc_invaffine(self):
+        """The inverse of uc_affine() (i.e. the transformation from the unit circle to this ellipse). This is calculated separately to reduce floating-point error."""
         return composition(translation(self.centre.real, self.centre.imag), rotation(self.tilt), scaling(self.rx, self.ry))
 
 class circle:
@@ -139,9 +139,9 @@ def intersect_cc(c, d):
 
 def intersect_el(e, l):
     """Ellipse/line intersection; transform the ellipse to a unit circle and work from there."""
-    ll = tuple(affine(e.unitcircletf(), p) for p in l)
+    ll = tuple(affine(e.uc_affine(), p) for p in l)
     ii = intersect_cl(circle(), ll)
-    return tuple(affine(e.unitcircleinvtf(), i) for i in ii)
+    return tuple(affine(e.uc_invaffine(), i) for i in ii)
 
 def intersect_ee(e, f):
     """Ellipse/ellipse intersection; sample at many points and refine with bisection. See mathforum.org/library/drmath/view/66877.html for the derivation."""
@@ -167,3 +167,13 @@ def intersect_ee(e, f):
 def intersect_ec(e, c):
     """Once the two-ellipse problem is solved this becomes trivial to implement."""
     return intersect_ee(e, c.toellipse())
+
+# With the ellipse functions settled we can move on to elliptical arcs.
+# They have a circle or ellipse with a starting and ending ray (the points do not have to lie on the ellipse).
+# The arc itself always moves positive-angle/clockwise from start to end.
+# For compatibility with the Bezier class (in particular the parametrisation) this is also a class.
+class elliparc:
+    def __init__(self, start, rx, ry, phi, large, sweep, end):
+        """Initialises with the arc's Kinross representation: start, rstart, centre, rend, end. Also generates an ellipse.
+        The cases where the ellipse is too small to fit in are handled as per the SVG specifications (i.e. scale until a fit is possible)."""
+        pass # TODO

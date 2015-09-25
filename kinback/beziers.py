@@ -9,7 +9,6 @@ class bezier:
         self.deg = len(self.p) - 1
     def __str__(self): return "<{}>".format(", ".join([printpoint(n) for n in self.p]))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
-    
     def __call__(self, t):
         q = self.p[:]
         while len(q) > 1: q = [linterp(q[i], q[i + 1], t) for i in range(len(q) - 1)]
@@ -18,5 +17,11 @@ class bezier:
     def end(self): return self.p[-1]
     
     def d(self):
-        """The derivative of this Bezier curve."""
+        """The derivative of this Bezier curve. Note that this returns the function and not any point on it."""
         return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])
+    def velocity(self, t):
+        """The velocity of the curve at parameter t."""
+        return self.d()(t)
+    def affine(self, mat):
+        """Transforms the curve by the given matrix."""
+        return bezier(*[affine(mat, n) for n in self.p])

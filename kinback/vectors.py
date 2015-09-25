@@ -1,8 +1,11 @@
-# Helper functions for Kinross: vector functions and affine transformations
+# Helper functions for Kinross: vector functions, affine transformations and miscellaneous numeric
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from math import sin, cos, tan, acos
 from cmath import phase, rect
+import re
+huge0 = re.compile(r"0{3,}$")
+tiny0 = re.compile(r"(-?)\.(0{3,})")
 
 # This file (and especially this function) underpins the ENTIRE Kinback library. Yet it is so plain and simple...
 def near(a, b, e = 1e-5):
@@ -107,18 +110,42 @@ def collapsibility(t):
     return 0
 
 def collapsetransform(t):
-    """If the transform is collapsible, returns the tuple-tuple ((float z, int flip) (float th, complex o))
+    """If the transform is collapsible, returns the tuple-tuple ((float z, int flip), (float th, complex o))
     corresponding to scale(z, flip * z) rotate(th, o), otherwise None. z is any non-zero number; flip = 1 or -1.
     
     If the first tuple is empty, this indicates that no scaling/flipping is present. For the second:
     * (complex l) indicates translate(l) (i.e. no rotation)
     * (float th) indicates rotate(th) (i.e. rotation around origin)
     * () indicates no rotation or translation (i.e. pure scaling)
-    Normally the function will put as much of the transformation as possible into the second tuple.
+    The function will put as much of the transformation as possible into the second tuple.
     However, the case of ((float z, 1), (float pi / 2)) - a pure negative scaling - is coerced to ((float -z, 1), ())."""
     flip = collapsibility(t)
     if not flip: return t
-    return 774 # TODO
+    # Notice how a transformation gives away its secrets:
+    # 1 | 0 >> a | c
+    # 0 | 1 >> b | d in the top-left-hand corner (relative to the last two numbers which give the origin for these changed vectors).
+    # To work out how much the x-axis has rotated, just take the left point and work out its phase.
+    rotation = phase(point(t[0], t[1]))
+    if near(rotation, 0.): second = (point(t[4], t[5]),)
+    else:
+        pass # TODO
+    return 774
+
+def floatinkrep(he):
+    """This function is used by the Bezier and elliptical arc classes to give a float's shortest representation in SVG
+    with respect to Inkscape's default precision (8 significant digits + 6 after decimal point)."""
+    ilen = len(str( abs(int(he)) )) # This is a joke
+    dec = str(round(he, min(6, 8 - ilen)))
+    if "e" in dec: dec = "{0:f}".format(he).rstrip("0")
+    if dec in ("-0.0", "0.0", "0"): return "0"
+    if dec[:2] == "0.": dec = dec[1:]
+    elif dec[:3] == "-0.": dec = "-" + dec[2:]
+    elif dec[-2:] == ".0": dec = dec[:-2]
+    em = huge0.search(dec)
+    sm = tiny0.search(dec)
+    if em: dec = "{}e{}".format(dec[:em.start()], len(em.group()))
+    elif sm: dec = "{}{}e-{}".format(sm.group(1), dec[sm.end():], len(dec) - len(sm.group(1)) - 1)
+    return dec
 
 # The Bareiss determinant algorithm as given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
 # Note that this gives exact results for integer matrices, so an exact option is there if needed.

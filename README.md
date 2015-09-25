@@ -22,4 +22,4 @@ Points (nodes and handles alike) are complex numbers, exploiting Python's native
 * **C/S**: three points
 * **A**: four points
 
-Every rhythm is a straight transcription of specification syntax – except the last one which describes the centre as its first point, two conjugate radii as its next two and the endpoint as its last. The signed (positive-angle/clockwise) angle from second to first to third point determines the arc's direction, while the underlying ellipse itself can be determined from Rytz's construction; the arc itself is delineated by rays from the centre to the two endpoints.
+Every rhythm is a straight transcription of specification syntax – except the last one which is (rstart, centre, rend, end): the ellipse is defined by Rytz's construction on the first three points and its direction is always positive-angle/clockwise from rstart to rend.

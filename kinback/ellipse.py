@@ -194,12 +194,10 @@ class elliparc:
         # Compute the discriminant that tells whether the ellipse is too small
         rx, ry = fabs(in_rx), fabs(in_ry)
         delta = hypot(startp.real / rx, startp.imag / ry)
-        lb, sb = bool(large), bool(sweep)
         if delta > 1: rx, ry, centrep = rx * delta, ry * delta, 0 # it is scaled
         else:
-            spsqt = point(rx * startp.imag / ry, -ry * startp.real / rx) * (-1 if lb == sb else 1) # startp squashed and turned
-            x2, y2, r2, i2 = rx * rx, ry * ry, startp.real * startp.real, startp.imag * startp.imag
-            centrep = spsqt * sqrt(x2 * y2 / (x2 * i2 + y2 * r2) - 1)
+            spsqt = (rturn if bool(large) == bool(sweep) else lturn)(affine(squeezing(ry / rx), startp))
+            centrep = spsqt * sqrt(1 / (delta * delta) - 1)
         centre = affine(composition(translation(midarc), rotation(phi)), centrep)
-        self.ell, self.start, self.end, self.clock = ellipse(centre, rx, ry, phi), start, end, sb
+        self.ell, self.start, self.end, self.clock = ellipse(centre, rx, ry, phi), start, end, bool(sweep)
         # TODO t-values for the sack

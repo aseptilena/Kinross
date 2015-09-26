@@ -92,6 +92,7 @@ def rotation(th, o = None):
     else: return composition(translation(o), rotation(th), translation(-o))
 def scaling(x, y = None): return (float(x), 0., 0., float(x if y == None else y), 0., 0.)
 def skewing(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
+def squeezing(a): return (float(a), 0., 0., 1 / a, 0., 0.)
 
 # Transformations are separated into the following components applied in sequence:
 # 1. Scaling only in the y-axis

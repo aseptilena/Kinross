@@ -15,11 +15,9 @@ Kinross is a town in Scotland whose sister Perth provided the Australian Perth's
 Originally there were Inkscape extensions and standalone scripts included, but because one pony could count the former's programs and the latter was a fragmented bunch of functions they were consolidated into the _Kinback_ library. The remaining "endpoint" programs are to be run in a place where the library is also present; Python 3.4 is required for operation.
 
 **The ~~cutie map~~ path format**  
-Points (nodes and handles alike) are complex numbers, exploiting Python's native support for them and simplifying things a lot. *Rhythms* are lists of points (the cardinality corresponding to a set of commands in [the SVG specifications](http://www.w3.org/TR/SVG11/paths.html) as below), subpaths are lists of rhythms and paths are lists of subpaths:
+Kinross paths are lists of subpaths, which in turn are lists of two kinds of classes representing segments: Bézier curves (containing three points for quadratics, four points for cubics and two points for lines) and elliptical arcs (containing the two endpoints, the ellipse itself and a boolean representing whether the arc goes positive-angle or negative-angle). The points themselves are complex numbers; the [SVG specification commands](http://www.w3.org/TR/SVG11/paths.html) map to a certain number of points as follows:
 * **Z**: zero points
-* **M/L/H/V**: one point (one at a subpath's start is compulsory and understood only as M)
-* **Q/T**: two points
-* **C/S**: three points
-* **A**: four points
-
-Every rhythm is a straight transcription of specification syntax – except the last one which is (rstart, centre, rend, end): the ellipse is defined by Rytz's construction on the first three points and its direction is always positive-angle/clockwise from rstart to rend.
+* **M/L/H/V**: two points
+* **Q/T**: three points
+* **C/S**: four points
+* **A**: five points

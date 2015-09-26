@@ -3,19 +3,16 @@
 # http://parclytaxel.tumblr.com
 from copy import deepcopy as dup
 from math import hypot, sqrt, pi
-from .vectors import * # local
-# There is pretty much only one way to write the real number regex; accordingly this is spliced from Scour
-number = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
-spacing = re.compile(r"[ ,]*")
+from .vectors import *
+from .regexes import tokenisepath
 
 def parserhythm(p):
     """Converts SVG paths to Kinross paths; see the readme for specifications."""
+    # TODO process to the new Bezier and arc classes
     out, pos, cursor = [], 0, point(0., 0.)
     take, prevailing, params = 2, "M", []
-    t, tokens = [], [c for c in number.split(p) if not spacing.fullmatch(c)]
-    for v in tokens:
-        if " " in v or v.isalpha(): t.extend(v.replace(" ", ""))
-        else: t.append(float(v))
+    
+    t = tokenisepath(p)
     while pos < len(t):
         # Two phases. First obtain the rhythm and its parameters...
         val = t[pos]

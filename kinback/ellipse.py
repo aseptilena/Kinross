@@ -50,16 +50,32 @@ class ellipse:
         z = abs(p - pins[0]) + abs(p - pins[1]) - 2 * self.a()
         if near(z, 0., 1e-12): return 0
         return copysign(1, z)
-    
+    def perimeter(self):
+        """Iterative formula for calculating the required elliptic integral from
+        http://www.ams.org/notices/201208/rtx120801094p.pdf (Semjon Adlaj, Notices of the AMS, September 2012).
+        To ensure accuracy, decimal floating-point arithmetic is used."""
+        from decimal import Decimal as D, localcontext
+        with localcontext() as c:
+            c.prec, err = 45, D("5e-21")
+            beta = D(self.b()) / D(self.a())
+            nx, ny, nz = D(1), beta * beta, D(0)
+            while not near(nx, ny, err):
+                rd = ((nx - nz) * (ny - nz)).sqrt()
+                nx, ny, nz = (nx + ny) / 2, nz + rd, nz - rd
+            n = (nx + ny) / 2
+            mx, my = D(1), beta
+            while not near(mx, my, err): mx, my = (mx + my) / 2, (mx * my).sqrt()
+            m = (mx + my) / 2
+        return 2 * float(n / m) * pi * self.a()
     def affine(self, mat):
         """Transforms the ellipse by the given matrix."""
         return rytz(affine(mat, self.centre), affine(mat, self.zerovertex()), affine(mat, self.hpivertex()))
     def uc_affine(self):
         """The transformation that maps this ellipse to the centred unit circle."""
-        return composition(scaling(1 / self.rx, 1 / self.ry), rotation(-self.tilt), translation(-self.centre.real, -self.centre.imag))
+        return composition(scaling(1 / self.rx, 1 / self.ry), rotation(-self.tilt), translation(-self.centre))
     def uc_invaffine(self):
         """The inverse of uc_affine() (i.e. the transformation from the unit circle to this ellipse). This is calculated separately to reduce floating-point error."""
-        return composition(translation(self.centre.real, self.centre.imag), rotation(self.tilt), scaling(self.rx, self.ry))
+        return composition(translation(self.centre), rotation(self.tilt), scaling(self.rx, self.ry))
 
 class circle:
     """Circles are the same as ellipses, only with one radius and no tilt."""
@@ -70,10 +86,7 @@ class circle:
     
     def raypoint(self, p): return lenvec(p, self.r, self.centre)
     def anglepoint(self, th = 0.): return self.centre + rect(self.r, th) # from the +x-axis
-    def pinversion(self, p):
-        """The inversion of a point in this circle. None signifies the point at infinity."""
-        if near(p, centre): return None
-        return lenvec(p, self.r * self.r / abs(p - self.centre), self.centre)
+    def perimeter(self): return 2 * pi * self.r
 
 def rytz(centre, a, b):
     """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
@@ -168,12 +181,25 @@ def intersect_ec(e, c):
     """Once the two-ellipse problem is solved this becomes trivial to implement."""
     return intersect_ee(e, c.toellipse())
 
-# With the ellipse functions settled we can move on to elliptical arcs.
-# They have a circle or ellipse with a starting and ending ray (the points do not have to lie on the ellipse).
-# The arc itself always moves positive-angle/clockwise from start to end.
+# With the ellipse functions settled elliptical arcs are now implementable.
+# They have an ellipse with a starting and ending ray; the arc itself always moves positive-angle/clockwise from start to end.
 # For compatibility with the Bezier class (in particular the parametrisation) this is also a class.
 class elliparc:
-    def __init__(self, start, rx, ry, phi, large, sweep, end):
-        """Initialises with the arc's Kinross representation: start, rstart, centre, rend, end. Also generates an ellipse.
-        The cases where the ellipse is too small to fit in are handled as per the SVG specifications (i.e. scale until a fit is possible)."""
-        pass # TODO
+    def __init__(self, start, in_rx, in_ry, phi, large, sweep, end):
+        """Initialises with the arc's Kinross representation (start, ell, clock, end); the endpoint t-values are also stored.
+        clock is True if the arc goes positive-angle (clockwise) and False otherwise.
+        Cases where the ellipse is too small are handled as per the SVG specifications (i.e. scale until a fit is possible)."""
+        midarc = between(start, end)
+        startp = affine(composition(rotation(-phi), translation(-midarc)), start)
+        # Compute the discriminant that tells whether the ellipse is too small
+        rx, ry = fabs(in_rx), fabs(in_ry)
+        delta = hypot(startp.real / rx, startp.imag / ry)
+        lb, sb = bool(large), bool(sweep)
+        if delta > 1: rx, ry, centrep = rx * delta, ry * delta, 0 # it is scaled
+        else:
+            spsqt = point(rx * startp.imag / ry, -ry * startp.real / rx) * (-1 if lb == sb else 1) # startp squashed and turned
+            x2, y2, r2, i2 = rx * rx, ry * ry, startp.real * startp.real, startp.imag * startp.imag
+            centrep = spsqt * sqrt(x2 * y2 / (x2 * i2 + y2 * r2) - 1)
+        centre = affine(composition(translation(midarc), rotation(phi)), centrep)
+        self.ell, self.start, self.end, self.clock = ellipse(centre, rx, ry, phi), start, end, sb
+        # TODO t-values for the sack

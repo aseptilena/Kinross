@@ -1,11 +1,8 @@
 # Helper functions for Kinross: vector functions, affine transformations and miscellaneous numeric
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from math import sin, cos, tan, acos
+from math import sin, cos, tan, acos, degrees
 from cmath import phase, rect
-import re
-huge0 = re.compile(r"0{3,}$")
-tiny0 = re.compile(r"(-?)\.(0{3,})")
 
 # This file (and especially this function) underpins the ENTIRE Kinback library. Yet it is so plain and simple...
 def near(a, b, e = 1e-5):
@@ -37,7 +34,7 @@ def angle(a, b, o = 0j): return acos(dot(a, b, o) / (abs(a - o) * abs(b - o)))
 def vecproject(p, base, o = 0j): return (p - o).real if near(base, o) else dot(p, base, o) / dot(base, base, o) * (base - o) + o 
 # Signed angles, in [-pi, pi]; planar cross product maximum if A>O>B = +90 degs, minimum if = -90 degs and 0 if points collinear
 def cross(a, b, o = 0j): return (a.real - o.real) * (b.imag - o.imag) - (a.imag - o.imag) * (b.real - o.real)
-def signedangle(p, base, o = 0j): return phase((p - o) / (base - o))
+def signedangle(p, base, o = 0j): return phase((p - o) / (base - o)) # from base to o to p
 def collinear(a, b, c): return near(cross(a, b, c), 0.)
 
 # Line functions; lines are 2-tuples of points
@@ -62,7 +59,7 @@ def lineareq2(a, b, p, c, d, q):
 def intersect_ll(l, m, real = True):
     """Finds the intersection of two lines. real restricts to "real" intersections on both line segments that define the lines."""
     v, w = l[1] - l[0], m[1] - m[0]
-    if not near(cross(v, w), 0.):
+    if not near(cross(v, w), 0., 1e-9):
         p, q = lineareq2(v.real, -w.real, (m[0] - l[0]).real, v.imag, -w.imag, (m[0] - l[0]).imag)
         if not real or 0. <= p <= 1. and 0. <= q <= 1.: return linterp(l[0], l[1], p)
     return None
@@ -89,10 +86,10 @@ def inverting(mat):
            (mat[2] * mat[5] - mat[3] * mat[4]) / det,
            (mat[1] * mat[4] - mat[0] * mat[5]) / det)
 def backaffine(mat, p): return affine(inverting(mat), p) # inverse transform
-def translation(x, y = 0.): return (1., 0., 0., 1., float(x), float(y))
+def translation(o): return (1., 0., 0., 1., o.real, o.imag)
 def rotation(th, o = None):
     if o == None: return (cos(th), sin(th), -sin(th), cos(th), 0., 0.)
-    else: return composition(translation(o.real, o.imag), rotation(th), translation(-o.real, -o.imag))
+    else: return composition(translation(o), rotation(th), translation(-o))
 def scaling(x, y = None): return (float(x), 0., 0., float(x if y == None else y), 0., 0.)
 def skewing(x, y): return (1., tan(x), tan(y), 1., 0., 0.)
 
@@ -109,43 +106,31 @@ def collapsibility(t):
     if near(t[0], -t[3]) and near(t[1], t[2]): return -1
     return 0
 
-def collapsetransform(t):
-    """If the transform is collapsible, returns the tuple-tuple ((float z, int flip), (float th, complex o))
-    corresponding to scale(z, flip * z) rotate(th, o), otherwise None. z is any non-zero number; flip = 1 or -1.
-    
+def collapsedtransform(t):
+    """If the transform is collapsible, returns ((z, flip), (th, o)) <=> scaling(z, flip * z) rotation(th, o), otherwise None. flip = 1 or -1 and th is in degrees.
     If the first tuple is empty, this indicates that no scaling/flipping is present. For the second:
-    * (complex l) indicates translate(l) (i.e. no rotation)
-    * (float th) indicates rotate(th) (i.e. rotation around origin)
-    * () indicates no rotation or translation (i.e. pure scaling)
-    The function will put as much of the transformation as possible into the second tuple.
-    However, the case of ((float z, 1), (float pi / 2)) - a pure negative scaling - is coerced to ((float -z, 1), ())."""
+    * (None, o) indicates translate(o)
+    * (th, None) indicates rotate(th)
+    * (None, None) indicates pure scaling
+    The function will put as much of the transformation as possible into the second tuple, so z is normally positive.
+    However, the case of ((z, 1), (pi / 2, None)) - a pure negative scaling - is coerced to ((-z, 1), (None, None))."""
     flip = collapsibility(t)
-    if not flip: return t
-    # Notice how a transformation gives away its secrets:
-    # 1 | 0 >> a | c
-    # 0 | 1 >> b | d in the top-left-hand corner (relative to the last two numbers which give the origin for these changed vectors).
-    # To work out how much the x-axis has rotated, just take the left point and work out its phase.
-    rotation = phase(point(t[0], t[1]))
-    if near(rotation, 0.): second = (point(t[4], t[5]),)
+    if not flip: return None
+    # The reverse of the second component aligns the x-axis correctly.
+    # If the original "masonic square" has origin (0, 0) at O, x-axis (1, 0) at X and y-axis (0, 1) at Y,
+    # while the transformed "square" has origin at O', hatted x-axis at X' and hatted y-axis at Y',
+    # the centre for the second component is the intersection of the perpendicular bisector of OO' and the perpendicular bisector of XX'.
+    # The angle rotated by is simply the signed angle from O to the intersection to O'.
+    o, z = point(t[4], t[5]), hat(point(t[0], t[1]))
+    x = o + z
+    if near(o, 0): second = (None if near(x, 1) else degrees(phase(x)), None)
     else:
-        pass # TODO
-    return 774
-
-def floatinkrep(he):
-    """This function is used by the Bezier and elliptical arc classes to give a float's shortest representation in SVG
-    with respect to Inkscape's default precision (8 significant digits + 6 after decimal point)."""
-    ilen = len(str( abs(int(he)) )) # This is a joke
-    dec = str(round(he, min(6, 8 - ilen)))
-    if "e" in dec: dec = "{0:f}".format(he).rstrip("0")
-    if dec in ("-0.0", "0.0", "0"): return "0"
-    if dec[:2] == "0.": dec = dec[1:]
-    elif dec[:3] == "-0.": dec = "-" + dec[2:]
-    elif dec[-2:] == ".0": dec = dec[:-2]
-    em = huge0.search(dec)
-    sm = tiny0.search(dec)
-    if em: dec = "{}e{}".format(dec[:em.start()], len(em.group()))
-    elif sm: dec = "{}{}e-{}".format(sm.group(1), dec[sm.end():], len(dec) - len(sm.group(1)) - 1)
-    return dec
+        g = 1. if near(x, 1) else intersect_ll(perpbisect((o, 0)), perpbisect((x, 1)), False)
+        second = (None, o) if g == None else (degrees(signedangle(o, 0, g)), g)
+    l = abs(z) # The first component is the absolute value of z
+    first = () if near(l, 1) and flip == 1 else (l, flip)
+    if second[1] == None and second[0] != None and flip == 1 and near(180, abs(second[0])): first, second = (-l, 1), (None, None)
+    return (first, second)
 
 # The Bareiss determinant algorithm as given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
 # Note that this gives exact results for integer matrices, so an exact option is there if needed.

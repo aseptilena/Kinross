@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 from .vectors import *
 from .polynomial import polynomroot
-from math import pi, sqrt, fabs, hypot, copysign
+from math import pi, sqrt, fabs, hypot, copysign, radians
 hpi = pi / 2
 
 # Ellipses have a centre, two axis lengths and the signed angle of +x relative to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
@@ -185,19 +185,35 @@ def intersect_ec(e, c):
 # They have an ellipse with a starting and ending ray; the arc itself always moves positive-angle/clockwise from start to end.
 # For compatibility with the Bezier class (in particular the parametrisation) this is also a class.
 class elliparc:
-    def __init__(self, start, in_rx, in_ry, phi, large, sweep, end):
-        """Initialises with the arc's Kinross representation (start, ell, clock, end); the endpoint t-values are also stored.
-        clock is True if the arc goes positive-angle (clockwise) and False otherwise.
-        Cases where the ellipse is too small are handled as per the SVG specifications (i.e. scale until a fit is possible)."""
-        midarc = between(start, end)
-        startp = affine(composition(rotation(-phi), translation(-midarc)), start)
-        # Compute the discriminant that tells whether the ellipse is too small
-        rx, ry = fabs(in_rx), fabs(in_ry)
-        delta = hypot(startp.real / rx, startp.imag / ry)
-        if delta > 1: rx, ry, centrep = rx * delta, ry * delta, 0 # it is scaled
+    def __init__(self, start, in_rx, in_ry, in_phi = None, large = None, sweep = None, end = None):
+        """Initialises with the arc's Kinross representation (tstart, ell, tend), where tstart < tend if the arc is positive-angle and vice versa.
+        (Yes, the parameters can go beyond [-pi, pi] here; phi should be given in degrees, as will happen in SVG path parsing.)
+        Cases where the ellipse is too small are handled as per the SVG specifications (i.e. scale until a fit is possible).
+        Note that this can also be initalised with only the three internally stored parameters for repr()'s ease."""
+        if in_phi == None: self.tstart, self.ell, self.tend = float(start), in_rx, float(in_ry) # The "grade-A" example of duck typing
         else:
-            spsqt = (rturn if bool(large) == bool(sweep) else lturn)(affine(squeezing(ry / rx), startp))
-            centrep = spsqt * sqrt(1 / (delta * delta) - 1)
-        centre = affine(composition(translation(midarc), rotation(phi)), centrep)
-        self.ell, self.start, self.end, self.clock = ellipse(centre, rx, ry, phi), start, end, bool(sweep)
-        # TODO t-values for the sack
+            midarc, phi = between(start, end), radians(in_phi)
+            startp = affine(composition(rotation(-phi), translation(-midarc)), start)
+            # Compute the discriminant that tells whether the ellipse is too small
+            rx, ry = fabs(in_rx), fabs(in_ry)
+            delta = hypot(startp.real / rx, startp.imag / ry)
+            if delta > 1: rx, ry, centrep = rx * delta, ry * delta, 0 # it is scaled
+            else:
+                spsqt = (rturn if bool(large) == bool(sweep) else lturn)(affine(squeezing(ry / rx), startp))
+                centrep = spsqt * sqrt(1 / (delta * delta) - 1)
+            centre = affine(composition(translation(midarc), rotation(phi)), centrep)
+            self.ell = ellipse(centre, rx, ry, phi)
+            taff = self.ell.uc_affine()
+            tstart, tend = phase(affine(taff, start)), phase(affine(taff, end))
+            if bool(sweep) and tstart > tend: tend += 2 * pi
+            if not bool(sweep) and tstart < tend: tstart += 2 * pi
+            self.tstart, self.tend = tstart, tend
+    def __str__(self):
+        return "{{{}, {}, {}, {}: {} -> {}}}".format(printpoint(self.ell.centre), self.ell.rx, self.ell.ry, self.ell.tilt, self.tstart, self.tend)
+    def __repr__(self):
+        return "elliparc({}, {}, {})".format(self.tstart, repr(self.ell), self.tend)
+    def __call__(self, t):
+        """See? This is why the endpoint parameters are allowed to go outside the principal range here."""
+        return self.ell.parampoint(linterp(self.tstart, self.tend, t))
+    def start(self): return self.ell.parampoint(self.tstart)
+    def end(self): return self.ell.parampoint(self.tend)

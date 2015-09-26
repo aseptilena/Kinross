@@ -51,9 +51,8 @@ class ellipse:
         if near(z, 0., 1e-12): return 0
         return copysign(1, z)
     def perimeter(self):
-        """Iterative formula for calculating the required elliptic integral from
-        http://www.ams.org/notices/201208/rtx120801094p.pdf (Semjon Adlaj, Notices of the AMS, September 2012).
-        To ensure accuracy, decimal floating-point arithmetic is used."""
+        """Iterative formula for calculating the required elliptic integral from http://www.ams.org/notices/201208/rtx120801094p.pdf
+        (Semjon Adlaj, Notices of the AMS, 59 (8) p. 1094, September 2012). To ensure accuracy, decimal floating-point arithmetic is used."""
         from decimal import Decimal as D, localcontext
         with localcontext() as c:
             c.prec, err = 45, D("5e-21")
@@ -181,9 +180,6 @@ def intersect_ec(e, c):
     """Once the two-ellipse problem is solved this becomes trivial to implement."""
     return intersect_ee(e, c.toellipse())
 
-# With the ellipse functions settled elliptical arcs are now implementable.
-# They have an ellipse with a starting and ending ray; the arc itself always moves positive-angle/clockwise from start to end.
-# For compatibility with the Bezier class (in particular the parametrisation) this is also a class.
 class elliparc:
     def __init__(self, start, in_rx, in_ry, in_phi = None, large = None, sweep = None, end = None):
         """Initialises with the arc's Kinross representation (tstart, ell, tend), where tstart < tend if the arc is positive-angle and vice versa.

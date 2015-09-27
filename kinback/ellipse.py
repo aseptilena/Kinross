@@ -208,10 +208,10 @@ class elliparc:
         return "{{{}, {}, {}, {}: {} -> {}}}".format(printpoint(self.ell.centre), self.ell.rx, self.ell.ry, self.ell.tilt, self.tstart, self.tend)
     def __repr__(self):
         return "elliparc({}, {}, {})".format(self.tstart, repr(self.ell), self.tend)
+    
     def __call__(self, t):
         """See? This is why the endpoint parameters are allowed to go outside the principal range here."""
         return self.ell.parampoint(linterp(self.tstart, self.tend, t))
-    
     def start(self): return self.ell.parampoint(self.tstart)
     def end(self): return self.ell.parampoint(self.tend)
     def split(self, t):

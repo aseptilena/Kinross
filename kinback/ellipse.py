@@ -211,5 +211,10 @@ class elliparc:
     def __call__(self, t):
         """See? This is why the endpoint parameters are allowed to go outside the principal range here."""
         return self.ell.parampoint(linterp(self.tstart, self.tend, t))
+    
     def start(self): return self.ell.parampoint(self.tstart)
     def end(self): return self.ell.parampoint(self.tend)
+    def split(self, t):
+        """Splits the arc at parameter t, returning a list that can then be inserted."""
+        return [elliparc(self.tstart, self.ell, linterp(self.tstart, self.tend, t)),
+                elliparc(linterp(self.tstart, self.tend, t), self.ell, self.tend)]

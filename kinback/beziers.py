@@ -13,6 +13,7 @@ class bezier:
         q = self.p[:]
         while len(q) > 1: q = [linterp(q[i], q[i + 1], t) for i in range(len(q) - 1)]
         return q[0]
+    
     def start(self): return self.p[0]
     def end(self): return self.p[-1]
     

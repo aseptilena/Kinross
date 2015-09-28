@@ -1,4 +1,4 @@
-# Helper functions for Kinross: linear, quadratic and cubic Bezier curves
+# Helper functions for Kinross: linear, quadratic and cubic Bézier curves
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
@@ -26,7 +26,7 @@ class bezier:
         return [bezier(*bef), bezier(*aft[::-1])]
     
     def d(self):
-        """The derivative of this Bezier curve. Note that this returns the function and not any point on it."""
+        """The derivative of this Bézier curve. Note that this returns the function and not any point on it."""
         return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])
     def velocity(self, t):
         """The velocity of the curve at parameter t."""

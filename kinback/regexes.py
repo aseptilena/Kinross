@@ -8,7 +8,7 @@ numre = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]
 spacere = re.compile(r"[ ,]*")
 
 def floatinkrep(he):
-    """This function is used by the Bezier and elliptical arc classes to give a float's shortest representation in SVG
+    """This function is used by the Bézier and elliptical arc classes to give a float's shortest representation in SVG
     with respect to Inkscape's default precision (8 significant digits + 6 after decimal point)."""
     ilen = len(str( abs(int(he)) )) # This is a joke
     dec = str(round(he, min(6, 8 - ilen)))
@@ -29,7 +29,7 @@ def floataffrep(f):
 
 def tokenisepath(p):
     """Parses SVG path data into its tokens and converts numbers into floats.
-    This does not further parse into curves and arcs afterwards, the task left instead to parserhythm() in the rhythms module."""
+    This does not further parse into curves and arcs afterwards, the task left instead to parserhythm() in svgpath."""
     t, tokens = [], [c for c in numre.split(p) if not spacere.fullmatch(c)]
     for v in tokens:
         if " " in v or v.isalpha(): t.extend(v.replace(" ", ""))

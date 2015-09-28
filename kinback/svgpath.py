@@ -1,4 +1,4 @@
-# Helper functions for Kinross: rhythms (quadratic + cubic Bezier curves) and SVG path processing
+# Helper functions for Kinross: SVG path processing
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from copy import deepcopy as dup

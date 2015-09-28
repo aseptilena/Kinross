@@ -148,7 +148,7 @@ aliases = {"pink": (255, 192, 203), # Pink
            "darkslategray": (47, 79, 79),
            "black": (0, 0, 0)}
 
-# decs[n] = shortest string that when converted to float, multiplied by 255 and rounded to nearest even integer will yield n
+# decs[n] = shortest string that when converted to float, multiplied by 255 and rounded to nearest integer (even in ties) will yield n
 decs = ("0"   , ".004", ".008", ".01" , ".016", ".02" , ".024", ".028", ".03" , ".036", ".04" , ".044", ".048", ".05" , ".056", ".06" ,
         ".064", ".068", ".07" , ".076", ".08" , ".084", ".088", ".09" , ".096", ".098", ".1"  , ".104", ".11" , ".112", ".116", ".12" ,
         ".124", ".13" , ".132", ".136", ".14" , ".144", ".15" , ".152", ".156", ".16" , ".164", ".17" , ".172", ".176", ".18" , ".184",

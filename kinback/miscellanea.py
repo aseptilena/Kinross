@@ -1,4 +1,4 @@
-# Helper functions for Kinross: timestamps for files
+# Helper functions for Kinross: miscellaneous things
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import time, hashlib, webbrowser
@@ -28,13 +28,13 @@ def hashstamp(fn):
 
 # Generates my logo with coordinates rounded to n // 2 decimal places
 def taxellogo(n = 20):
-    from decimal import Decimal, getcontext
+    from decimal import Decimal as D, getcontext
     getcontext().prec = n
-    k, l, m = Decimal(13.5).sqrt(), Decimal(2).sqrt(), (31 + 12 * Decimal(3).sqrt()) / 23
+    k, l, m = D(13.5).sqrt(), D(2).sqrt(), (31 + 12 * D(3).sqrt()) / 23
     t = (69 / (4 * (1 + m * m))).sqrt()
     p, q = (l - k) / 2 - t, (l + k) / 2 - m * t
     d = [p, -q, l, -l, q, -p]
-    c = [str(round(i * (Decimal(2) / Decimal(3)).sqrt() + 4, n // 2)) for i in d]
+    c = [str(round(i * (D(2) / D(3)).sqrt() + 4, n // 2)) for i in d]
     return '<svg><rect fill="#230f38" width="8" height="8"/><path style="fill:none;stroke:#6dc6fb;stroke-width:.2109375;stroke-linecap:round;stroke-linejoin:round" d="M1 1 {0} 7 7"/></svg>'.format(" ".join(c))
 
 # Opens Derpibooru image #n

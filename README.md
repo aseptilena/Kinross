@@ -15,9 +15,7 @@ Kinross is a town in Scotland whose sister Perth provided the Australian Perth's
 Originally there were Inkscape extensions and standalone scripts included, but because one pony could count the former's programs and the latter was a fragmented bunch of functions they were consolidated into the _Kinback_ library. The remaining "endpoint" programs are to be run in a place where the library is also present; Python 3.4 is required for operation.
 
 **The ~~cutie map~~ path format**  
-Kinross paths are lists of subpaths, which in turn are lists of two kinds of classes representing segments: Bézier curves (containing three points for quadratics, four points for cubics and two points for lines) and elliptical arcs (containing the two endpoints, the ellipse itself and a boolean representing whether the arc goes positive-angle or negative-angle). The points themselves are complex numbers; the [SVG specification commands](http://www.w3.org/TR/SVG11/paths.html) map to a certain number of points as follows:
-* **Z**: zero points
-* **M/L/H/V**: two points
-* **Q/T**: three points
-* **C/S**: four points
-* **A**: five points
+Kinross paths are lists of subpaths, which in turn are lists of two kinds of classes representing segments: Bézier curves (containing three points or complex numbers for quadratics, four points for cubics and two points for lines) and elliptical arcs (containing the source ellipse and two t-values for the endpoints). Both classes are parametrised by a parameter _t_ ∈ \[0, 1] and implement a number of common functions:
+* Value at _t_ and at endpoints (0, 1)
+* Splitting into two curves or arcs at _t_
+* Tangents at _t_ and at endpoints (TODO)

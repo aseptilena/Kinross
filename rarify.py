@@ -38,7 +38,7 @@ def rarify(f):
     templates = set(rn.findall(".//svg:defs/svg:path", nm))
     mdelem = set(rn.findall(".//svg:title", nm) + rn.findall(".//svg:metadata", nm) + rn.findall(".//svg:metadata//*", nm))
     actual = set([rn] + rn.findall(".//*")) - templates - mdelem
-    for n in actual: whack(n)
+    for n in actual: whack(n, flags.lpeoutput)
     for t in templates: weakwhack(t)
     if flags.dimens: matchrm(rn.attrib, {"height": None, "width": None, "viewBox": None})
     # Phase 3: reference tree pruning
@@ -83,6 +83,7 @@ cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncou
 cdl.add_argument("-m", "--metadata", action="store_false", default=True, help="don't remove metadata")
 cdl.add_argument("-d", "--dimens", action="store_true", default=False, help="remove dimensions")
 cdl.add_argument("-s", "--scripts", action="store_false", default=True, help="don't remove scripts")
+cdl.add_argument("-l", "--lpeoutput", action="store_true", default=False, help="preserve LPE output for rendering by other applications")
 cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()

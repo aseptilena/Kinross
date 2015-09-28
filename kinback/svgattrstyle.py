@@ -172,9 +172,12 @@ def stylesplit(node, sd):
     else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
 # Phases 1 and 2 of the old (standalone) Rarify script on the node level.
 # The function's name comes from the early perception that the script "whacks" the node's redundant attributes/properties.
-def whack(node):
+# The lpeoutput flag, if True, preserves the d of paths with LPEs
+# (which would normally be removed by the first item of defattrb) so that other applications can render them correctly.
+def whack(node, lpeoutput = False):
     sd = styledict(node)
     for aset in defattrb:
+        if lpeoutput and "inkscape:original-d" in aset[2]: continue
         if aset[0] == None or node.tag == prependnms(aset[0]): matchrm(node.attrib, aset[1], aset[2])
     for c in colp:
         if c not in sd: sd[c] = defstyle[c]

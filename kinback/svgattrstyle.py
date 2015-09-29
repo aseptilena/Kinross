@@ -89,9 +89,8 @@ styleplus = {"letter-spacing": "0px",
              "word-spacing": "0px",
              "line-height": "125%",
              "font-weight": "500"}
-# Default attributes of projects; None denotes any string
-defattrb = [("path", {"d": None}, {"inkscape:original-d": None}), # This is the very reason this script was written
-            (None, {"inkscape:connector-curvature": "0"}, {}),
+# Default attributes of objects; None denotes any string. The LPE output tuple, the very reason Rarify was written, is separate so as to enable controlling its execution.
+defattrb = [(None, {"inkscape:connector-curvature": "0"}, {}),
             (None, {"sodipodi:nodetypes": None}, {}),
             
             ("circle", {"cx": "0", "cy": "0"}, {}),
@@ -172,13 +171,12 @@ def stylesplit(node, sd):
     else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
 # Phases 1 and 2 of the old (standalone) Rarify script on the node level.
 # The function's name comes from the early perception that the script "whacks" the node's redundant attributes/properties.
-# The lpeoutput flag, if True, preserves the d of paths with LPEs
-# (which would normally be removed by the first item of defattrb) so that other applications can render them correctly.
+# The lpeoutput flag, if True, preserves the d of paths with LPEs (which would normally be removed) so that other applications can render them correctly.
 def whack(node, lpeoutput = False):
     sd = styledict(node)
     for aset in defattrb:
-        if lpeoutput and "inkscape:original-d" in aset[2]: continue
         if aset[0] == None or node.tag == prependnms(aset[0]): matchrm(node.attrib, aset[1], aset[2])
+    if not lpeoutput and node.tag == "{http://www.w3.org/2000/svg}path": matchrm(node.attrib, {"d": None}, {"inkscape:original-d": None})
     for c in colp:
         if c not in sd: sd[c] = defstyle[c]
         if colp[c] != None and colp[c] not in sd: sd[colp[c]] = defstyle[colp[c]]

@@ -132,29 +132,3 @@ def collapsedtransform(t):
     first = () if near(l, 1) and flip == 1 else (l, flip)
     if second[1] == None and second[0] != None and flip == 1 and near(180, abs(second[0])): first, second = (-l, 1), (None, None)
     return (first, second)
-
-# The Bareiss determinant algorithm as given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
-# Note that this gives exact results for integer matrices, so an exact option is there if needed.
-def matdeterm(m, exact = False):
-    import operator
-    divf = operator.floordiv if exact else operator.truediv
-    a, N = [list(r[:]) for r in m], len(m)
-    # Add rows until the main diagonal is all non-zero; this does not change the determinant
-    counter = 0
-    while counter < N:
-        if not near(a[counter][counter], 0, 1e-9):
-            counter += 1
-            continue
-        nadded = True
-        for z in range(N):
-            if not near(a[z][counter], 0, 1e-9) and z != counter:
-                a[counter] = [sum(pair) for pair in zip(a[counter], a[z])]
-                nadded = False
-                break
-        if nadded: return 0 # The determinant of a matrix with a row or column of 0's is 0
-        counter += 1
-    for k in range(1, N):
-        kk = k - 1
-        for i in range(k, N):
-            for j in range(k, N): a[i][j] = divf(a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j], 1 if not kk else a[k - 2][k - 2])
-    return a[-1][-1]

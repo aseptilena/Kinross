@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
-from .polynomial import polynomroot
+from .algebra import polynomroot, matdeterm
 from math import pi, sqrt, fabs, hypot, copysign, radians
 hpi = pi / 2
 

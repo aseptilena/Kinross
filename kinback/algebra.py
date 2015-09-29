@@ -1,4 +1,4 @@
-# Helper functions for Kinross: polynomials and their roots
+# Helper functions for Kinross: analytic linear and polynomial algebra
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 # Decimal arithmetic is used in this class to mitigate floating-point follies.
@@ -161,3 +161,29 @@ def polynomroot(coeffs, precdigits = 20):
         if near(cn[1], zero, prec): out[0].append(float(round(cn[0], precdigits)))
         else: out[1].append(complex(round(cn[0], precdigits), round(cn[1], precdigits)))
     return out
+
+# Bareiss's determinant algorithm as given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
+# This gives exact results for integer matrices when exact is True.
+def matdeterm(m, exact = False):
+    import operator
+    divf = operator.floordiv if exact else operator.truediv
+    a, N = [list(r[:]) for r in m], len(m)
+    # Elementary row operations do not change the determinant
+    counter = 0
+    while counter < N:
+        if not near(a[counter][counter], 0, 1e-9):
+            counter += 1
+            continue
+        nadded = True
+        for z in range(N):
+            if not near(a[z][counter], 0, 1e-9) and z != counter:
+                a[counter] = [sum(pair) for pair in zip(a[counter], a[z])]
+                nadded = False
+                break
+        if nadded: return 0 # The determinant of a matrix with a row or column of 0's is 0
+        counter += 1
+    for k in range(1, N):
+        kk = k - 1
+        for i in range(k, N):
+            for j in range(k, N): a[i][j] = divf(a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j], 1 if not kk else a[k - 2][k - 2])
+    return a[-1][-1]

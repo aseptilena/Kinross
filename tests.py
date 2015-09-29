@@ -2,6 +2,7 @@
 # Tests for the Kinback library. The expected output is to the right of the line or on top if too long.
 from kinback.ellipse import *
 from kinback.beziers import *
+from kinback.algebra import *
 
 e = ellipse(0, 4, 1, 0)
 print(e.perimeter()) # 17.156843550313667
@@ -17,3 +18,6 @@ print(y(0.5)) # (4.375+2.5j)
 print(y.split(0.5)[1]) # <(4.375, 2.5), (5.5, 1.75), (6.0, 0.5), (5.0, -1.0)>
 ea = elliparc(0, 100, 50, 10, 1, 0, 100+50j)
 print(ea) # {(4.7995147433659895, 51.14533946694863), 100.0, 50.0, 0.17453292519943295: 4.575886525335371 -> -0.36097503655678714}
+print(ea.lenfunc(0.63)) # 71.4365914191138815696758857368943424060555160370897062766673
+print()
+print(adaptivesimpson(lambda x: 1 / x, 1, 100)) # should agree to 12 decimal digits with log(100): 4.60517018598810541810298923515504629290758957098279944155263

@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
-from .algebra import polynomroot, matdeterm
+from .algebra import *
 from math import pi, sqrt, fabs, hypot, copysign, radians
 hpi = pi / 2
 
@@ -50,7 +50,7 @@ class ellipse:
         z = abs(p - pins[0]) + abs(p - pins[1]) - 2 * self.a()
         if near(z, 0., 1e-12): return 0
         return copysign(1, z)
-    def perimeter(self):
+    def semiperimeter(self):
         """Iterative formula for calculating the required elliptic integral from http://www.ams.org/notices/201208/rtx120801094p.pdf
         (Semjon Adlaj, Notices of the AMS, 59 (8) p. 1094, September 2012). To ensure accuracy, decimal floating-point arithmetic is used."""
         from decimal import Decimal as D, localcontext
@@ -65,7 +65,10 @@ class ellipse:
             mx, my = D(1), beta
             while not near(mx, my, err): mx, my = (mx + my) / 2, (mx * my).sqrt()
             m = (mx + my) / 2
-        return 2 * float(n / m) * pi * self.a()
+        return float(n / m) * pi * self.a()
+    def perimeter(self): return 2 * self.semiperimeter()
+    def quartrarc(self): return self.semiperimeter() / 2 # This function used to simplify the work for finding general arc length
+    
     def affine(self, mat):
         """Transforms the ellipse by the given matrix."""
         return rytz(affine(mat, self.centre), affine(mat, self.zerovertex()), affine(mat, self.hpivertex()))
@@ -190,7 +193,6 @@ class elliparc:
         else:
             midarc, phi = between(start, end), radians(in_phi)
             startp = affine(composition(rotation(-phi), translation(-midarc)), start)
-            # Compute the discriminant that tells whether the ellipse is too small
             rx, ry = fabs(in_rx), fabs(in_ry)
             delta = hypot(startp.real / rx, startp.imag / ry)
             if delta > 1: rx, ry, centrep = rx * delta, ry * delta, 0 # it is scaled
@@ -204,6 +206,10 @@ class elliparc:
             if bool(sweep) and tstart > tend: tend += 2 * pi
             if not bool(sweep) and tstart < tend: tstart += 2 * pi
             self.tstart, self.tend = tstart, tend
+            # By this construction tstart and tend are guaranteed to fall within [-pi, 3 * pi].
+            # It turns out that the arc length computation can be simplified by splitting off axis-aligned quarter arcs
+            # and computing them via the iterative method described above. The numerical integration need only be done for the end segments.
+            # The split points can be any of [-0.5, 0, 0.5, ..., 2.5] * hpi.
     def __str__(self):
         return "{{{}, {}, {}, {}: {} -> {}}}".format(printpoint(self.ell.centre), self.ell.rx, self.ell.ry, self.ell.tilt, self.tstart, self.tend)
     def __repr__(self):
@@ -218,3 +224,9 @@ class elliparc:
         """Splits the arc at parameter t, returning a list that can then be inserted."""
         return [elliparc(self.tstart, self.ell, linterp(self.tstart, self.tend, t)),
                 elliparc(linterp(self.tstart, self.tend, t), self.ell, self.tend)]
+    
+    def lenfunc(self, t):
+        """The function that is integrated to obtain the length of this arc."""
+        cs = cosandsin(t)
+        dx, dy = cs[1] * D(self.ell.rx), cs[0] * D(self.ell.ry)
+        return (dx * dx + dy * dy).sqrt()

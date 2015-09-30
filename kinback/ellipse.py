@@ -67,7 +67,7 @@ class ellipse:
             m = (mx + my) / 2
         return float(n / m) * pi * self.a()
     def perimeter(self): return 2 * self.semiperimeter()
-    def quartrarc(self): return self.semiperimeter() / 2 # This function used to simplify the work for finding general arc length
+    def quartrarc(self): return self.semiperimeter() / 2 # This function is used to simplify the work for finding general arc length
     
     def affine(self, mat):
         """Transforms the ellipse by the given matrix."""
@@ -225,11 +225,17 @@ class elliparc:
         return [elliparc(self.tstart, self.ell, linterp(self.tstart, self.tend, t)),
                 elliparc(linterp(self.tstart, self.tend, t), self.ell, self.tend)]
     
-    def lenfunc(self, t):
+    def lenf(self):
         """The function that is integrated to obtain the length of this arc."""
-        cs = cosandsin(t)
-        dx, dy = cs[1] * D(self.ell.rx), cs[0] * D(self.ell.ry)
-        return (dx * dx + dy * dy).sqrt()
+        def z(t): return hypot(sin(t) * self.ell.rx, cos(t) * self.ell.ry)
+        return z
     def length(self, end = None, start = None):
-        """The length of this arc between the specified endpoints."""
-        pass # TODO
+        """The length of this arc between the specified parameters. None signifies that the length extends to the respective end (0 or 1)."""
+        if end != None or start != None:
+            if start == None: return self.split(end)[0].length()
+            elif end == None: return self.split(start)[1].length()
+            else: return self.split(end)[0].split(start / end)[1].length()
+        if near(self.tstart, self.tend, 1e-9): return 0.
+        if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(simpquad(self.lenf(), self.tstart, self.tend))
+        sl = simpquad(self.lenf(), self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + simpquad(self.lenf(), self.ef * hpi, self.tend)
+        return -sl if self.tend < self.tstart else sl

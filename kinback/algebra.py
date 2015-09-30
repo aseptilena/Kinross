@@ -1,7 +1,7 @@
-# Helper functions for Kinross: numerical algebra with a decimal floating-point basis
+# Helper functions for Kinross: numerical algebra
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from decimal import Decimal as D, getcontext, localcontext
+from decimal import Decimal as D, getcontext
 getcontext().prec = 60
 zero, one = D(0), D(1)
 from .vectors import near
@@ -187,40 +187,13 @@ def matdeterm(m, exact = False):
             for j in range(k, N): a[i][j] = divf(a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j], 1 if not kk else a[k - 2][k - 2])
     return a[-1][-1]
 
-def cosandsin(t):
-    """Computes the (cosine, sine of t) at the same time."""
-    with localcontext() as scc:
-        scc.prec = 80
-        cres, sres, x, cstep, sstep, err = D(1), D(t), D(t), D(1), D(1), D("1e-70")
-        px, i = x * x / 2, 2
-        while (max(abs(cstep), abs(sstep))) > err:
-            cstep, sstep = D(0), D(0)
-            cstep -= px           # Twelve straight assignments,
-            px = px * x / (i + 1) # eleven in the darkness,
-            i += 1                # ten-base computing,
-            sstep -= px           # nine-point* typefacing,
-            px = px * x / (i + 1) # eight background changes,
-            i += 1                # seven stellar sisters**,
-            cstep += px           # six friendly ponies,
-            px = px * x / (i + 1) # five boron stars!
-            i += 1                # Four different kinds,
-            sstep += px           # three simple steps,
-            px = px * x / (i + 1) # two trig functions
-            i += 1                # and Princess Parcly in a yew tree.
-            # * gedit by default uses the system's monospace font at 9 pt.
-            # ** Pleiades.
-            cres, sres = cres + cstep, sres + sstep
-    return (+cres, +sres)
-
-def adaptivesimpson(f, a, b, e = 1e-12):
+def simpquad(f, a, b, e = 1e-16):
     """Computes the definite integral of f from a to b by an adaptive Simpson's rule, where e is an error parameter.
     The naive implementation would be recursive, which is frowned upon, so instead this uses a list of 2-tuples storing function evaluations."""
-    c, res = (D(a) + D(b)) / 2, D(0)
-    v = [(D(a), f(D(a))), (c, f(c)), (D(b), f(D(b)))]
+    c, res = (a + b) / 2, 0
+    v = [(a, f(a)), (c, f(c)), (b, f(b))]
     while len(v) > 2:
-        # Evaluate Simpson's rule on the first three points...
         ab = (v[2][0] - v[0][0]) * (v[0][1] + 4 * v[1][1] + v[2][1]) / 6
-        # ...then insert the "second midpoints"
         acm, cbm = (v[0][0] + v[1][0]) / 2, (v[1][0] + v[2][0]) / 2
         v.insert(2, (cbm, f(cbm)))
         v.insert(1, (acm, f(acm)))

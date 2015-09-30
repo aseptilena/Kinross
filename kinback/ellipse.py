@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 from .vectors import *
 from .algebra import *
-from math import pi, sqrt, fabs, hypot, copysign, radians
+from math import pi, sqrt, fabs, hypot, copysign, radians, floor, ceil
 hpi = pi / 2
 
 # Ellipses have a centre, two axis lengths and the signed angle of +x relative to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
@@ -206,10 +206,10 @@ class elliparc:
             if bool(sweep) and tstart > tend: tend += 2 * pi
             if not bool(sweep) and tstart < tend: tstart += 2 * pi
             self.tstart, self.tend = tstart, tend
-            # By this construction tstart and tend are guaranteed to fall within [-pi, 3 * pi].
-            # It turns out that the arc length computation can be simplified by splitting off axis-aligned quarter arcs
-            # and computing them via the iterative method described above. The numerical integration need only be done for the end segments.
-            # The split points can be any of [-0.5, 0, 0.5, ..., 2.5] * hpi.
+            # To help numerical integration, store two integers sf and ef in [-1, 5] such that
+            # the arc covered can be broken into [tstart, sf * hpi], some quarter arcs and [ef * hpi, tend].
+            if tend < tstart: self.sf, self.ef = floor(tstart / hpi), ceil(tend / hpi)
+            else: self.sf, self.ef = ceil(tstart / hpi), floor(tend / hpi)
     def __str__(self):
         return "{{{}, {}, {}, {}: {} -> {}}}".format(printpoint(self.ell.centre), self.ell.rx, self.ell.ry, self.ell.tilt, self.tstart, self.tend)
     def __repr__(self):
@@ -230,3 +230,6 @@ class elliparc:
         cs = cosandsin(t)
         dx, dy = cs[1] * D(self.ell.rx), cs[0] * D(self.ell.ry)
         return (dx * dx + dy * dy).sqrt()
+    def length(self, end = None, start = None):
+        """The length of this arc between the specified endpoints."""
+        pass # TODO

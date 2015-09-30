@@ -236,6 +236,7 @@ class elliparc:
             elif end == None: return self.split(start)[1].length()
             else: return self.split(end)[0].split(start / end)[1].length()
         if near(self.tstart, self.tend, 1e-9): return 0.
-        if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(simpquad(self.lenf(), self.tstart, self.tend))
-        sl = simpquad(self.lenf(), self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + simpquad(self.lenf(), self.ef * hpi, self.tend)
+        lf = self.lenf()
+        if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(simpquad(lf, self.tstart, self.tend))
+        sl = simpquad(lf, self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + simpquad(lf, self.ef * hpi, self.tend)
         return -sl if self.tend < self.tstart else sl

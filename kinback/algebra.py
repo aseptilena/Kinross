@@ -1,7 +1,7 @@
 # Helper functions for Kinross: numerical algebra
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from decimal import Decimal as D, getcontext
+from decimal import Decimal as D, getcontext, localcontext
 getcontext().prec = 60
 zero, one = D(0), D(1)
 from .vectors import near
@@ -187,9 +187,25 @@ def matdeterm(m, exact = False):
             for j in range(k, N): a[i][j] = divf(a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j], 1 if not kk else a[k - 2][k - 2])
     return a[-1][-1]
 
+def eix(t):
+    """Computes decimal (cos t, sin t) simultaneously (real and complex components of e^(it))."""
+    with localcontext() as scc:
+        scc.prec = 40
+        cres, sres, x, cstep, sstep, err = D(1), D(t), D(t), D(1), D(1), D("1e-31")
+        px, i, s = x * x / 2, 2, -1
+        while (max(abs(cstep), abs(sstep))) > err:
+            cstep, sstep = D(0), D(0)
+            cstep += px * s
+            px, i = px * x / (i + 1), i + 1
+            sstep += px * s
+            px, i, s = px * x / (i + 1), i + 1, -s
+            cres, sres = cres + cstep, sres + sstep
+        scc.prec = 30
+        cres, sres = +cres, +sres
+    return (cres, sres)
+
 def simpquad(f, a, b, e = 1e-16):
-    """Computes the definite integral of f from a to b by an adaptive Simpson's rule, where e is an error parameter.
-    The naive implementation would be recursive, which is frowned upon, so instead this uses a list of 2-tuples storing function evaluations."""
+    """∫(a, b) f(x) dx by adaptive Simpson's rule. This uses a list of 2-tuples to cache function evaluations."""
     c, res = (a + b) / 2, 0
     v = [(a, f(a)), (c, f(c)), (b, f(b))]
     while len(v) > 2:

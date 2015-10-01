@@ -202,14 +202,13 @@ class elliparc:
             centre = affine(composition(translation(midarc), rotation(phi)), centrep)
             self.ell = ellipse(centre, rx, ry, phi)
             taff = self.ell.uc_affine()
-            tstart, tend = phase(affine(taff, start)), phase(affine(taff, end))
-            if bool(sweep) and tstart > tend: tend += 2 * pi
-            if not bool(sweep) and tstart < tend: tstart += 2 * pi
-            self.tstart, self.tend = tstart, tend
-            # To help numerical integration, store two integers sf and ef in [-1, 5] such that
-            # the arc covered can be broken into [tstart, sf * hpi], some quarter arcs and [ef * hpi, tend].
-            if tend < tstart: self.sf, self.ef = floor(tstart / hpi), ceil(tend / hpi)
-            else: self.sf, self.ef = ceil(tstart / hpi), floor(tend / hpi)
+            self.tstart, self.tend = phase(affine(taff, start)), phase(affine(taff, end))
+            if bool(sweep) and self.tstart > self.tend: self.tend += 2 * pi
+            if not bool(sweep) and self.tstart < self.tend: self.tstart += 2 * pi
+        # To help numerical integration, store two integers sf and ef in [-1, 5] such that
+        # the arc covered can be broken into [tstart, sf * hpi], some quarter arcs and [ef * hpi, tend].
+        sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
+        self.sf, self.ef = sr(self.tstart / hpi), er(self.tend / hpi)
     def __str__(self):
         return "{{{}, {}, {}, {}: {} -> {}}}".format(printpoint(self.ell.centre), self.ell.rx, self.ell.ry, self.ell.tilt, self.tstart, self.tend)
     def __repr__(self):

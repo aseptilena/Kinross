@@ -9,6 +9,7 @@ print()
 print(ell5pts(3j, 3+4j, 7+2j, 5-1j, 1))
 print()
 ea = elliparc(0, 2, 1, 10, 1, 0, 2+1j)
-print(ea) # {(0.0959902948673198, 1.0229067893389725), 2.0, 1.0, 0.17453292519943295: 4.575886525335371 -> -0.3609750365567869}
-print(ea.ell.perimeter()) # 9.688448220547675
+eb = elliparc(0, ellipse(0, 2, 1, 0), 3 * pi / 2 - 0.01)
 print(ea.length()) # 7.376705574218604
+print(eb.ell.quartrarc() * 3) # 7.266336165410756
+print(eb.length()) # 7.246336415408569

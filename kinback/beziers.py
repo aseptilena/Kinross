@@ -24,6 +24,9 @@ class bezier:
             bef.append(q[0])
             aft.append(q[-1])
         return [bezier(*bef), bezier(*aft[::-1])]
+    def reverse(self):
+        """Returns the curve reversed."""
+        return bezier(*self.p[::-1])
     
     def d(self):
         """The derivative of this Bézier curve. Note that this returns the function and not any point on it."""

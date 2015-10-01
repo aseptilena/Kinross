@@ -15,10 +15,7 @@ class ellipse:
         if self.tilt > hpi: self.tilt -= pi
     def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(printpoint(self.centre), self.rx, self.ry, self.tilt)
     def __repr__(self): return "ellipse({}, {}, {}, {})".format(self.centre, self.rx, self.ry, self.tilt)
-    def geogebrarepr(self):
-        """Returns the GeoGebra representation of this ellipse."""
-        ff = self.foci()
-        return "Ellipse[({},{}),({},{}),{}]".format(ff[0].real, ff[0].imag, ff[1].real, ff[1].imag, self.a())
+    def dup(self): return ellipse(self.centre, self.rx, self.ry, self.tilt)
     
     def a(self): return max(self.rx, self.ry) # Semi-major axis length
     def b(self): return min(self.rx, self.ry) # Semi-minor axis length
@@ -223,6 +220,9 @@ class elliparc:
         """Splits the arc at parameter t, returning a list that can then be inserted."""
         return [elliparc(self.tstart, self.ell, linterp(self.tstart, self.tend, t)),
                 elliparc(linterp(self.tstart, self.tend, t), self.ell, self.tend)]
+    def reverse(self):
+        """Returns the arc reversed."""
+        return elliparc(self.tend, self.ell.dup(), self.tstart)
     
     def lenf(self):
         """The function that is integrated to obtain the length of this arc."""

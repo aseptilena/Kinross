@@ -183,7 +183,7 @@ def intersect_ec(e, c):
 class elliparc:
     def __init__(self, start, in_rx, in_ry, in_phi = None, large = None, sweep = None, end = None):
         """Initialises with the arc's Kinross representation (tstart, ell, tend), where tstart < tend if the arc is positive-angle and vice versa.
-        (Yes, the parameters can go beyond [-pi, pi] here; phi should be given in degrees, as will happen in SVG path parsing.)
+        (Yes, the parameters can go beyond [-pi, pi] here; phi should be given in DEGREES, as will happen in SVG path parsing.)
         Cases where the ellipse is too small are handled as per the SVG specifications (i.e. scale until a fit is possible).
         Note that this can also be initalised with only the three internally stored parameters for repr()'s ease."""
         if in_phi == None: self.tstart, self.ell, self.tend = float(start), in_rx, float(in_ry) # The "grade-A" example of duck typing
@@ -202,6 +202,7 @@ class elliparc:
             self.tstart, self.tend = phase(affine(taff, start)), phase(affine(taff, end))
             if bool(sweep) and self.tstart > self.tend: self.tend += 2 * pi
             if not bool(sweep) and self.tstart < self.tend: self.tstart += 2 * pi
+        self.deg = 4 # This is to signal an elliptical arc to whatever function may call for the degree
         # To help numerical integration, store two integers sf and ef in [-1, 5] such that
         # the arc covered can be broken into [tstart, sf * hpi], some quarter arcs and [ef * hpi, tend].
         sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)

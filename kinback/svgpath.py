@@ -38,10 +38,11 @@ def parsepath(p):
                 params[2 * i + 1] += current.imag
         # Fill in blanks
         rhtype = prevailing.lower()
+        lastdeg = out[-1][-1].deg() if len(out) > 0 and len(out[-1]) > 0 else 0
         if   rhtype == "h": params.append(current.imag)
         elif rhtype == "v": params.insert(0, current.real)
-        elif rhtype == "s": params.insert(0, 1) # TODO
-        elif rhtype == "t": params.insert(0, 1)
+        elif rhtype == "s": params.insert(0, reflect(1, current) if lastdeg == 3 else current)
+        elif rhtype == "t": params.insert(0, reflect(1, current) if lastdeg == 2 else current)
         # Construct the next segment
         if rhtype == "m":
             current = complex(params[0], params[1])
@@ -50,9 +51,6 @@ def parsepath(p):
             if rhtype == "a": nextseg = elliparc(current, params[0], params[1], params[2], params[3], params[4], complex(params[5], params[6])
             else: nextseg = bezier(*([current] + [complex(params[2 * i], params[2 * i + 1]) for i in range((take + 1) // 2)]))
             out[-1].append(nextseg)
-        
-        if rhtype == "s":   nextpts.insert(0, reflect(lastrh[1], lastrh[2]) if len(lastrh) == 3 else cursor)
-        elif rhtype == "t": nextpts.insert(0, reflect(lastrh[0], lastrh[1]) if len(lastrh) == 2 else cursor)
         
         if rhtype != "z": current = nextseg.end()
     return out

@@ -2,7 +2,6 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from cmath import isclose
-from copy import deepcopy as dup
 from .ellipse import elliparc
 from .beziers import bezier
 from .regexes import tokenisepath
@@ -77,16 +76,9 @@ def outputpath(r):
     """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close."""
     pass # TODO
 
-def reversepath(r):
-    """Reverses a Kinross path. To make an independent copy, use dup(r)."""
-    s = dup(r)[::-1]
-    for sp in s:
-        sp.reverse()
-        for rh in sp: rh.reverse()
-        cpen = bool(sp[0])
-        if cpen: sp.insert(0, [])
-        for i in range(len(sp) - 1):
-            if len(sp[i + 1]) == 4: sp[i + 1].insert(1, sp[i + 1].pop())
-            sp[i].append(sp[i + 1].pop(0))
-        if cpen: sp.pop()
-    return s
+def reversepath(p):
+    out = []
+    for sp in p:
+        if sp[-1] == 0: out.append([p.reverse() for p in sp[-2::-1]] + [0])
+        else: out.append([p.reverse() for p in sp[::-1]])
+    return out[::-1]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.5
 # Tests for the Kinback library. The expected output is to the right of the line or on top if too long.
 from kinback.ellipse import *
-from kinback.svgpath import parsepath, prettypath
+from kinback.svgpath import *
 
 # ((-0.5801753182779774+6.403206599624836j), (-1.2858815280829052+3.2027085369818975j), (7.325416619694055+1.6143915515721436j), (6.37498063919398+5.148446618730812j))
 print(intersect_ee(ellipse(3+3j, 4, 5, 0.6), ellipse(3+4j, 7, 2, -0.2)))
@@ -18,6 +18,10 @@ q = "m 6 0 -5 0 0 2 1 2 C 3 3 4 4 5 6 7 5 7 3 6 0 z l 1 1 h 1 v 1"
 qc = "M300,200 h-150 a150,150 0 1,0 150,-150 z" # From the SVG specs
 # <6,0 1,0> <1,0 1,2> <1,2 2,4> <2,4 3,3 4,4 5,6> <5,6 7,5 7,3 6,0> 0
 # <6,0 7,1> <7,1 8,1> <8,1 8,2>
-print(prettypath(parsepath(q)))
+qp = parsepath(q)
+print(prettypath(qp))
+# <8,2 8,1> <8,1 7,1> <7,1 6,0>
+# <6,0 7,3 7,5 5,6> <5,6 4,4 3,3 2,4> <2,4 1,2> <1,2 1,0> <1,0 6,0> 0
+print(prettypath(reversepath(qp)))
 print(prettypath(parsepath(qc))) # <300,200 150,200> {300,200 150 150 0 3.141592653589793:-1.5707963267948966} <300,50 300,200> 0
 print(prettypath(parsepath(flutterbat))) # The second subpath of this should begin with 190.74504,315.39453

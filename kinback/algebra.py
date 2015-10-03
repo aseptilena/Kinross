@@ -1,10 +1,10 @@
 # Helper functions for Kinross: numerical algebra
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
+from math import isclose
 from decimal import Decimal as D, getcontext, localcontext
 getcontext().prec = 60
-zero, one = D(0), D(1)
-from .vectors import near
+zero = D(0)
 
 class polynomial:
     """A polynomial stores a list of decimal coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on.
@@ -83,9 +83,9 @@ class polynomial:
     def minusendzeros(self, prec = 1e-10):
         """Returns the polynomial with leading and trailing zeros to the specified precision stripped along with the number of trailing zeros (or equivalently zero roots)."""
         p = self.dup()
-        while near(p[-1], zero, prec): p.a.pop()
+        while isclose(p[-1], zero, abs_tol=prec): p.a.pop()
         N = 0
-        while near(p[0], zero, prec):
+        while isclose(p[0], zero, abs_tol=prec):
             p.a.pop(0)
             N += 1
         return (p, N)
@@ -122,7 +122,7 @@ class polynomial:
             while p.deg() > 2:
                 u, v = self[-2] / self[-1], self[-3] / self[-1]
                 x, y, N, bairprec = D(3), D(4), 0, D(prec * prec * prec)
-                while not near((x * x + y * y).sqrt(), zero, bairprec) and N < 256:
+                while not isclose((x * x + y * y).sqrt(), zero, abs_tol=bairprec) and N < 256:
                     x, y = p.bairstowstep(u, v)
                     u, v = u + x, v + y
                     N += 1
@@ -136,28 +136,28 @@ class polynomial:
             if odd:
                 notr = True
                 for r in res[0]:
-                    if near(r, one, prec):
+                    if isclose(r, D(1), abs_tol=prec):
                         res[0].remove(r)
                         notr = False
                         break
                 if notr:
                     for c in res[1]:
-                        if near(c[0], one, prec):
+                        if isclose(c[0], D(1), abs_tol=prec):
                             res[1].remove(c)
                             break
         # At the end the previously found number of "trivial" zeros are appended to res.
         res[0].extend([zero for i in range(nz)])
         return res
 
-def polynomroot(coeffs, precdigits = 20):
+def polynomroot(coeffs, precdigits = 15):
     """Finds all the roots of polynomial(coeffs) to [precdigits] decimal places.
     This function not only saves the need for creating a new instance, it also coerces to floats/complexes and suppresses small complex components."""
-    prec = D("1e-{}".format(precdigits))
+    prec = D("1e-" + str(precdigits))
     raw = polynomial(coeffs).roots(prec)
     out = [[], []]
     for rn in raw[0]: out[0].append(float(round(rn, precdigits)))
     for cn in raw[1]:
-        if near(cn[1], zero, prec): out[0].append(float(round(cn[0], precdigits)))
+        if isclose(cn[1], zero, abs_tol=prec): out[0].append(float(round(cn[0], precdigits)))
         else: out[1].append(complex(round(cn[0], precdigits), round(cn[1], precdigits)))
     return out
 
@@ -170,12 +170,12 @@ def matdeterm(m, exact = False):
     # Elementary row operations do not change the determinant
     counter = 0
     while counter < N:
-        if not near(a[counter][counter], 0, 1e-9):
+        if not isclose(a[counter][counter], 0):
             counter += 1
             continue
         nadded = True
         for z in range(N):
-            if not near(a[z][counter], 0, 1e-9) and z != counter:
+            if not isclose(a[z][counter], 0) and z != counter:
                 a[counter] = [sum(pair) for pair in zip(a[counter], a[z])]
                 nadded = False
                 break
@@ -190,8 +190,8 @@ def matdeterm(m, exact = False):
 def eix(t):
     """Computes decimal (cos t, sin t) simultaneously (real and complex components of e^(it))."""
     with localcontext() as scc:
-        scc.prec = 40
-        cres, sres, x, cstep, sstep, err = D(1), D(t), D(t), D(1), D(1), D("1e-31")
+        scc.prec = 70
+        cres, sres, x, cstep, sstep, err = D(1), D(t), D(t), D(1), D(1), D("5e-66")
         px, i, s = x * x / 2, 2, -1
         while (max(abs(cstep), abs(sstep))) > err:
             cstep, sstep = D(0), D(0)
@@ -200,9 +200,7 @@ def eix(t):
             sstep += px * s
             px, i, s = px * x / (i + 1), i + 1, -s
             cres, sres = cres + cstep, sres + sstep
-        scc.prec = 30
-        cres, sres = +cres, +sres
-    return (cres, sres)
+    return (+cres, +sres)
 
 def simpquad(f, a, b, e = 1e-16):
     """∫(a, b) f(x) dx by adaptive Simpson's rule. This uses a list of 2-tuples to cache function evaluations."""

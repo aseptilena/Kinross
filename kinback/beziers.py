@@ -1,13 +1,14 @@
 # Helper functions for Kinross: linear, quadratic and cubic Bézier curves
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from .vectors import *
+from .vectors import linterp, affine
+from .regexes import floatinkrep
 
 class bezier:
     def __init__(self, *p):
         self.p = list(p)[:min(4, len(p))] # cull to cubic curves, since they are the highest degree used in SVG
         self.deg = len(self.p) - 1
-    def __str__(self): return "<{}>".format(", ".join([printpoint(n) for n in self.p]))
+    def __str__(self): return "<{}>".format(" ".join([floatinkrep(n.real) + "," + floatinkrep(n.imag) for n in self.p]))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
     
     def __call__(self, t):

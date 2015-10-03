@@ -4,6 +4,7 @@
 from .vectors import *
 from .algebra import *
 from math import pi, sqrt, fabs, hypot, copysign, radians, floor, ceil
+from .regexes import floatinkrep
 hpi = pi / 2
 
 # Ellipses have a centre, two axis lengths and the signed angle of +x relative to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
@@ -29,7 +30,7 @@ class ellipse:
     
     def parampoint(self, th):
         """The point on this ellipse with eccentric anomaly (or parameter of the classic parametric form) th relative to the zero vertex."""
-        return self.centre + turn(point(self.rx * cos(th), self.ry * sin(th)), self.tilt)
+        return self.centre + turn(complex(self.rx * cos(th), self.ry * sin(th)), self.tilt)
     def zerovertex(self): return self.centre + rect(self.rx, self.tilt) # This vertex is considered the zero point for angles
     def hpivertex(self): return self.centre + rect(self.ry, self.tilt + hpi) # The point at +90 degrees to the zero vertex
     def anglepoint(self, th = 0.):
@@ -39,13 +40,13 @@ class ellipse:
     def raypoint(self, p):
         """Intersection of the ray from the centre to the specified point with the ellipse.
         The Kinross elliptical arc representation uses this to determine endpoints."""
-        if near(p, self.centre): return self.zerovertex()
+        if isclose(p, self.centre): return self.zerovertex()
         return self.anglepoint(signedangle(p, self.zerovertex(), self.centre))
     def psideof(self, p):
         """-1 if p is inside the ellipse, 0 if on and 1 if outside."""
         pins = self.foci()
         z = abs(p - pins[0]) + abs(p - pins[1]) - 2 * self.a()
-        if near(z, 0., 1e-12): return 0
+        if isclose(z, 0., abs_tol=1e-12): return 0
         return copysign(1, z)
     def semiperimeter(self):
         """Iterative formula for calculating the required elliptic integral from http://www.ams.org/notices/201208/rtx120801094p.pdf
@@ -55,12 +56,12 @@ class ellipse:
             c.prec, err = 45, D("5e-21")
             beta = D(self.b()) / D(self.a())
             nx, ny, nz = D(1), beta * beta, D(0)
-            while not near(nx, ny, err):
+            while not isclose(nx, ny, abs_tol=err):
                 rd = ((nx - nz) * (ny - nz)).sqrt()
                 nx, ny, nz = (nx + ny) / 2, nz + rd, nz - rd
             n = (nx + ny) / 2
             mx, my = D(1), beta
-            while not near(mx, my, err): mx, my = (mx + my) / 2, (mx * my).sqrt()
+            while not isclose(mx, my, abs_tol=err): mx, my = (mx + my) / 2, (mx * my).sqrt()
             m = (mx + my) / 2
         return float(n / m) * pi * self.a()
     def perimeter(self): return 2 * self.semiperimeter()
@@ -90,7 +91,7 @@ class circle:
 def rytz(centre, a, b):
     """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
     Used to remove the transformation matrix from SVG ellipses (and a lot of other things)."""
-    if near(dot(a, b, centre), 0.): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
+    if isclose(dot(a, b, centre), 0): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
     else:
         c = rturn(a, centre)
         m = between(b, c)
@@ -114,10 +115,10 @@ def ell5pts(q, r, s, t, u):
         coeffs.append(matdeterm(sqmat) * (-1 if i % 2 else 1))
     a, b, c, d, e, f = coeffs
     qd = 4 * a * c - b * b
-    if near(matdeterm([[a * 2, b, d], [b, c * 2, e], [d, e, f * 2]]), 0., 1e-9) or qd <= 0.: return None
-    centre = point((b * e - 2 * c * d) / qd, (b * d - 2 * a * e) / qd)
+    if isclose(matdeterm([[a * 2, b, d], [b, c * 2, e], [d, e, f * 2]]), 0) or qd <= 0: return None
+    centre = complex((b * e - 2 * c * d) / qd, (b * d - 2 * a * e) / qd)
     cx, cy = centre.real, centre.imag
-    axes = [1., 1j] if near(b, 0., 1e-9) else [hat(point(b / 2, l - a)) for l in polynomroot((qd, -(a + c) * 4, 4))[0]]
+    axes = [1., 1j] if isclose(b, 0) else [hat(complex(b / 2, l - a)) for l in polynomroot((qd, -(a + c) * 4, 4))[0]]
     lens = [0., 0.]
     for i in (0, 1):
         dx, dy = axes[i].real, axes[i].imag
@@ -208,7 +209,8 @@ class elliparc:
         sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
         self.sf, self.ef = sr(self.tstart / hpi), er(self.tend / hpi)
     def __str__(self):
-        return "{{{}, {}, {}, {}: {} -> {}}}".format(printpoint(self.ell.centre), self.ell.rx, self.ell.ry, self.ell.tilt, self.tstart, self.tend)
+        return "{{{} {} {} {} {}:{}}}".format(floatinkrep(self.ell.centre.real) + "," + floatinkrep(self.ell.centre.imag),
+                                              floatinkrep(self.ell.rx), floatinkrep(self.ell.ry), floatinkrep(self.ell.tilt), self.tstart, self.tend)
     def __repr__(self):
         return "elliparc({}, {}, {})".format(self.tstart, repr(self.ell), self.tend)
     
@@ -235,7 +237,7 @@ class elliparc:
             if start == None: return self.split(end)[0].length()
             elif end == None: return self.split(start)[1].length()
             else: return self.split(end)[0].split(start / end)[1].length()
-        if near(self.tstart, self.tend, 1e-9): return 0.
+        if isclose(self.tstart, self.tend): return 0.
         lf = self.lenf()
         if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(simpquad(lf, self.tstart, self.tend))
         sl = simpquad(lf, self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + simpquad(lf, self.ef * hpi, self.tend)

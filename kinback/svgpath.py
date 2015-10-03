@@ -1,6 +1,7 @@
 # Helper functions for Kinross: SVG path processing
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
+from cmath import isclose
 from copy import deepcopy as dup
 from .ellipse import elliparc
 from .beziers import bezier
@@ -9,8 +10,8 @@ from .regexes import tokenisepath
 def parsepath(p):
     """Converts SVG paths to Kinross paths; see the readme for specifications."""
     t, pos = tokenisepath(p), 0
-    out, current = [], point(0., 0.)
-    take, prevailing, params, sonp = 2, "M", [], False # The last variable indicates "start of new path"
+    out, current = [], complex(0, 0)
+    take, prevailing, params = 2, "M", []
     while pos < len(t):
         # Obtain the command and its parameters
         val = t[pos]
@@ -26,7 +27,7 @@ def parsepath(p):
         else:
             params = t[pos:pos + take]
             pos += take
-        # Convert to absolute coordinates
+        # Absolutise coordinates
         if prevailing == "h": params[0] += current.real
         elif prevailing == "v": params[0] += current.imag
         elif prevailing == "a":
@@ -38,26 +39,42 @@ def parsepath(p):
                 params[2 * i + 1] += current.imag
         # Fill in blanks
         rhtype = prevailing.lower()
-        lastdeg = out[-1][-1].deg() if len(out) > 0 and len(out[-1]) > 0 else 0
+        lastseg = out[-1][-1] if len(out) > 0 and len(out[-1]) > 0 else bezier(0, 1)
         if   rhtype == "h": params.append(current.imag)
         elif rhtype == "v": params.insert(0, current.real)
-        elif rhtype == "s": params.insert(0, reflect(1, current) if lastdeg == 3 else current)
-        elif rhtype == "t": params.insert(0, reflect(1, current) if lastdeg == 2 else current)
+        elif rhtype in "st":
+            r = reflect(lastseg.p[-2], current) if lastseg.deg == (3 if rhtype == "s" else 2) else current
+            params[:0] = [r.real, r.imag]
         # Construct the next segment
         if rhtype == "m":
-            current = complex(params[0], params[1])
-            out.append([])
+            # To deal with multiple movetos (which should be interpreted as linetos)...
+            if type(t[pos - 3]) != str:
+                nextend = complex(params[0], params[1])
+                out[-1].append(bezier(current, nextend))
+                current = nextend
+            else:
+                out.append([])
+                current = complex(params[0], params[1])
+        elif rhtype == "z":
+            spstart, spend = out[-1][0].start(), out[-1][-1].end()
+            if not isclose(spstart, spend): out[-1].append(bezier(spend, spstart))
+            out[-1].append(0)
+            if pos < len(t) and t[pos].lower() != "m":
+                out.append([])
+                current = spstart # This is for cases like "... z c 0 1 2 ..."
         else:
-            if rhtype == "a": nextseg = elliparc(current, params[0], params[1], params[2], params[3], params[4], complex(params[5], params[6])
+            if rhtype == "a": nextseg = elliparc(current, params[0], params[1], params[2], params[3], params[4], complex(params[5], params[6]))
             else: nextseg = bezier(*([current] + [complex(params[2 * i], params[2 * i + 1]) for i in range((take + 1) // 2)]))
             out[-1].append(nextseg)
-        
-        if rhtype != "z": current = nextseg.end()
+            current = nextseg.end()
     return out
+
+def prettypath(p):
+    """Return a pretty string representation of a Kinross path (with <> for Bézier curves and {} for arcs rather than their class names)."""
+    return "\n".join([" ".join([str(seg) for seg in sp]) for sp in p])
 
 def outputpath(r):
     """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close."""
-    # First work out the shortest number representations as strings
     pass # TODO
 
 def reversepath(r):

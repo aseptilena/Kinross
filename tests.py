@@ -25,3 +25,6 @@ print(prettypath(qp))
 print(prettypath(reversepath(qp)))
 print(prettypath(parsepath(qc))) # <300,200 150,200> {300,200 150 150 0 3.141592653589793:-1.5707963267948966} <300,50 300,200> 0
 print(prettypath(parsepath(flutterbat))) # The second subpath of this should begin with 190.74504,315.39453
+
+b = bezier(96+78j, 30+30j, 104+43j, 22+81j)
+print(b.length()) # 100.86008481303311

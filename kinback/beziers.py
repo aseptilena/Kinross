@@ -2,6 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import linterp, affine
+from .algebra import simpquad
 from .regexes import floatinkrep
 
 class bezier:
@@ -38,6 +39,14 @@ class bezier:
         """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
         def z(t): return abs(self.velocity(t))
         return z
+    def length(self, end = None, start = None):
+        """The length of this curve between the specified endpoint parameters (omitted start and end values correspond to 0 and 1 respectively)."""
+        if end != None or start != None:
+            if start == None: return self.split(end)[0].length()
+            elif end == None: return self.split(start)[1].length()
+            else: return self.split(end)[0].split(start / end)[1].length()
+        lf = self.lenf()
+        return simpquad(lf, 0, 1)
     def affine(self, mat):
         """Transforms the curve by the given matrix."""
         return bezier(*[affine(mat, n) for n in self.p])

@@ -227,6 +227,12 @@ class elliparc:
         """Returns the arc reversed."""
         return elliparc(self.tend, self.ell.dup(), self.tstart)
     
+    def velocity(self, t):
+        """Returns the velocity (first derivative) of the curve at parameter t."""
+        et = linterp(self.tstart, self.tend, t)
+        return turn(complex(-sin(et) * self.ell.rx, cos(et) * self.ell.ry) * (1 if tstart < tend else -1), self.ell.tilt)
+    def startdirc(self): return self.velocity(0)
+    def enddirc(self): return -self.velocity(1)
     def lenf(self):
         """The function that is integrated to obtain the length of this arc."""
         def z(t): return hypot(sin(t) * self.ell.rx, cos(t) * self.ell.ry)

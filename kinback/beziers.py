@@ -29,12 +29,15 @@ class bezier:
         """Returns the curve reversed."""
         return bezier(*self.p[::-1])
     
-    def d(self):
-        """The derivative of this Bézier curve. Note that this returns the function and not any point on it."""
-        return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])
     def velocity(self, t):
-        """The velocity of the curve at parameter t."""
-        return self.d()(t)
+        """The velocity (first derivative) of this curve at parameter t."""
+        return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])(t)
+    def startdirc(self): return self.p[1] - self.p[0]
+    def enddirc(self): return self.p[-2] - self.p[-1] # Defining the end direction as such makes the mitre angle simply the angle between the tangents
+    def lenf(self):
+        """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
+        def z(t): return abs(self.velocity(t))
+        return z
     def affine(self, mat):
         """Transforms the curve by the given matrix."""
         return bezier(*[affine(mat, n) for n in self.p])

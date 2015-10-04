@@ -46,7 +46,6 @@ def parsepath(p):
             params[:0] = [r.real, r.imag]
         # Construct the next segment
         if rhtype == "m":
-            # To deal with multiple movetos (which should be interpreted as linetos)...
             if type(t[pos - 3]) != str:
                 nextend = complex(params[0], params[1])
                 out[-1].append(bezier(current, nextend))
@@ -60,7 +59,7 @@ def parsepath(p):
             out[-1].append(0)
             if pos < len(t) and t[pos].lower() != "m":
                 out.append([])
-                current = spstart # This is for cases like "... z c 0 1 2 ..."
+                current = spstart
         else:
             if rhtype == "a": nextseg = elliparc(current, params[0], params[1], params[2], params[3], params[4], complex(params[5], params[6]))
             else: nextseg = bezier(*([current] + [complex(params[2 * i], params[2 * i + 1]) for i in range((take + 1) // 2)]))
@@ -69,7 +68,7 @@ def parsepath(p):
     return out
 
 def prettypath(p):
-    """Return a pretty string representation of a Kinross path (with <> for Bézier curves and {} for arcs rather than their class names)."""
+    """Return a pretty string representation of a Kinross path, with <> for Bézier curves and {} for arcs rather than their class names."""
     return "\n".join([" ".join([str(seg) for seg in sp]) for sp in p])
 
 def outputpath(r):

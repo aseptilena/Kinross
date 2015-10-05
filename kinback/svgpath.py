@@ -1,7 +1,9 @@
 # Helper functions for Kinross: SVG path processing
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
+from math import sin
 from cmath import isclose
+from .vectors import angle
 from .ellipse import elliparc
 from .beziers import bezier
 from .regexes import tokenisepath
@@ -81,3 +83,12 @@ def reversepath(p):
         if sp[-1] == 0: out.append([p.reverse() for p in sp[-2::-1]] + [0])
         else: out.append([p.reverse() for p in sp[::-1]])
     return out[::-1]
+
+def minmitrelimit(p):
+    """Determines the minimum integer mitre limit that will allow all middle nodes in the path to render with mitre and not bevel joins, with a minimum of 4 (the default value)."""
+    mvals = []
+    for sp in p:
+        if sp[-1] == 0:
+            sgs = sp[:-1]
+            angles = [angle(sgs[i].startdirc(), sgs[i - 1].enddirc()) for i in range(len(sgs))]
+    pass # TODO

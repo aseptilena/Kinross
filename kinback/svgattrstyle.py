@@ -122,7 +122,7 @@ colp = {"fill": "fill-opacity",
 precld = {"stroke-dasharray": ("stroke-dashoffset"),
           "stroke": ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset")}
 
-# Namespace map
+# Namespace map. This differs from svgnms because it should be used for the findall function, not to initialise the parser.
 nm = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
 def prependnms(t):
     a = t.split(':')

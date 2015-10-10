@@ -4,6 +4,7 @@
 # http://parclytaxel.tumblr.com
 import os, time, argparse
 from kinback.svgattrstyle import *
+from kinback.miscellanea import svgnms
 t, tr, rn = xml.etree.ElementTree, None, None
 
 def rarify(f):
@@ -27,6 +28,7 @@ def rarify(f):
             N += len(torm)
     if flags.metadata:
         for md in rn.findall("svg:metadata", nm): rn.remove(md)
+        for md in rn.findall("svg:title", nm): rn.remove(md)
     if flags.scripts:
         for sc in rn.findall("svg:script", nm): rn.remove(sc)
     # Phase 2: individual node attribute/style property processing
@@ -72,13 +74,7 @@ def rarify(f):
     before, after = os.path.getsize(f), os.path.getsize(outfn)
     print("{}: {:.3f}, {} -> {} ({:.2%})".format(f, end - begin, before, after, after / before))
 
-t.register_namespace("", "http://www.w3.org/2000/svg")
-t.register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")
-t.register_namespace("sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
-t.register_namespace("xlink", "http://www.w3.org/1999/xlink")
-t.register_namespace("dc", "http://purl.org/dc/elements/1.1/")
-t.register_namespace("cc", "http://creativecommons.org/ns#")
-t.register_namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+for n in svgnms: t.register_namespace(n, svgnms[n])
 cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncouth SVG optimiser")
 cdl.add_argument("-m", "--metadata", action="store_false", default=True, help="don't remove metadata")
 cdl.add_argument("-d", "--dimens", action="store_true", default=False, help="remove dimensions")

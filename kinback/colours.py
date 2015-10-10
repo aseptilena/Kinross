@@ -1,7 +1,7 @@
 # Helper functions for Kinross: colours in all their colours
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from .vectors import near
+from math import isclose
 
 # An RGBA colour is a 4-tuple of floats in [0, 1]; operations, especially alpha compositing and its reverse, are easier in this format.
 # The CSS colour aliases follow in the order Wikipedia gives them:
@@ -242,13 +242,13 @@ def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)
 # R_R = (S_R * S_A + B_R * B_A * (1 - S_A)) / R_A, 0 if R_A = 0, same for the other two primaries
 def alphacomp(back, tint): # tint over back = comp
     resa = back[3] * (1 - tint[3]) + tint[3]
-    if near(resa, 0.): return (0., 0., 0., 0.)
+    if isclose(resa, 0.): return (0., 0., 0., 0.)
     else: return clip01([(tint[i] * tint[3] + back[i] * back[3] * (1 - tint[3])) / resa for i in range(3)] + [resa])
 # B_A = (R_A - S_A) / (1 - S_A)
 # B_R = (R_R * R_A - S_R * S_A) / (R_A - S_A)
 def alphaback(tint, comp):
-    if near(tint[3], 1.): return (0., 0., 0., 1.)
-    elif near(tint[3], comp[3]): return (0., 0., 0., 0.)
+    if isclose(tint[3], 1.): return (0., 0., 0., 1.)
+    elif isclose(tint[3], comp[3]): return (0., 0., 0., 0.)
     else:
         rgb = [(comp[i] * comp[3] - tint[i] * tint[3]) / (comp[3] - tint[3]) for i in range(3)]
         rgb.append((comp[3] - tint[3]) / (1 - tint[3]))
@@ -271,12 +271,12 @@ def alphatint(back1, comp1, back2, comp2):
         k1 = (comp1[i] - back1[i]) * comp1[3]
         k2 = (comp2[i] - back2[i]) * comp2[3]
         kval.append((k1, k2))
-        if not near(back1[i], back2[i]):
+        if not isclose(back1[i], back2[i]):
             p += 1
             ta += (k2 - k1) / (back1[i] - back2[i])
     if p == 0: return (0., 0., 0., .5)
     ta /= p
-    if near(ta, 0.): return (0., 0., 0., 0.)
+    if isclose(ta, 0.): return (0., 0., 0., 0.)
     for i in range(3):
         c1 = kval[i][0] / ta + back1[i]
         c2 = kval[i][1] / ta + back2[i]

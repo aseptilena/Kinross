@@ -1,7 +1,7 @@
 # Helper functions for Kinross: miscellaneous things
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-import time, hashlib, webbrowser
+import time, hashlib
 
 exts = (".svg", ".png", ".jpg", ".jpeg", ".txt", ".tar.gz", ".tar.bz2", ".tar", ".gz", ".bz2", ".7z", ".zip", ".py")
 # Stamp a filename with a given string, separated by a hyphen
@@ -37,5 +37,12 @@ def taxellogo(n = 20):
     c = [str(round(i * (D(2) / D(3)).sqrt() + 4, n // 2)) for i in d]
     return '<svg><rect fill="#230f38" width="8" height="8"/><path style="fill:none;stroke:#6dc6fb;stroke-width:.2109375;stroke-linecap:round;stroke-linejoin:round" d="M1 1 {0} 7 7"/></svg>'.format(" ".join(c))
 
-# Opens Derpibooru image #n
-def derpipic(n, canonical = True): webbrowser.open("https://derpiboo{}/".format("ru.org" if canonical else ".ru") + str(n), 2)
+def derpipic(n, canonical = True):
+    """Opens Derpibooru image #n."""
+    import webbrowser
+    webbrowser.open("https://derpiboo{}/".format("ru.org" if canonical else ".ru") + str(n), 2)
+
+def xmlprettyprint(et):
+    """Converts an XML element tree (the object) into a pretty XML representation (tab = four spaces)."""
+    import xml.dom.minidom as x, xml.etree.ElementTree as t
+    return x.parseString(t.tostring(et.getroot(), "unicode")).toprettyxml()

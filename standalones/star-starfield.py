@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3.5
 # For those who love diffraction spikes...
 import random, time
 from math import pi

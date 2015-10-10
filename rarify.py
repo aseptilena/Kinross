@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3.5
 # Rarify, the uncouth SVG optimiser
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com

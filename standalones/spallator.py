@@ -2,7 +2,7 @@
 # "Spallates" an input object on a canvas, generating a random pattern according to given variability data.
 # (This is not Splatoon, mind you, it's the nuclear process)
 # The circle and star templates included match the behaviour of the old circle-starfield and star-starfield scripts,
-# being used to generate MLPFIM starry sky backgrounds and magic sparkles / Luna's mane stars respectively.
+# being used to generate MLPFIM starry sky backgrounds and magic sparkles / Luna and Nightmare Moon's mane stars respectively.
 # This script consolidates them both and was written for generating Nightmare Rarity's mane stars, which are astroids.
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com

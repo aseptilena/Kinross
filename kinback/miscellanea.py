@@ -45,7 +45,7 @@ def derpipic(n, canonical = True):
 def xmlprettyprint(et):
     """Converts an XML element tree (the object) into a pretty XML representation (tab = four spaces)."""
     import xml.dom.minidom as x, xml.etree.ElementTree as t
-    return x.parseString(t.tostring(et.getroot(), "unicode")).toprettyxml()
+    return x.parseString(t.tostring(et.getroot(), "unicode")).toprettyxml("  ")
 
 # Namespaces used by SVG and Inkscape, for ease of registering them with the XML parser.
 svgnms = {"": "http://www.w3.org/2000/svg",

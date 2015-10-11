@@ -38,6 +38,9 @@ def nextspall():
             dt[sdpns + "arg2"] = str(round(float(dt[sdpns + "arg2"]) + delta, 9))
         dt[sdpns + "cx"], dt[sdpns + "cy"] = str(round(rgen.random() * width, 3)), str(round(rgen.random() * height, 3))
         return t.Element("path", dt)
+    elif base.tag == "path": # TODO bounding box size?
+        dt["transform"] = "translate({},{})scale({})".format(str(round(rgen.random() * width, 3)), str(round(rgen.random() * height, 3)), 1 + variate / 4)
+        return t.Element("path", dt)
 
 if len(sys.argv) != 3:
      print("Usage: {} [file] [params]\nSee the documentation for details.".format(sys.argv[0]))
@@ -51,6 +54,7 @@ distro, spins = vard[1].split(), bool(vard[2])
 density = float(vard[0]) if vard[0] else 1
 if base.tag == "circle": er = float(base.get("r"))
 elif baseisstar(): er = (float(base.get(sdpns + "r1")) + float(base.get(sdpns + "r2"))) / 2
+elif base.tag == "path": er = 8 # TODO this is for the astroid only
 N = round(width * height * er * er * density / 49000)
 try: gparam = log(float(distro[1]))
 except ValueError: gparam = 1.0986123 # equivalent to a decay rate of 3

@@ -232,6 +232,8 @@ def lab2xyz(c):
          yn * icise(l0),
          zn * icise(l0 - c[2] / 200)]
     return (z[0], z[1], z[2], c[3])
+def rgb2lab(c): return xyz2lab(rgb2xyz(c))
+def lab2rgb(c): return xyz2rgb(lab2xyz(c))
 
 # Calculations may occasionally produce values outside [0, 1]; this function clips them to the desired range.
 def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)

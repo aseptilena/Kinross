@@ -38,7 +38,7 @@ def parsepath(p):
             for i in range(take // 2):
                 params[2 * i] += current.real
                 params[2 * i + 1] += current.imag
-        # Fill in blanks
+        # Fill in blanks, pair coordinates and add current position
         rhtype = prevailing.lower()
         lastseg = out[-1][-1] if len(out) > 0 and len(out[-1]) > 0 else bezier(0, 1)
         if   rhtype == "h": params.append(current.imag)
@@ -46,15 +46,15 @@ def parsepath(p):
         elif rhtype in "st":
             r = reflect(lastseg.p[-2], current) if lastseg.deg == (3 if rhtype == "s" else 2) else current
             params[:0] = [r.real, r.imag]
+        if rhtype == "a":
+            params[5:] = [complex(params[5], params[6])]
+            params.insert(0, current)
+        else: params = [current] + [complex(params[2 * i], params[2 * i + 1]) for i in range(len(params) // 2)]
         # Construct the next segment
         if rhtype == "m":
-            if type(t[pos - 3]) != str:
-                nextend = complex(params[0], params[1])
-                out[-1].append(bezier(current, nextend))
-                current = nextend
-            else:
-                out.append([])
-                current = complex(params[0], params[1])
+            if type(t[pos - 3]) != str: out[-1].append(bezier(*params))
+            else: out.append([])
+            current = params[1]
         elif rhtype == "z":
             spstart, spend = out[-1][0].start(), out[-1][-1].end()
             if not isclose(spstart, spend): out[-1].append(bezier(spend, spstart))
@@ -63,10 +63,7 @@ def parsepath(p):
                 out.append([])
                 current = spstart
         else:
-            if rhtype == "a": nextseg = elliparc(current, params[0], params[1], params[2], params[3], params[4], complex(params[5], params[6]))
-            else:
-                params[:0] = [current.real, current.imag]
-                nextseg = bezier(*[complex(params[2 * i], params[2 * i + 1]) for i in range(len(params) // 2)])
+            nextseg = (elliparc if rhtype == "a" else bezier)(*params)
             out[-1].append(nextseg)
             current = nextseg.end()
     for sp in out:

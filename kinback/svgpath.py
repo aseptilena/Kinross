@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 from math import sin
 from cmath import isclose
-from .vectors import angle
+from .vectors import angle, reflect
 from .ellipse import elliparc
 from .beziers import bezier
 from .regexes import tokenisepath
@@ -64,7 +64,9 @@ def parsepath(p):
                 current = spstart
         else:
             if rhtype == "a": nextseg = elliparc(current, params[0], params[1], params[2], params[3], params[4], complex(params[5], params[6]))
-            else: nextseg = bezier(*([current] + [complex(params[2 * i], params[2 * i + 1]) for i in range((take + 1) // 2)]))
+            else:
+                params[:0] = [current.real, current.imag]
+                nextseg = bezier(*[complex(params[2 * i], params[2 * i + 1]) for i in range(len(params) // 2)])
             out[-1].append(nextseg)
             current = nextseg.end()
     for sp in out:

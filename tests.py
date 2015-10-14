@@ -18,6 +18,3 @@ print(prettypath(parsepath(celestia))) # <2.9,-.4 3.8,-.9 4.6,-1.1 4.9,0> <4.9,0
 
 b = bezier(96+78j, 30+30j, 104+43j, 22+81j)
 print(b.length()) # 100.86008481303311
-
-a = elliparc(0, 1, 1, 0, 0, 0, 0)
-print(a.ell) # None

@@ -35,6 +35,11 @@ class bezier:
         return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])(t)
     def startdirc(self): return self.p[1] - self.p[0]
     def enddirc(self): return self.p[-2] - self.p[-1] # Defining the end direction as such makes the mitre angle simply the angle between the tangents
+    
+    def inflections(self):
+        """Returns the inflection points of this curve."""
+        pass # TODO
+    
     def lenf(self):
         """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
         def z(t): return abs(self.velocity(t))

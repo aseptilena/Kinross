@@ -70,13 +70,13 @@ def parsepath(p):
         N = 0
         while N < len(sp):
             seg = sp[N]
-            if seg == 0: break
-            elif type(seg) == bezier:
+            if type(seg) == bezier:
                 if min([isclose(seg.p[-1], seg.p[i]) for i in range(len(seg.p) - 1)]): del sp[N]
                 else: N += 1
             elif type(seg) == elliparc:
                 if seg.ell == None: del sp[N]
                 else: N += 1
+            else: break
     return out
 
 def prettypath(p):

@@ -114,7 +114,7 @@ def collapsedtransform(t):
     x = o + z
     if isclose(o, 0): second = (None if isclose(x, 1) else degrees(phase(x)), None)
     else:
-        g = 1. if isclose(x, 1) else intersect_ll(perpbisect((o, 0)), perpbisect((x, 1)), False)
+        g = 1. if isclose(x, 1) else intersect_ll(perpbisect(o, 0), perpbisect(x, 1), False)
         second = (None, o) if g == None else (degrees(signedangle(o, 0, g)), g)
     l = abs(z) # The first component is the absolute value of z
     first = () if isclose(l, 1) and flip == 1 else (l, flip)

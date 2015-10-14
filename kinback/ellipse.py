@@ -184,30 +184,28 @@ def intersect_ec(e, c):
 class elliparc:
     def __init__(self, start, in_rx, in_ry, in_phi = None, large = None, sweep = None, end = None):
         """Initialises with the arc's Kinross representation (tstart, ell, tend), where tstart < tend if the arc is positive-angle and vice versa.
-        (Yes, the parameters can go beyond [-pi, pi] here; phi should be given in DEGREES, as will happen in SVG path parsing.)
-        Cases where the ellipse is too small are handled as per the SVG specifications (i.e. scale until a fit is possible).
-        Note that this can also be initalised with only the three internally stored parameters for repr()'s ease."""
-        if in_phi == None: self.tstart, self.ell, self.tend = float(start), in_rx, float(in_ry) # The "grade-A" example of duck typing
+        phi should be given in degrees, as happens in SVG path parsing."""
+        self.deg = -1
+        if in_phi == None: self.tstart, self.ell, self.tend = float(start), in_rx, float(in_ry)
+        elif isclose(start, end): self.tstart = self.ell = self.tend = self.sf = self.ef = None
         else:
             midarc, phi = between(start, end), radians(in_phi)
             startp = affine(composition(rotation(-phi), translation(-midarc)), start)
             rx, ry = fabs(in_rx), fabs(in_ry)
             delta = hypot(startp.real / rx, startp.imag / ry)
-            if delta > 1: rx, ry, centrep = rx * delta, ry * delta, 0 # it is scaled
+            if delta > 1: rx, ry, centrep = rx * delta, ry * delta, 0
             else:
-                spsqt = (rturn if bool(large) == bool(sweep) else lturn)(affine(squeezing(ry / rx), startp))
-                centrep = spsqt * sqrt(1 / (delta * delta) - 1)
+                k = (rturn if bool(large) == bool(sweep) else lturn)(affine(squeezing(ry / rx), startp))
+                centrep = k * sqrt(1 / (delta * delta) - 1)
             centre = affine(composition(translation(midarc), rotation(phi)), centrep)
             self.ell = ellipse(centre, rx, ry, phi)
             taff = self.ell.uc_affine()
             self.tstart, self.tend = phase(affine(taff, start)), phase(affine(taff, end))
             if bool(sweep) and self.tstart > self.tend: self.tend += 2 * pi
             if not bool(sweep) and self.tstart < self.tend: self.tstart += 2 * pi
-        self.deg = 4 # This is to signal an elliptical arc to whatever function may call for the degree
-        # To help numerical integration, store two integers sf and ef in [-1, 5] such that
-        # the arc covered can be broken into [tstart, sf * hpi], some quarter arcs and [ef * hpi, tend].
-        sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
-        self.sf, self.ef = sr(self.tstart / hpi), er(self.tend / hpi)
+        if self.ell:
+            sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
+            self.sf, self.ef = sr(self.tstart / hpi), er(self.tend / hpi)
     def __str__(self):
         return "{{{} {} {} {} {}:{}}}".format(floatinkrep(self.ell.centre.real) + "," + floatinkrep(self.ell.centre.imag),
                                               floatinkrep(self.ell.rx), floatinkrep(self.ell.ry), floatinkrep(self.ell.tilt), self.tstart, self.tend)

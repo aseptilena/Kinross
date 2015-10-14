@@ -1,7 +1,7 @@
 # Helper functions for Kinross: numerical algebra
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from math import isclose
+from cmath import isclose
 from decimal import Decimal as D, getcontext, localcontext
 getcontext().prec = 60
 zero = D(0)

@@ -66,6 +66,7 @@ def parsepath(p):
             nextseg = (elliparc if rhtype == "a" else bezier)(*params)
             out[-1].append(nextseg)
             current = nextseg.end()
+    # Remove degenerate segments
     for sp in out:
         N = 0
         while N < len(sp):
@@ -95,7 +96,7 @@ def reversepath(p):
     return out[::-1]
 
 def minmitrelimit(p):
-    """Determines the minimum integer mitre limit that will allow all middle nodes in the path to render with mitre and not bevel joins, with a minimum of 4 (the default value)."""
+    """Determines the minimum mitre limit that will allow all middle nodes in the path to render with mitre and not bevel joins."""
     mvals = []
     for sp in p:
         if sp[-1] == 0:

@@ -42,10 +42,11 @@ def nextspall():
         dt["transform"] = "translate({},{})scale({})".format(str(round(rgen.random() * width, 3)), str(round(rgen.random() * height, 3)), 1 + variate / 4)
         return t.Element("path", dt)
 
-if len(sys.argv) != 3:
-     print("Usage: {} [file] [params]\nSee the documentation for details.".format(sys.argv[0]))
+if len(sys.argv) != 2:
+     print("Usage: {} [file with object and variability data]\nSee the documentation for details.".format(sys.argv[0]))
      sys.exit(1)
-rn, vard = t.parse(sys.argv[1]).getroot(), sys.argv[2].split(";")
+rn = t.parse(sys.argv[1]).getroot()
+vard = rn.get("var").split(";")
 base, width, height = rn[0], float(rn.get("width", "1000")), float(rn.get("height", "1000"))
 distro, spins = vard[1].split(), bool(vard[2])
 # Density is a relative measure of how many objects are put into a 1000-by-1000 square: 250 objects = 1, 500 = 2, etc.

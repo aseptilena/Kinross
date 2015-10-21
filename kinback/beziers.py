@@ -55,7 +55,7 @@ class bezier:
         # For a cubic curve:
         # x = A, B, C, D; y = E, F, G, H
         # x' = A', B', C'; y' = E', F', G' (t from 0 to 1)
-        # x'' = A'', B'', y'' = E'', F''
+        # x'' = A'', B''; y'' = E'', F''
         # Then numerator of signed curvature = x'y'' - y''x'
         # =   E'' F''      A'' B''
         #  A' 3   2     E' 3   2

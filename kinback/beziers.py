@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 from cmath import isclose
 from .vectors import linterp, affine
-from .algebra import simpquad
+from .algebra import simpquad, polynomroot
 from .regexes import floatinkrep
 
 class bezier:
@@ -31,9 +31,12 @@ class bezier:
         """Returns the curve reversed."""
         return bezier(*self.p[::-1])
     
+    def derivative(self):
+        """The derivative Bézier curve of this Bézier curve."""
+        return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])
     def velocity(self, t):
         """The velocity (first derivative) of this curve at parameter t."""
-        return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])(t)
+        return self.derivative()(t)
     def startdirc(self):
         N = 1
         while N <= self.deg:
@@ -49,7 +52,33 @@ class bezier:
     
     def inflections(self):
         """Returns the inflection points of this curve."""
-        pass # TODO
+        # For a cubic curve:
+        # x = A, B, C, D; y = E, F, G, H
+        # x' = A', B', C'; y' = E', F', G' (t from 0 to 1)
+        # x'' = A'', B'', y'' = E'', F''
+        # Then numerator of signed curvature = x'y'' - y''x'
+        # =   E'' F''      A'' B''
+        #  A' 3   2     E' 3   2
+        # 2B' 2   1  - 2F' 2   1
+        #  C' 1   0     G' 1   0 (numbers denote powers of 1 - t in term)
+        if self.deg == 3:
+            d1 = self.derivative()
+            d2 = d1.derivative()
+            xp, yp = tuple(zip(*((c.real, c.imag) for c in d1.p)))
+            xpp, ypp = tuple(zip(*((c.real, c.imag) for c in d2.p)))
+            first  = xp[0] * ypp[0] - yp[0] * xpp[0]
+            second = 2 * xp[1] * ypp[0] + xp[0] * ypp[1] - (2 * yp[1] * xpp[0] + yp[0] * xpp[1])
+            third  = xp[2] * ypp[0] + 2 * xp[1] * ypp[1] - (yp[2] * xpp[0] + 2 * yp[1] * xpp[1])
+            fourth = xp[2] * ypp[1] - yp[2] * xpp[1]
+            # p(t) coeffs:       3  2  1  0
+            # first contributes -1 +3 -3 +1
+            # second            +1 -2 +1
+            # third             -1 +1
+            # fourth            +1
+            # Roots of p(t) between 0 and 1 = inflection points
+            tentinflect = polynomroot([first, second - 3 * first, 3 * first - 2 * second + third, fourth - third + second - first])[0]
+            return [t for t in tentinflect if 0 <= t <= 1]
+        return []
     
     def lenf(self):
         """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
@@ -61,8 +90,7 @@ class bezier:
             if start == None: return self.split(end)[0].length()
             elif end == None: return self.split(start)[1].length()
             else: return self.split(end)[0].split(start / end)[1].length()
-        lf = self.lenf()
-        return simpquad(lf, 0, 1)
+        return simpquad(self.lenf(), 0, 1)
     def affine(self, mat):
         """Transforms the curve by the given matrix."""
         return bezier(*[affine(mat, n) for n in self.p])

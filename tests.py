@@ -13,8 +13,10 @@ print(ea.length()) # 7.376705574218604
 print(eb.ell.quartrarc() * 3) # 7.266336165 410756 (GeoGebra actually gets this wrong: 7.266336165 838058)
 print(eb.length()) # 7.246336415408569
 
-celestia = "m2.9-.4c.9-.5 1.7-.7 2 .4s1.5.8 1.2-.2c.6.7.2 1.6-.8 1.8s-1.4-1-2.8 0" # This string was hoof-optimised and contains a lot of edge cases
-print(prettypath(parsepath(celestia))) # <2.9,-.4 3.8,-.9 4.6,-1.1 4.9,0> <4.9,0 5.2,1.1 6.4,.8 6.1,-.2> <6.1,-.2 6.7,.5 6.3,1.4 5.3,1.6> <5.3,1.6 4.3,1.8 3.9,.6 2.5,1.6>
+celestia = parsepath("m2.9-.4c.9-.5 1.7-.7 2 .4s1.5.8 1.2-.2c.6.7.2 1.6-.8 1.8s-1.4-1-2.8 0") # This string was hoof-optimised and contains a lot of edge cases
+print(prettypath(celestia)) # <2.9,-.4 3.8,-.9 4.6,-1.1 4.9,0> <4.9,0 5.2,1.1 6.4,.8 6.1,-.2> <6.1,-.2 6.7,.5 6.3,1.4 5.3,1.6> <5.3,1.6 4.3,1.8 3.9,.6 2.5,1.6>
+print(minmitrelimit(celestia)) # 5
+print(minmitrelimit([[bezier(1, 2)]])) # 4
 
 b = bezier(96+78j, 30+30j, 104+43j, 22+81j)
 print(b.length()) # 100.86008481303311

@@ -1,6 +1,7 @@
 # Helper functions for Kinross: linear, quadratic and cubic Bézier curves
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
+from cmath import isclose
 from .vectors import linterp, affine
 from .algebra import simpquad
 from .regexes import floatinkrep
@@ -33,17 +34,16 @@ class bezier:
     def velocity(self, t):
         """The velocity (first derivative) of this curve at parameter t."""
         return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])(t)
-    # I had to install 100+ packages and run matplotlib just to confirm this. Bollocks.
     def startdirc(self):
         N = 1
         while N <= self.deg:
-            if not near(self.p[N], self.p[0]): return self.p[N] - self.p[0]
+            if not isclose(self.p[N], self.p[0]): return self.p[N] - self.p[0]
             N += 1
         return 1
     def enddirc(self):
         N = self.deg - 1
         while N >= 0:
-            if not near(self.p[N], self.p[-1]): return self.p[N] - self.p[-1]
+            if not isclose(self.p[N], self.p[-1]): return self.p[N] - self.p[-1]
             N -= 1
         return -1
     

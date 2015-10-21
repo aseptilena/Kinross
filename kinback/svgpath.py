@@ -96,10 +96,15 @@ def reversepath(p):
     return out[::-1]
 
 def minmitrelimit(p):
-    """Determines the minimum mitre limit that will allow all middle nodes in the path to render with mitre and not bevel joins."""
+    """Returns the minimum integer mitre limit (floored at 4, the default value) required to have mitre joins for all middle nodes."""
     mvals = []
     for sp in p:
         if sp[-1] == 0:
             sgs = sp[:-1]
             angles = [angle(sgs[i].startdirc(), sgs[i - 1].enddirc()) for i in range(len(sgs))]
-    pass # TODO
+        else: angles = [angle(sp[i].enddirc(), sp[i + 1].startdirc()) for i in range(len(sp) - 1)]
+        mvals.append(min(angles, default=4))
+    p = min(mvals)
+    if isclose(p, 0): return float("inf")
+    if p == 4: return 4
+    return max(round(1 / sin(p / 2)), 4)

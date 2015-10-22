@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
-from .algebra import *
+from .algebra import polynomroot, matdeterm, rombergquad
 from math import pi, sqrt, fabs, hypot, copysign, radians, floor, ceil
 from .regexes import floatinkrep
 hpi = pi / 2
@@ -244,5 +244,5 @@ class elliparc:
         if isclose(self.tstart, self.tend): return 0.
         lf = self.lenf()
         if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(simpquad(lf, self.tstart, self.tend))
-        sl = simpquad(lf, self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + simpquad(lf, self.ef * hpi, self.tend)
+        sl = rombergquad(lf, self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + rombergquad(lf, self.ef * hpi, self.tend)
         return -sl if self.tend < self.tstart else sl

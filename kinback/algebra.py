@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from cmath import isclose
-from decimal import Decimal as D, getcontext, localcontext
+from decimal import Decimal as D, getcontext
 getcontext().prec = 60
 zero = D(0)
 
@@ -187,34 +187,16 @@ def matdeterm(m, exact = False):
             for j in range(k, N): a[i][j] = divf(a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j], 1 if not kk else a[k - 2][k - 2])
     return a[-1][-1]
 
-def eix(t):
-    """Computes decimal (cos t, sin t) simultaneously (real and complex components of e^(it))."""
-    with localcontext() as scc:
-        scc.prec = 70
-        cres, sres, x, cstep, sstep, err = D(1), D(t), D(t), D(1), D(1), D("5e-66")
-        px, i, s = x * x / 2, 2, -1
-        while (max(abs(cstep), abs(sstep))) > err:
-            cstep, sstep = D(0), D(0)
-            cstep += px * s
-            px, i = px * x / (i + 1), i + 1
-            sstep += px * s
-            px, i, s = px * x / (i + 1), i + 1, -s
-            cres, sres = cres + cstep, sres + sstep
-    return (+cres, +sres)
-
-def simpquad(f, a, b, e = 1e-16):
-    """∫(a, b) f(x) dx by adaptive Simpson's rule. This uses a list of 2-tuples to cache function evaluations."""
-    c, res = (a + b) / 2, 0
-    v = [(a, f(a)), (c, f(c)), (b, f(b))]
-    while len(v) > 2:
-        ab = (v[2][0] - v[0][0]) * (v[0][1] + 4 * v[1][1] + v[2][1]) / 6
-        acm, cbm = (v[0][0] + v[1][0]) / 2, (v[1][0] + v[2][0]) / 2
-        v.insert(2, (cbm, f(cbm)))
-        v.insert(1, (acm, f(acm)))
-        ac = (v[2][0] - v[0][0]) * (v[0][1] + 4 * v[1][1] + v[2][1]) / 6
-        cb = (v[4][0] - v[2][0]) * (v[2][1] + 4 * v[3][1] + v[4][1]) / 6
-        corr = (ac + cb - ab) / 15
-        if abs(corr) < e:
-            del v[:4]
-            res += ac + cb + corr
-    return res
+def rombergquad(f, a, b, e = 1e-18):
+    """∫(a, b) f(x) dx by Romberg's method."""
+    fa, fm, fb, h = f(a), f((a + b) / 2), f(b), (b - a) / 2
+    first = (fa + fb) * h
+    second = (fa + 2 * fm + fb) * h / 2
+    third = (4 * second - first) / 3
+    v = [[second, third]]
+    while abs(v[-1][-1] - v[-1][-2]) > e:
+        h /= 2
+        v.append([v[-1][0] / 2 + h * sum([f(a + i * h) for i in range(1, 1 << len(v[-1]), 2)])])
+        cur = v[-1]
+        for i in range(len(v[-2])): cur.append(cur[-1] + (cur[-1] - v[-2][i]) / (4 ** (i + 1) - 1))
+    return v[-1][-1]

@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import xml.etree.ElementTree
-from .colours import repr2col, col2repr
+from .colours import repr2col, col2repr, decs
 
 # Default style properties
 defstyle = {"display": "inline",
@@ -50,8 +50,7 @@ defstyle = {"display": "inline",
             # Clips and masks
             "clip-path": "none",
             "clip-rule": "nonzero",
-            "mask": "none",
-            "text-decoration-color": "#000"}
+            "mask": "none"}
 # Text styling only properly belongs on text and tspan tags!
 dstytext = {"baseline-shift": "baseline",
             "block-progression": "tb",
@@ -89,7 +88,7 @@ styleplus = {"letter-spacing": "0px",
              "word-spacing": "0px",
              "line-height": "125%",
              "font-weight": "500"}
-# Default attributes of objects; None denotes any string. The LPE output tuple, the very reason Rarify was written, is separate so as to enable controlling its execution.
+# Default attributes of objects; None denotes any string. The LPE output tuple, the reason Rarify was written in the first place, is separate so as to enable controlling its execution.
 defattrb = [(None, {"inkscape:connector-curvature": "0"}, {}),
             (None, {"sodipodi:nodetypes": None}, {}),
             
@@ -122,7 +121,7 @@ defattrb = [(None, {"inkscape:connector-curvature": "0"}, {}),
                                       "tang_offset": "0",
                                       "vertical_pattern": "false"}, {"effect": "skeletal"}),
             
-            ("use", {"x": "0", "y": "0", "height": "100%", "width": "100%"}, {}),
+            ("use", {"x": None, "y": None, "height": None, "width": None}, {}),
             ("clipPath", {"clipPathUnits": "userSpaceOnUse"}, {}),
             ("mask", {"maskUnits": "userSpaceOnUse"}, {}),
             ("text", {"sodipodi:linespacing": "125%"}, {}),
@@ -130,34 +129,30 @@ defattrb = [(None, {"inkscape:connector-curvature": "0"}, {}),
             (None, {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None}, {}),
             ("svg", {"version": None, "inkscape:version": None, "sodipodi:docname": None, "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None}, {})]
 # Colour properties and their corresponding opacities
-colp = {"fill": "fill-opacity",
-        "stroke": "stroke-opacity",
-        "stop-color": "stop-opacity",
-        "color": "opacity",
-        "solid-color": "solid-opacity",
-        "flood-color": "flood-opacity",
-        "lighting-color": None,
-        "text-decoration-color": None}
+colop = {"fill": "fill-opacity",
+         "stroke": "stroke-opacity",
+         "stop-color": "stop-opacity",
+         "color": "opacity",
+         "solid-color": "solid-opacity",
+         "flood-color": "flood-opacity",
+         "lighting-color": None,
+         "text-decoration-color": None}
 # Preclusions
 precld = {"stroke-dasharray": ("stroke-dashoffset"),
           "stroke": ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset")}
 
-# Namespace map for the two namespace-expanding functions, which really only need to bother with three namespaces
-longnms = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
+# Namespace map for the two namespace-expanding functions (and findall)
+nm_findall = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
 def treename(t):
     """On node tags, returns their names as stored in the element tree."""
     a = t.split(':')
     if len(a) == 1: return "{http://www.w3.org/2000/svg}" + t
-    return "{{{0}}}{1}".format(longnms[a[0]], a[1])
+    return "{{{0}}}{1}".format(nm_findall[a[0]], a[1])
 def fullattr(t):
     """Expands the namespaces of attributes to match their names in the tree. Not to be confused with treename."""
     a = t.split(':')
     if len(a) == 1: return t
-    return "{{{0}}}{1}".format(longnms[a[0]], a[1])
-# Returns the shortest representation of the input with opacity.
-def tersecol(s, a):
-    if s[0] == "u" or s == "none": return (s, a)
-    else: return repr2col(col2repr(s, a))
+    return "{{{0}}}{1}".format(nm_findall[a[0]], a[1])
 def matchrm(d, pr, cond = {}):
     """Dictionary match-and-remove with namespaces.
     pr is the list of pairs to remove; ! prefix removes non-matchings (key is there but value is not the one specified).
@@ -170,6 +165,10 @@ def matchrm(d, pr, cond = {}):
         for p in pr:
             negate, term = p[0] == '!', p.lstrip("!")
             if fullattr(term) in d and negate ^ (pr[p] in (d[fullattr(term)], None)): del d[fullattr(term)]
+def tersecol(c):
+    """Returns the shortest representation of an RGB colour (without the opacity)."""
+    if c[0] == "u" or c == "none": return c
+    return repr2col(col2repr(c))[0]
 
 def styledict(node, preserve = False):
     """Returns the style dictionary; if the second argument is True, also wipes it from the node."""
@@ -197,28 +196,26 @@ def whack(node, lpeoutput = False):
     for aset in defattrb:
         if aset[0] == None or node.tag == treename(aset[0]): matchrm(node.attrib, aset[1], aset[2])
     if not lpeoutput and node.tag == "{http://www.w3.org/2000/svg}path": matchrm(node.attrib, {"d": None}, {"inkscape:original-d": None})
-    # Colour normalisation
-    for c in colp:
-        if c not in sd: sd[c] = defstyle[c]
-        if colp[c] != None and colp[c] not in sd: sd[colp[c]] = defstyle[colp[c]]
-        tersed = tersecol(sd[c], sd[colp[c]] if colp[c] else None)
-        sd[c] = tersed[0]
-        if colp[c]: sd[colp[c]] = tersed[1]
+    # Colour normalisation; work on the RGB separately from the A
+    for c in colop:
+        if c in sd: sd[c] = tersecol(sd[c])
+        if colop[c] != None and colop[c] in sd: sd[colop[c]] = decs[round(float(sd[colop[c]]) * 255)]
     # Preclusions
     for p in precld:
         if p not in sd: sd[p] = defstyle[p]
         matchrm(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
     matchrm(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
+    # Implied style property removal
     matchrm(sd, defstyle)
     if node.tag in ("{http://www.w3.org/2000/svg}text", "{http://www.w3.org/2000/svg}tspan"):
         matchrm(sd, dstytext)
         matchrm(sd, styleplus)
     else: matchrm(sd, rstytext)
     stylesplit(node, sd)
-# In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties)
+# In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties).
 def weakwhack(node): stylesplit(node, styledict(node))
-# The nodes a node references (via "URLs" and hashes)
 def refsof(node):
+    """Works out which nodes the input node references, whether by hashes or URIs."""
     rf, sd = {}, styledict(node, True)
     for a in ("fill", "stroke", "clip-path", "mask", "filter"):
         if a in sd and sd[a][0] == 'u': rf[a] = sd[a][5:-1]

@@ -13,12 +13,12 @@ def rarify(f):
     rn = tr.getroot()
     begin = time.perf_counter()
     # Phase 1: node tree operations
-    for nv in rn.findall("sodipodi:namedview", nm): rn.remove(nv)
+    for nv in rn.findall("sodipodi:namedview", nm_findall): rn.remove(nv)
     # Embrittlement of zero-length groups
     N = 1
     while N:
         N = 0
-        sel = rn.findall(".//svg:g/..", nm)
+        sel = rn.findall(".//svg:g/..", nm_findall)
         for par in sel:
             torm = []
             for nd in list(par):
@@ -27,18 +27,18 @@ def rarify(f):
             for degen in torm: par.remove(degen)
             N += len(torm)
     if flags.metadata:
-        for md in rn.findall("svg:metadata", nm): rn.remove(md)
-        for md in rn.findall("svg:title", nm): rn.remove(md)
+        for md in rn.findall("svg:metadata", nm_findall): rn.remove(md)
+        for md in rn.findall("svg:title", nm_findall): rn.remove(md)
     if flags.scripts:
-        for sc in rn.findall("svg:script", nm): rn.remove(sc)
+        for sc in rn.findall("svg:script", nm_findall): rn.remove(sc)
     # Phase 2: individual node attribute/style property processing
     # Isolated clipping paths can be stripped of all style except for clip-rule:evenodd
-    for clips in rn.findall(".//svg:clipPath/svg:path", nm):
+    for clips in rn.findall(".//svg:clipPath/svg:path", nm_findall):
         if "clip-rule:evenodd" in clips.get("style", ""): clips.set("style", "clip-rule:evenodd")
         else: matchrm(clips.attrib, {"style": None})
     # Bespokely placed paths and metadata are processed differently
-    templates = set(rn.findall(".//svg:defs/svg:path", nm))
-    mdelem = set(rn.findall(".//svg:title", nm) + rn.findall(".//svg:metadata", nm) + rn.findall(".//svg:metadata//*", nm))
+    templates = set(rn.findall(".//svg:defs/svg:path", nm_findall))
+    mdelem = set(rn.findall(".//svg:title", nm_findall) + rn.findall(".//svg:metadata", nm_findall) + rn.findall(".//svg:metadata//*", nm_findall))
     actual = set([rn] + rn.findall(".//*")) - templates - mdelem
     for n in actual: whack(n, flags.lpeoutput)
     for t in templates: weakwhack(t)
@@ -55,10 +55,10 @@ def rarify(f):
         rd[irk] = cits
         for i in cits: reob.add(cits[i])
     # 3b: unreferenced IDs
-    for rm in set(rd.keys()) - reob: del rn.find(".//*[@id='{0}']".format(rm), nm).attrib["id"]
+    for rm in set(rd.keys()) - reob: del rn.find(".//*[@id='{0}']".format(rm), nm_findall).attrib["id"]
     if rn.get("id") != None: del rn.attrib["id"]
     # 3c: unused <defs>
-    df, ud = rn.find(".//svg:defs", nm), []
+    df, ud = rn.find(".//svg:defs", nm_findall), []
     if df != None:
         for dlm in df:
             if dlm.get("id") == None: ud.append(dlm)

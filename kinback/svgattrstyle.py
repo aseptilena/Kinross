@@ -142,36 +142,37 @@ colp = {"fill": "fill-opacity",
 precld = {"stroke-dasharray": ("stroke-dashoffset"),
           "stroke": ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset")}
 
-# Namespace map. This differs from svgnms because it should be used for the findall function, not to initialise the parser.
-nm = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
-def prependnms(t):
+# Namespace map for the two namespace-expanding functions, which really only need to bother with three namespaces
+longnms = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
+def treename(t):
+    """On node tags, returns their names as stored in the element tree."""
     a = t.split(':')
     if len(a) == 1: return "{http://www.w3.org/2000/svg}" + t
-    return "{{{0}}}{1}".format(nm[a[0]], a[1])
-# The function below will not add the default namespace (to handle attributes).
-def expandnms(t):
+    return "{{{0}}}{1}".format(longnms[a[0]], a[1])
+def fullattr(t):
+    """Expands the namespaces of attributes to match their names in the tree. Not to be confused with treename."""
     a = t.split(':')
     if len(a) == 1: return t
-    return "{{{0}}}{1}".format(nm[a[0]], a[1])
+    return "{{{0}}}{1}".format(longnms[a[0]], a[1])
 # Returns the shortest representation of the input with opacity.
 def tersecol(s, a):
     if s[0] == "u" or s == "none": return (s, a)
     else: return repr2col(col2repr(s, a))
-# Dictionary match and remove with namespaces.
-# pr is the list of pairs to remove; ! prefix removes non-matchings (key is there but value is not the one specified).
-# cond gives pairs which must all be there; !-prefixing works similarly.
 def matchrm(d, pr, cond = {}):
+    """Dictionary match-and-remove with namespaces.
+    pr is the list of pairs to remove; ! prefix removes non-matchings (key is there but value is not the one specified).
+    cond gives pairs which must all be there; !-prefixing works similarly."""
     rute = True
     for c in cond:
         negate, term = c[0] == '!', c.lstrip("!")
-        rute &= expandnms(term) in d and negate ^ (cond[c] in (d[expandnms(term)], None))
+        rute &= fullattr(term) in d and negate ^ (cond[c] in (d[fullattr(term)], None))
     if rute:
         for p in pr:
             negate, term = p[0] == '!', p.lstrip("!")
-            if expandnms(term) in d and negate ^ (pr[p] in (d[expandnms(term)], None)): del d[expandnms(term)]
+            if fullattr(term) in d and negate ^ (pr[p] in (d[fullattr(term)], None)): del d[fullattr(term)]
 
-# Returns the style dictionary. If the second argument is False (the default), also wipes the style out.
 def styledict(node, preserve = False):
+    """Returns the style dictionary; if the second argument is True, also wipes it from the node."""
     sd, sa = {}, []
     for p in node.attrib:
         if p in defstyle:
@@ -182,27 +183,28 @@ def styledict(node, preserve = False):
     if sp: sd.update(dict([a.split(':') for a in sp if a]))
     if not preserve: node.set("style", "")
     return sd
-# Sets the style, minimising the number of bytes used (three or less single properties trump a style property)
 def stylesplit(node, sd):
+    """Sets the style, minimising occupied space."""
     if len(sd) < 1: del node.attrib["style"]
     elif len(sd) < 4:
         del node.attrib["style"]
         for p in sd: node.set(p, sd[p])
     else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
-# Phases 1 and 2 of the old (standalone) Rarify script on the node level.
-# The function's name comes from the early perception that the script "whacks" the node's redundant attributes/properties.
-# The lpeoutput flag, if True, preserves the d of paths with LPEs (which would normally be removed) so that other applications can render them correctly.
+
 def whack(node, lpeoutput = False):
+    """Phases 1 and 2 of the old Rarify script on the node level. lpeoutput, if True, preserves the d of paths with LPEs (which would normally be removed) so that other applications can render them correctly."""
     sd = styledict(node)
     for aset in defattrb:
-        if aset[0] == None or node.tag == prependnms(aset[0]): matchrm(node.attrib, aset[1], aset[2])
+        if aset[0] == None or node.tag == treename(aset[0]): matchrm(node.attrib, aset[1], aset[2])
     if not lpeoutput and node.tag == "{http://www.w3.org/2000/svg}path": matchrm(node.attrib, {"d": None}, {"inkscape:original-d": None})
+    # Colour normalisation
     for c in colp:
         if c not in sd: sd[c] = defstyle[c]
         if colp[c] != None and colp[c] not in sd: sd[colp[c]] = defstyle[colp[c]]
         tersed = tersecol(sd[c], sd[colp[c]] if colp[c] else None)
         sd[c] = tersed[0]
         if colp[c]: sd[colp[c]] = tersed[1]
+    # Preclusions
     for p in precld:
         if p not in sd: sd[p] = defstyle[p]
         matchrm(sd, {q: None for q in precld[p]}, {p: defstyle[p]})

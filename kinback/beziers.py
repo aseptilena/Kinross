@@ -90,7 +90,8 @@ class bezier:
             if start == None: return self.split(end)[0].length()
             elif end == None: return self.split(start)[1].length()
             else: return self.split(end)[0].split(start / end)[1].length()
-        return rombergquad(self.lenf(), 0, 1)
+        knots = [0] + sorted(self.inflections()) + [1]
+        return sum([rombergquad(self.lenf(), knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
     def affine(self, mat):
         """Transforms the curve by the given matrix."""
         return bezier(*[affine(mat, n) for n in self.p])

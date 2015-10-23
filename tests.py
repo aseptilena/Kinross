@@ -13,20 +13,17 @@ print(prettypath(celestia)) # <2.9,-.4 3.8,-.9 4.6,-1.1 4.9,0> <4.9,0 5.2,1.1 6.
 print(minmitrelimit(celestia)) # 5
 print(minmitrelimit([[bezier(1, 2, 3, 4)]])) # 4; this one has no corners
 
-b = bezier(0, 5+5j, 5j, 13)
-for i in b.inflections(): print(b(i)) # (2.2190529218434643+2.678571428571432j) and (6.495232792442245+2.678571428571432j)
-print(b.length()) # 15.461447145751428
-
 ea = elliparc(1.2, ellipse(0, 2, 1, 0), 4.7)
 start = time.perf_counter()
 for q in range(1000): l = ea.length()
 end = time.perf_counter()
 print(l) # 5.548448510448969
-print("Integration time for elliptical arc: {}".format((end - start) / 1000)) # On a Lenovo U41: 0.35 ms
+print("Integration time for elliptical arc: {} ms".format(end - start)) # On a Lenovo U41: 0.36 ms
 
 bs = bezier(5j, 9+2j, 3+1j, 12+7j)
+print(bs.inflections()) # [0.723606797749979, 0.276393202250021]
 start = time.perf_counter()
-for q in range(1000): l = bs.length()
+for q in range(100): l = bs.length()
 end = time.perf_counter()
-print(l) # 13.928561431506912
-print("Integration time for Bézier curve: {}".format((end - start) / 1000)) # 3.3 ms
+print(l) # 13.92856143150691
+print("Integration time for Bézier curve: {} ms".format((end - start) * 10)) # 2.7 ms

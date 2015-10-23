@@ -51,7 +51,7 @@ defstyle = {"display": "inline",
             "clip-path": "none",
             "clip-rule": "nonzero",
             "mask": "none"}
-# Text styling only properly belongs on text and tspan tags!
+# Text styling only properly belongs on text and tspan nodes, so these attributes can be removed on other nodes.
 dstytext = {"baseline-shift": "baseline",
             "block-progression": "tb",
             "direction": "ltr",
@@ -82,7 +82,6 @@ dstytext = {"baseline-shift": "baseline",
             "word-spacing": "normal",
             "writing-mode": "lr-tb",
             "-inkscape-font-specification": "Sans"}
-rstytext = {a: None for a in dstytext}
 # Inkscape aliases the following default style properties for text as such. There is no corresponding "None-dictionary" as above because all its keys are in dstytext.
 styleplus = {"letter-spacing": "0px",
              "word-spacing": "0px",
@@ -154,17 +153,13 @@ def fullattr(t):
     if len(a) == 1: return t
     return "{{{0}}}{1}".format(nm_findall[a[0]], a[1])
 def matchrm(d, pr, cond = {}):
-    """Dictionary match-and-remove with namespaces.
-    pr is the list of pairs to remove; ! prefix removes non-matchings (key is there but value is not the one specified).
-    cond gives pairs which must all be there; !-prefixing works similarly."""
+    """Dictionary match-and-remove with namespaces. pr is the list of pairs to remove and cond gives pairs which must all be there."""
     rute = True
     for c in cond:
-        negate, term = c[0] == '!', c.lstrip("!")
-        rute &= fullattr(term) in d and negate ^ (cond[c] in (d[fullattr(term)], None))
+        rute &= fullattr(c) in d and cond[c] in (d[fullattr(c)], None)
     if rute:
         for p in pr:
-            negate, term = p[0] == '!', p.lstrip("!")
-            if fullattr(term) in d and negate ^ (pr[p] in (d[fullattr(term)], None)): del d[fullattr(term)]
+            if fullattr(p) in d and pr[p] in (d[fullattr(p)], None): del d[fullattr(p)]
 def tersecol(c):
     """Returns the shortest representation of an RGB colour (without the opacity)."""
     if c[0] == "u" or c == "none": return c
@@ -174,7 +169,7 @@ def styledict(node, preserve = False):
     """Returns the style dictionary; if the second argument is True, also wipes it from the node."""
     sd, sa = {}, []
     for p in node.attrib:
-        if p in defstyle:
+        if p in defstyle or p in dstytext:
             sd[p] = node.get(p)
             if not preserve: sa.append(p)
     for a in sa: del node.attrib[a]
@@ -182,6 +177,12 @@ def styledict(node, preserve = False):
     if sp: sd.update(dict([a.split(':') for a in sp if a]))
     if not preserve: node.set("style", "")
     return sd
+def lipostyle(sd, dct, ignore = False):
+    """Removes default attributes from sd according to dct. ignore = True removes them regardless of what values dct has."""
+    ra = []
+    for prop in sd:
+        if prop in dct and (ignore or sd[prop] == dct[prop]): ra.append(prop)
+    for tra in ra: del sd[tra]
 def stylesplit(node, sd):
     """Sets the style, minimising occupied space."""
     if len(sd) < 1: del node.attrib["style"]
@@ -204,13 +205,13 @@ def whack(node, lpeoutput = False):
     for p in precld:
         if p not in sd: sd[p] = defstyle[p]
         matchrm(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
-    matchrm(sd, {"stroke-miterlimit": None}, {"!stroke-linejoin": "miter"})
+    if sd.get("stroke-linejoin", "miter") != "miter" and "stroke-miterlimit" in sd: del sd["stroke-miterlimit"]
     # Implied style property removal
-    matchrm(sd, defstyle)
+    lipostyle(sd, defstyle)
     if node.tag in ("{http://www.w3.org/2000/svg}text", "{http://www.w3.org/2000/svg}tspan"):
-        matchrm(sd, dstytext)
-        matchrm(sd, styleplus)
-    else: matchrm(sd, rstytext)
+        lipostyle(sd, dstytext)
+        lipostyle(sd, styleplus)
+    else: lipostyle(sd, dstytext, True)
     stylesplit(node, sd)
 # In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties).
 def weakwhack(node): stylesplit(node, styledict(node))

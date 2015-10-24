@@ -179,9 +179,7 @@ def styledict(node, preserve = False):
     return sd
 def lipostyle(sd, dct, ignore = False):
     """Removes default attributes from sd according to dct. ignore = True removes them regardless of what values dct has."""
-    ra = []
-    for prop in sd:
-        if prop in dct and (ignore or sd[prop] == dct[prop]): ra.append(prop)
+    ra = [prop for prop in sd if sd[prop] == dct.get(prop) or ignore and prop in dct]
     for tra in ra: del sd[tra]
 def stylesplit(node, sd):
     """Sets the style, minimising occupied space."""

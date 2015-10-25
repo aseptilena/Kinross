@@ -2,6 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
+from .affines import affine, composition, translation, rotation, scaling 
 from .algebra import polynomroot, matdeterm, rombergquad
 from math import pi, sqrt, fabs, hypot, copysign, radians, floor, ceil
 from .regexes import floatinkrep

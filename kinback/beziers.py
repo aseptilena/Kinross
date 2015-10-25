@@ -2,7 +2,8 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from cmath import isclose
-from .vectors import linterp, affine
+from .vectors import linterp
+from .affines import affine
 from .algebra import rombergquad, polynomroot
 from .regexes import floatinkrep
 

@@ -6,8 +6,8 @@ huge0 = re.compile(r"0{3,}$")
 tiny0 = re.compile(r"(-?)\.(0{3,})")
 numre = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
 spacere = re.compile(r"[ ,]*")
-def rdigitnormal(k): return min(6, 8 - len(k))
-def rdigitaffine(l): return 8 if l == "0" else 8 - len(l)
+rdigitnormal = lambda k: min(6, 8 - len(k))
+rdigitaffine = lambda k: 8 if k == "0" else 8 - len(k)
 transformbreaks = re.compile(r"(?:matrix|translate|scale|rotate|skewX|skewY)\s*\(.*?\)")
 
 def floatinkrep(he, aflag = False):

@@ -5,6 +5,7 @@
 import os, time, argparse
 from kinback.svgattrstyle import *
 from kinback.miscellanea import svgnms
+from kinback.affines import minimisetransform
 t, tr, rn = xml.etree.ElementTree, None, None
 
 def rarify(f):
@@ -64,6 +65,11 @@ def rarify(f):
             if dlm.get("id") == None: ud.append(dlm)
         for z in ud: df.remove(z)
         if not len(list(df)): rn.remove(df)
+    # Phase 4: transformation simplification
+    for withtf in rn.findall(".//*[@transform]", nm_findall):
+        mt = minimisetransform(withtf.get("transform"))
+        if mt == None: del withtf.attrib[transform]
+        else: withtf.set("transform", mt)
     # Final output
     outfn = "{0}-rarified.svg".format(f[:-4])
     outf = open(outfn, 'w')

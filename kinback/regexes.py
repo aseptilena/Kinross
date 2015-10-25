@@ -34,8 +34,8 @@ def tokenisetransform(s):
     l, res = transformbreaks.findall(s), []
     for tf in l:
         typ, params = tf[:-1].split("(")
-        res.extend([typ, tuple(float(n) for n in numre.split(params) if not spacere.fullmatch(n))])
-    return tuple(zip(*[iter(res)] * 2))
+        res.append([typ, [float(n) for n in numre.split(params) if not spacere.fullmatch(n)]])
+    return res
 
 def numbercrunch(*nums):
     """Concatenates the given number representations, removing all delimiters where that keeps the string unambiguous to the regular expression parser."""

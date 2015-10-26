@@ -204,7 +204,7 @@ def repr2col(tups, four = False):
 # Conversions between colour spaces: sRGB, CIEXYZ, CIELAB
 def xyz2rgb(c):
     def delinearise(k): return 12.92 * k if k <= .0031308 else 1.055 * k ** (1 / 2.4) - .055
-    cc = [3.24062547 * c[0] - 1.53720797 * c[1] -  .49862859 * c[2],
+    cc = [3.24062548 * c[0] - 1.53720797 * c[1] -  .49862860 * c[2],
           -.96893071 * c[0] + 1.87575606 * c[1] +  .04151752 * c[2],
            .05571012 * c[0] -  .20402105 * c[1] + 1.05699594 * c[2]]
     z = [delinearise(k) for k in cc]

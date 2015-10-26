@@ -166,27 +166,25 @@ decs = ("0"   , ".004", ".008", ".01" , ".016", ".02" , ".024", ".028", ".03" , 
         ".88" , ".884", ".888", ".89" , ".896", ".898", ".9"  , ".904", ".91" , ".912", ".916", ".92" , ".924", ".93" , ".932", ".936",
         ".94" , ".944", ".95" , ".952", ".956", ".96" , ".964", ".97" , ".972", ".976", ".98" , ".984", ".99" , ".992", ".996",    "1")
 
-# The colour string may be # + 3/6/8 hexes, an alias or an RGB/HSL bracket. The opacity is a string representing a number in [0, 1].
-# Separately specified opacities override colour string opacities.
+# The opacity is a string representing a number in [0, 1]; an opacity specified as the second parameter overrides an opacity specified in the first.
 def col2repr(col, alpha = None):
-    if col in aliases: return tuple([i / 255 for i in aliases[col]] + [1. if alpha == None else float(alpha)])
+    if col in aliases: return tuple([i / 255 for i in aliases[col]] + [1 if alpha == None else float(alpha)])
     elif "(" in col:
         ket = col[4:-1].replace(" ", "").split(",")
-        if ord(col[0]) & 31 == 18: # R or r of RGB
+        if col[0].lower() == 'r': # rgb()
             bra = [float(c[:-1]) / 100 if ket[0][-1] == "%" else float(c) / 255 for c in ket]
-        else: # HSL
+        else: # hsl()
             h, s, l = float(ket[0]) / 60, float(ket[1][:-1]) / 100, float(ket[2][:-1]) / 100
             c = (1 - abs(2 * l - 1)) * s
             x, m = (1 - abs(h % 2 - 1)) * c, l - c / 2
-            bra = [c, x, 0.] if h % 2 < 1 else [x, c, 0.]
+            bra = [c, x, 0] if h % 2 < 1 else [x, c, 0]
             for q in range(int(h / 2)): bra.insert(0, bra.pop())
             bra = [p + m for p in bra]
-        return tuple(bra + [1. if alpha == None else float(alpha)])
-    else:
-        h, a = col.strip('#'), 1.
-        if len(h) == 3: rgb = [int(2 * h[i], 16) / 255 for i in range(3)]
-        else: rgb = [int(h[i:i + 2], 16) / 255 for i in range(0, 6, 2)]
-        if len(h) == 8: a = int(h[6:], 16) / 255
+        return tuple(bra + [1 if alpha == None else float(alpha)])
+    else: # 3/6/8 hexes
+        if len(col) == 4: rgb = [int(2 * col[i], 16) / 255 for i in range(1, 4)]
+        else: rgb = [int(col[i:i + 2], 16) / 255 for i in range(1, 7, 2)]
+        a = int(col[7:], 16) / 255 if len(h) == 9 else 1
         if alpha != None: a = float(alpha)
         return (rgb[0], rgb[1], rgb[2], a)
 # four causes an eight-hex RGBA string to be returned instead of a six-hex RGB string or alias and an opacity float for pasting into Inkscape's fill/stroke dialogue.
@@ -205,10 +203,10 @@ def repr2col(tups, four = False):
 
 # Conversions between colour spaces: sRGB, CIEXYZ, CIELAB
 def xyz2rgb(c):
-    def delinearise(k): return 12.92 * k if k <= .0031308 else 1.055 * k ** (1 / 2.4) - 0.055
-    cc = [3.2406 * c[0] - 1.5372 * c[1] -  .4986 * c[2],
-          -.9689 * c[0] + 1.8758 * c[1] +  .0415 * c[2],
-           .0557 * c[0] -  .2040 * c[1] + 1.0570 * c[2]]
+    def delinearise(k): return 12.92 * k if k <= .0031308 else 1.055 * k ** (1 / 2.4) - .055
+    cc = [3.24062547 * c[0] - 1.53720797 * c[1] -  .49862859 * c[2],
+          -.96893071 * c[0] + 1.87575606 * c[1] +  .04151752 * c[2],
+           .05571012 * c[0] -  .20402105 * c[1] + 1.05699594 * c[2]]
     z = [delinearise(k) for k in cc]
     return (z[0], z[1], z[2], c[3])
 def rgb2xyz(c):

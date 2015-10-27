@@ -184,7 +184,7 @@ def col2repr(col, alpha = None):
     else: # 3/6/8 hexes
         if len(col) == 4: rgb = [int(2 * col[i], 16) / 255 for i in range(1, 4)]
         else: rgb = [int(col[i:i + 2], 16) / 255 for i in range(1, 7, 2)]
-        a = int(col[7:], 16) / 255 if len(h) == 9 else 1
+        a = int(col[7:], 16) / 255 if len(col) == 9 else 1
         if alpha != None: a = float(alpha)
         return (rgb[0], rgb[1], rgb[2], a)
 # four causes an eight-hex RGBA string to be returned instead of a six-hex RGB string or alias and an opacity float for pasting into Inkscape's fill/stroke dialogue.

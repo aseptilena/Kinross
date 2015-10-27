@@ -140,7 +140,15 @@ colop = {"fill": "fill-opacity",
 precld = {"stroke-dasharray": ("stroke-dashoffset"),
           "stroke": ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset")}
 
-# Namespace map for the two namespace-expanding functions (and findall)
+# Namespaces used by SVG and Inkscape, for ease of registering them with the XML parser
+svgnms = {"": "http://www.w3.org/2000/svg",
+          "inkscape": "http://www.inkscape.org/namespaces/inkscape",
+          "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
+          "xlink": "http://www.w3.org/1999/xlink",
+          "dc": "http://purl.org/dc/elements/1.1/",
+          "cc": "http://creativecommons.org/ns#",
+          "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}
+# A reduced namespace for the two namespace-expanding functions and findall
 nm_findall = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
 def treename(t):
     """On node tags, returns their names as stored in the element tree."""

@@ -3,8 +3,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import os, time, argparse
-from kinback.svgattrstyle import *
-from kinback.miscellanea import svgnms
+from kinback.svgproc import *
 from kinback.affines import minimisetransform
 t, tr, rn = xml.etree.ElementTree, None, None
 

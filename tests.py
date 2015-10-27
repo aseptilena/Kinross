@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.5
 # Tests for the Kinback library. The expected output is to the right of the line or on top if too long.
 from kinback.ellipse import *
-from kinback.svgpath import *
+from kinback.pathery import *
 from kinback.affines import *
 
 # ((-0.5801753182779774+6.403206599624836j), (-1.2858815280829052+3.2027085369818975j), (7.325416619694055+1.6143915515721436j), (6.37498063919398+5.148446618730812j))

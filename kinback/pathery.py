@@ -1,4 +1,4 @@
-# Helper functions for Kinross: SVG path processing
+# Helper functions for Kinross: paths
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from math import sin, ceil

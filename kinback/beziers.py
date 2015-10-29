@@ -109,8 +109,8 @@ class bezier:
         lower, higher = (frac, 1) if fa < target else (0, frac)
         flower, fire = self.length(lower), self.length(higher)
         for q in range(40):
-            if not isclose(flower, target, rel_tol=1e-15):
-                if isclose(flower, target, rel_tol=1e-7):
+            if not isclose(lower, higher, rel_tol=1e-15):
+                if isclose(lower, higher, rel_tol=1e-7):
                     mid_newton = lower - (self.length(lower) - target) / self.lenf()(lower)
                     mid = mid_newton if lower < mid_newton < higher else (lower + higher) / 2
                 else: mid = (lower + higher) / 2
@@ -118,7 +118,7 @@ class bezier:
                 if fmid <= target: lower, flower = mid, fmid
                 else: higher, fire = mid, fmid
             else: break
-        return round(lower, 11)
+        return round((lower + higher) / 2, 12)
     
     def affine(self, mat):
         """Transforms the curve by the given matrix."""

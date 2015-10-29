@@ -248,7 +248,7 @@ class elliparc:
         sl = rombergquad(lf, self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + rombergquad(lf, self.ef * hpi, self.tend)
         return -sl if self.tend < self.tstart else sl
     def invlength(self, frac):
-        """Returns the t value where self.length(t) / self.length() = frac. The code here is identical to that for the Bézier length inversion."""
+        """Returns the t value where self.length(t) / self.length() = frac. The code here is (almost) identical to that for the Bézier length inversion."""
         if frac <= 0: return 0
         if frac >= 1: return 1
         whole = self.length()
@@ -265,7 +265,7 @@ class elliparc:
                 if fmid <= target: lower, flower = mid, fmid
                 else: higher, fire = mid, fmid
             else: break
-        return round(lower, 11)
+        return round((lower + higher) / 2, 12)
     
     def affine(self, mat):
         """Transforms the arc by the given matrix."""

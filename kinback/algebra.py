@@ -83,9 +83,9 @@ class polynomial:
     def minusendzeros(self, prec = 1e-10):
         """Returns the polynomial with leading and trailing zeros to the specified precision stripped along with the number of trailing zeros (or equivalently zero roots)."""
         p = self.dup()
-        while isclose(p[-1], zero, abs_tol=prec): p.a.pop()
+        while isclose(p[-1], zero, abs_tol=prec) and len(p) > 1: p.a.pop()
         N = 0
-        while isclose(p[0], zero, abs_tol=prec):
+        while isclose(p[0], zero, abs_tol=prec) and len(p) > 1:
             p.a.pop(0)
             N += 1
         return (p, N)
@@ -121,11 +121,12 @@ class polynomial:
             res = [[], []]
             while p.deg() > 2:
                 u, v = self[-2] / self[-1], self[-3] / self[-1]
-                x, y, N, bairprec = D(3), D(4), 0, D(prec * prec * prec)
-                while not isclose((x * x + y * y).sqrt(), zero, abs_tol=bairprec) and N < 256:
-                    x, y = p.bairstowstep(u, v)
-                    u, v = u + x, v + y
-                    N += 1
+                x, y, bairprec = D(3), D(4), D(prec * prec * prec)
+                for q in range(256):
+                    if not isclose((x * x + y * y).sqrt(), zero, abs_tol=bairprec):
+                        x, y = p.bairstowstep(u, v)
+                        u, v = u + x, v + y
+                    else: break
                 p = p.quadruffini(u, v)[0]
                 load = polynomial((v, u, 1)).roots()
                 res[0].extend(load[0])

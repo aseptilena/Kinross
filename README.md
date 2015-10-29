@@ -20,7 +20,8 @@ Kinross paths are lists of subpaths, which in turn are lists of two kinds of cla
 * Value at _t_ and at endpoints (0, 1)
 * Splitting into two curves or arcs at _t_
 * Reversed segment
-* Segment length
+* Segment length and its inverse
 * Tangents at _t_ and at endpoints
+* Affine transformations
 
 Closed subpaths (those with a z) have the sentinel **0** at their end, whether their defined endpoints are near each other or not.

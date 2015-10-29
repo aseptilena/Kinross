@@ -100,6 +100,25 @@ class bezier:
             else: return self.split(end)[0].split(start / end)[1].length()
         knots = [0] + sorted(self.inflections()) + [1]
         return sum([rombergquad(self.lenf(), knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
+    def invlength(self, frac):
+        """Returns the t value where self.length(t) / self.length() = frac."""
+        if frac <= 0: return 0
+        if frac >= 1: return 1
+        whole = self.length()
+        target, fa, N = frac * whole, self.length(frac), 0
+        lower, higher = (frac, 1) if fa < target else (0, frac)
+        flower, fire = self.length(lower), self.length(higher)
+        for q in range(40):
+            if not isclose(flower, target, rel_tol=1e-15):
+                if isclose(flower, target, rel_tol=1e-7):
+                    mid_newton = lower - (self.length(lower) - target) / self.lenf()(lower)
+                    mid = mid_newton if lower < mid_newton < higher else (lower + higher) / 2
+                else: mid = (lower + higher) / 2
+                fmid = self.length(mid)
+                if fmid <= target: lower, flower = mid, fmid
+                else: higher, fire = mid, fmid
+            else: break
+        return round(lower, 11)
     
     def affine(self, mat):
         """Transforms the curve by the given matrix."""

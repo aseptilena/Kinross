@@ -244,9 +244,28 @@ class elliparc:
             else: return self.split(end)[0].split(start / end)[1].length()
         if isclose(self.tstart, self.tend): return 0.
         lf = self.lenf()
-        if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(simpquad(lf, self.tstart, self.tend))
+        if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(rombergquad(lf, self.tstart, self.tend))
         sl = rombergquad(lf, self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + rombergquad(lf, self.ef * hpi, self.tend)
         return -sl if self.tend < self.tstart else sl
+    def invlength(self, frac):
+        """Returns the t value where self.length(t) / self.length() = frac. The code here is identical to that for the Bézier length inversion."""
+        if frac <= 0: return 0
+        if frac >= 1: return 1
+        whole = self.length()
+        target, fa, N = frac * whole, self.length(frac), 0
+        lower, higher = (frac, 1) if fa < target else (0, frac)
+        flower, fire = self.length(lower), self.length(higher)
+        for q in range(40):
+            if not isclose(flower, target, rel_tol=1e-16):
+                if isclose(flower, target, rel_tol=1e-7):
+                    mid_newton = lower - (self.length(lower) - target) / self.lenf()(lower)
+                    mid = mid_newton if lower < mid_newton < higher else (lower + higher) / 2
+                else: mid = (lower + higher) / 2
+                fmid = self.length(mid)
+                if fmid <= target: lower, flower = mid, fmid
+                else: higher, fire = mid, fmid
+            else: break
+        return round(lower, 11)
     
     def affine(self, mat):
         """Transforms the arc by the given matrix."""

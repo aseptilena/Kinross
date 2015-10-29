@@ -51,3 +51,8 @@ def intersect_ll(l, m, real = True):
         p, q = lineareq2(v.real, -w.real, (m[0] - l[0]).real, v.imag, -w.imag, (m[0] - l[0]).imag)
         if not real or 0. <= p <= 1. and 0. <= q <= 1.: return linterp(l[0], l[1], p)
     return None
+
+def pointbounds(pts):
+    """The orthogonal bounding box of an array of points, represented as a tuple of opposing corners."""
+    xs, ys = tuple(map(lambda p: p.real, pts)), tuple(map(lambda p: p.imag, pts))
+    return complex(min(xs), min(ys)), complex(max(xs), max(ys))

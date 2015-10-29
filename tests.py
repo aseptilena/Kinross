@@ -18,7 +18,9 @@ print(ea.length()) # 5.548448510448969
 
 bs = bezier(5j, 9+2j, 3+1j, 12+7j)
 print(bs.inflections()) # [0.723606797749979, 0.276393202250021]
-print(bs.length()) # # 13.92856143150691
+print(bs.length()) # 13.92856143150691
+bt = bezier(9+6j, 18, -7-1j, 12+7j)
+print(bt.boundingbox()) # ((4.668802369589486+1.25j), (12+7j))
 
 #                        rotate(45-10-20)scale(2)
 print(minimisetransform("translate(-10,-20) scale(2) rotate(45) translate(5,10)"))

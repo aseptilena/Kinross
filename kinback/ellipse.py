@@ -247,3 +247,12 @@ class elliparc:
         if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(simpquad(lf, self.tstart, self.tend))
         sl = rombergquad(lf, self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + rombergquad(lf, self.ef * hpi, self.tend)
         return -sl if self.tend < self.tstart else sl
+    
+    def affine(self, mat):
+        """Transforms the arc by the given matrix."""
+        nell, pst, pen = self.ell.affine(mat), affine(mat, self.start()), affine(mat, self.end())
+        z = nell.uc_affine()
+        start, end = phase(affine(z, pst)), phase(affine(z, pen))
+        if self.tstart < self.tend and start > end: end += 2 * pi
+        if self.tstart > self.tend and start < end: start += 2 * pi
+        return elliparc(start, nell, end)

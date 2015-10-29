@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from cmath import isclose
-from .vectors import linterp
+from .vectors import linterp, pointbounds
 from .affines import affine
 from .algebra import rombergquad, polynomroot
 from .regexes import floatinkrep
@@ -51,6 +51,13 @@ class bezier:
             N -= 1
         return -1
     
+    def coordpolynoms(self):
+        """Returns the (x-component, y-component) polynomial coefficients of this curve."""
+        cp = self.p
+        if   self.deg == 3: pp = (cp[0], 3 * (cp[1] - cp[0]), 3 * (cp[2] - 2 * cp[1] + cp[0]), cp[3] - 3 * cp[2] + 3 * cp[1] - cp[0])
+        elif self.deg == 2: pp = (cp[0], 2 * (cp[1] - cp[0]), cp[2] - 2 * cp[1] + cp[0])
+        elif self.deg == 1: pp = (cp[0], cp[1] - cp[0])
+        return (tuple(map(lambda p: p.real, pp)), tuple(map(lambda p: p.imag, pp)))
     def inflections(self):
         """Returns the inflection points of this curve."""
         # For a cubic curve:
@@ -93,6 +100,12 @@ class bezier:
             else: return self.split(end)[0].split(start / end)[1].length()
         knots = [0] + sorted(self.inflections()) + [1]
         return sum([rombergquad(self.lenf(), knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
+    
     def affine(self, mat):
         """Transforms the curve by the given matrix."""
         return bezier(*[affine(mat, n) for n in self.p])
+    def boundingbox(self):
+        """The orthogonal bounding box of this curve as a tuple of two opposite points."""
+        if self.deg == 1: return pointbounds(self.p)
+        xtremat, ytremat = tuple(map(lambda l: [t for t in polynomroot([i * l[i] for i in range(1, len(l))])[0] if 0 < t < 1], self.coordpolynoms()))
+        return pointbounds([self(t) for t in xtremat] + [self(t) for t in ytremat] + [self.start(), self.end()])

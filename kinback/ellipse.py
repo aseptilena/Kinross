@@ -256,7 +256,7 @@ class elliparc:
         lower, higher = (frac, 1) if fa < target else (0, frac)
         flower, fire = self.length(lower), self.length(higher)
         for q in range(40):
-            if not isclose(flower, target, rel_tol=1e-16):
+            if not isclose(flower, target, rel_tol=1e-15):
                 if isclose(flower, target, rel_tol=1e-7):
                     mid_newton = lower - (self.length(lower) - target) / self.lenf()(lower)
                     mid = mid_newton if lower < mid_newton < higher else (lower + higher) / 2

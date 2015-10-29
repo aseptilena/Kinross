@@ -15,7 +15,7 @@ Rarify is an SVG optimiser better than the traditional [Scour](http://codedread.
 
 There is also a half-mathematical (vector), half-linguistic (SVG) library called the _Kinback_ which contains some of the functions Rarify uses, including an element tree parser and cleaner, as well as a script called Spallator that takes an object and scatters many instances across a canvas. Both Rarify and Spallator are to be run in a folder where the Kinback is also present; Python 3.5 is required for operation, since the long-awaited [approximate equality function](https://docs.python.org/3/library/cmath.html#cmath.isclose) arrived in that version.
 
-**The ~~cutie map~~ path format**  
+**The ~~cutie map~~ path structure and associated functions**  
 Kinross paths are lists of subpaths, which in turn are lists of two kinds of classes representing segments: Bézier curves (containing three points or complex numbers for quadratics, four points for cubics and two points for lines) and elliptical arcs (containing the source ellipse and two t-values for the endpoints). Both classes are parametrised by a parameter _t_ ∈ \[0, 1] and implement a number of common functions:
 * Value at _t_ and at endpoints (0, 1)
 * Splitting into two curves or arcs at _t_

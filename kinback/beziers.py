@@ -105,7 +105,7 @@ class bezier:
         if frac <= 0: return 0
         if frac >= 1: return 1
         whole = self.length()
-        target, fa, N = frac * whole, self.length(frac), 0
+        target, fa = frac * whole, self.length(frac)
         lower, higher = (frac, 1) if fa < target else (0, frac)
         flower, fire = self.length(lower), self.length(higher)
         for q in range(40):

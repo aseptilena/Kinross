@@ -9,7 +9,8 @@
 import random, sys
 rgen = random.SystemRandom()
 from math import log, pi
-from kinback.miscellanea import xmlprettyprint, svgnms
+from kinback.svgproc import svgnms
+from kinback.miscellanea import xmlprettyprint
 import xml.etree.ElementTree as t
 for n in svgnms: t.register_namespace(n, svgnms[n])
 sdpns = "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}"

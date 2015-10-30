@@ -180,7 +180,7 @@ def matdeterm(m, exact = False):
                 a[counter] = [sum(pair) for pair in zip(a[counter], a[z])]
                 nadded = False
                 break
-        if nadded: return 0 # The determinant of a matrix with a row or column of 0's is 0
+        if nadded: return 0 # The determinant of a matrix with a row or column of zeros is 0
         counter += 1
     for k in range(1, N):
         kk = k - 1

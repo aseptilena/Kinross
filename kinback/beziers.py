@@ -101,24 +101,24 @@ class bezier:
         knots = [0] + sorted(self.inflections()) + [1]
         return sum([rombergquad(self.lenf(), knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
     def invlength(self, frac):
-        """Returns the t value where self.length(t) / self.length() = frac."""
+        """Computes the t value where self.length(t) / self.length() = frac. This and the corresponding elliptical arc function use the Illinois algorithm."""
         if frac <= 0: return 0
         if frac >= 1: return 1
         whole = self.length()
         target, fa = frac * whole, self.length(frac)
         lower, higher = (frac, 1) if fa < target else (0, frac)
-        flower, fire = self.length(lower), self.length(higher)
-        for q in range(40):
+        flower, fire, status = self.length(lower), self.length(higher), 0
+        for q in range(64):
             if not isclose(lower, higher, rel_tol=1e-15):
-                if isclose(lower, higher, rel_tol=1e-7):
-                    mid_newton = lower - (self.length(lower) - target) / self.lenf()(lower)
-                    mid = mid_newton if lower < mid_newton < higher else (lower + higher) / 2
-                else: mid = (lower + higher) / 2
+                mt = (target - flower) / (fire - flower)
+                if status == 2: mt, status = mt / 2, 0
+                elif status == -2: mt, status = (1 + mt) / 2, 0
+                mid = linterp(lower, higher, mt)
                 fmid = self.length(mid)
-                if fmid <= target: lower, flower = mid, fmid
-                else: higher, fire = mid, fmid
-            else: break
-        return round((lower + higher) / 2, 12)
+                if fmid < target: lower, flower, status = mid, fmid, min(-1, status - 1)
+                elif fmid > target: higher, fire, status = mid, fmid, max(1, status + 1)
+                else: break
+        return round(mid, 12)
     
     def affine(self, mat):
         """Transforms the curve by the given matrix."""

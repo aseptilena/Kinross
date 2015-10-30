@@ -37,7 +37,7 @@ def tokenisetransform(s):
         res.append([typ, [float(n) for n in numre.split(params) if not spacere.fullmatch(n)]])
     return res
 
-def numbercrunch(*nums):
+def numstrcrunch(nums):
     """Concatenates the given number representations, removing all delimiters where that keeps the string unambiguous to the regular expression parser."""
     # A negative number (begin with -) can immediately follow any other number.
     # A positive float less than 1 (begin with .) can immediately follow exponential forms and numbers that also have a decimal point.
@@ -47,3 +47,11 @@ def numbercrunch(*nums):
         if not (n[0] == '-' or n[0] == '.' and ('.' in rlist[-1] or 'e' in rlist[-1])): rlist.append(" ")
         rlist.append(n)
     return "".join(rlist)
+
+def affinecrunch(*nums):
+    """Convenience function that takes in a bunch of floating-point numbers and sends the output of floatinkrep (with the affine flag) to numbercrunch."""
+    return numstrcrunch([floatinkrep(n, True) for n in nums])
+
+def pathcrunch(*nums):
+    """The same as affinecrunch, but formatting to the precision of paths."""
+    return numstrcrunch([floatinkrep(n) for n in nums])

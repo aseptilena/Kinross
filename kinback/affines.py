@@ -4,7 +4,7 @@
 from .vectors import hat, intersect_ll, perpbisect, signedangle
 from math import sin, cos, tan, degrees, radians
 from cmath import isclose, phase
-from .regexes import tokenisetransform, floatinkrep, numbercrunch
+from .regexes import tokenisetransform, floatinkrep, affinecrunch
 
 # Affine transformations are 6-tuples of floats corresponding to the following matrix. Compositions are stored last-to-first-applied.
 # [c0 c2 c4]
@@ -81,21 +81,21 @@ def minimisetransform(tfs):
     a0, b0, c0, d0, e0, f0 = [isclose(n, 0) for n in ctm]
     if b0 and c0 and e0 and f0: # Scaling check
         if isclose(a0, d0): return "scale({})".format(floatinkrep(ctm[0], True))
-        else: return "scale({})".format(numbercrunch(floatinkrep(ctm[0], True), floatinkrep(ctm[3], True)))
+        else: return "scale({})".format(affinecrunch(ctm[0], ctm[3]))
     if isclose(ctm[0], 1) and isclose(ctm[3], 1) and b0 and c0: # Translation check
         if f0: return None if e0 else "translate({})".format(floatinkrep(ctm[4], True))
-        else: return "translate({})".format(numbercrunch(floatinkrep(ctm[4], True), floatinkrep(ctm[5], True)))
+        else: return "translate({})".format(affinecrunch(ctm[4], ctm[5]))
     ctf = collapsedtransform(ctm)
-    if ctf == None: return "matrix({})".format(numbercrunch(*[floatinkrep(n, True) for n in ctm]))
+    if ctf == None: return "matrix({})".format(affinecrunch(*ctm))
     sc, rt = ctf
     if not sc: first = ""
     elif sc[1] == 1:
         factor = floatinkrep(sc[0], True)
         first = "" if factor == "1" else "scale({})".format(factor)
-    else: first = "scale({})".format(numbercrunch(floatinkrep(sc[0], True), floatinkrep(-sc[0], True)))
+    else: first = "scale({})".format(affinecrunch(sc[0], -sc[0]))
     if rt[1] != None:
         rl, im = floatinkrep(rt[1].real, True), floatinkrep(rt[1].imag, True)
-        if rt[0] == None: second = "translate({})".format(rl if im == "0" else numbercrunch(rl, im))
-        else: second = "rotate({})".format(numbercrunch(floatinkrep(rt[0], True), rl, im))
+        if rt[0] == None: second = "translate({})".format(rl if im == "0" else affinecrunch(rt[1].real, rt[1].imag))
+        else: second = "rotate({})".format(affinecrunch(rt[0], rt[1].real, rt[1].imag))
     else: second = "" if rt[0] == None else "rotate({})".format(floatinkrep(rt[0], True))
     return second + first

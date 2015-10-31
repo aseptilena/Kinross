@@ -4,7 +4,7 @@
 from .vectors import hat, intersect_ll, perpbisect, signedangle
 from math import sin, cos, tan, degrees, radians
 from cmath import isclose, phase
-from .regexes import tokenisetransform, floatinkrep, affinecrunch
+from .regexes import tokenisetransform, floatinkrep
 
 # Affine transformations are 6-tuples of floats corresponding to the following matrix. Compositions are stored last-to-first-applied.
 # [c0 c2 c4]
@@ -67,6 +67,16 @@ def collapsedtransform(t):
         if second[1] == None and flip == 1 and isclose(180, abs(second[0])): first, second = [-l, 1], [None, None]
     return [first, second]
 
+def tfmt(tn, *ps):
+    """Formats a transformation with the given name and parameters, removing delimiters wherever possible. Since this variant of number-crunching is only present here, it gets included in full here."""
+    if len(ps) == 1: return "{}({})".format(tn, floatinkrep(ps[0], True))
+    pstrs = [floatinkrep(n, True) for n in ps]
+    rlist = [pstrs[0]]
+    for n in pstrs[1:]:
+        if not (n[0] == '-' or n[0] == '.' and ('.' in rlist[-1] or 'e' in rlist[-1])): rlist.append(" ")
+        rlist.append(n)
+    return "{}({})".format(tn, "".join(rlist))
+
 def minimisetransform(tfs):
     """If the transform is collapsible, returns its minimal representation according to collapsibility, otherwise returns tfs itself."""
     tmats = []
@@ -78,24 +88,16 @@ def minimisetransform(tfs):
         elif pair[0] == "skewX": tmats.append(skewing(radians(pair[1][0]), 0))
         elif pair[0] == "skewY": tmats.append(skewing(0, radians(pair[1][0])))
     ctm = composition(*tmats)
-    a0, b0, c0, d0, e0, f0 = [isclose(n, 0) for n in ctm]
-    if b0 and c0 and e0 and f0: # Scaling check
-        if isclose(a0, d0): return "scale({})".format(floatinkrep(ctm[0], True))
-        else: return "scale({})".format(affinecrunch(ctm[0], ctm[3]))
-    if isclose(ctm[0], 1) and isclose(ctm[3], 1) and b0 and c0: # Translation check
-        if f0: return None if e0 else "translate({})".format(floatinkrep(ctm[4], True))
-        else: return "translate({})".format(affinecrunch(ctm[4], ctm[5]))
     ctf = collapsedtransform(ctm)
-    if ctf == None: return "matrix({})".format(affinecrunch(*ctm))
+    if ctf == None: return tfmt("matrix", *ctm)
     sc, rt = ctf
     if not sc: first = ""
-    elif sc[1] == 1:
-        factor = floatinkrep(sc[0], True)
-        first = "" if factor == "1" else "scale({})".format(factor)
-    else: first = "scale({})".format(affinecrunch(sc[0], -sc[0]))
+    elif sc[1] == 1: first = "" if floatinkrep(sc[0], True) == "1" else tfmt("scale", sc[0])
+    else: first = tfmt("scale", sc[0], -sc[0])
     if rt[1] != None:
-        rl, im = floatinkrep(rt[1].real, True), floatinkrep(rt[1].imag, True)
-        if rt[0] == None: second = "translate({})".format(rl if im == "0" else affinecrunch(rt[1].real, rt[1].imag))
-        else: second = "rotate({})".format(affinecrunch(rt[0], rt[1].real, rt[1].imag))
-    else: second = "" if rt[0] == None else "rotate({})".format(floatinkrep(rt[0], True))
+        if rt[0] == None:
+            if floatinkrep(rt[1].imag, True) == "1": second = tfmt("translate", rt[1].real)
+            else:                                    second = tfmt("translate", rt[1].real, rt[1].imag)
+        else: second = tfmt("rotate", rt[0], rt[1].real, rt[1].imag)
+    else: second = "" if rt[0] == None else tfmt("rotate", rt[0])
     return second + first

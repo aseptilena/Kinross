@@ -43,14 +43,14 @@ def collapsibility(t):
     return 0
 
 def collapsedtransform(t):
-    """If the transform is collapsible, returns ((z, flip), (th, o)) <=> scaling(z, flip * z) rotation(th, o), otherwise None. flip = 1 or -1 and th is in degrees.
-    If the first tuple is empty, this indicates that no scaling/flipping is present. For the second:
+    """If the transform is collapsible, returns [[z, flip], [th, o]] <=> scaling(z, flip * z) rotation(th, o), otherwise [0, 0]. flip = 1 or -1 and th is in degrees.
+    If the first list is empty, this indicates that no scaling/flipping is present. For the second:
     * (None, o) indicates translate(o)
     * (th, None) indicates rotate(th)
     * (None, None) indicates pure scaling
     z will normally be positive, but ((z, 1), (pi / 2, None)) is coerced to ((-z, 1), (None, None)) or scale(-z)."""
     flip = collapsibility(t)
-    if not flip: return None
+    if not flip: return [0, 0]
     # If the original ell has O = (0, 0), X = (1, 0) and Y = (0, 1) while the transformed ell has origin at O', hatted x-axis at X' and hatted y-axis at Y',
     # the centre for the second component is the intersection of the perpendicular bisector of OO' and the perpendicular bisector of XX'.
     # The angle rotated by is simply the signed angle from O to the intersection to O'.
@@ -68,7 +68,7 @@ def collapsedtransform(t):
     return [first, second]
 
 def tfmt(tn, *ps):
-    """Formats a transformation with the given name and parameters, removing delimiters wherever possible. Since this variant of number-crunching is only present here, it gets included in full here."""
+    """Formats a transformation with the given name and parameter list, removing delimiters wherever possible. Since this variant of number-crunching is only present here, it gets included in full here."""
     if len(ps) == 1: return "{}({})".format(tn, floatinkrep(ps[0], True))
     pstrs = [floatinkrep(n, True) for n in ps]
     rlist = [pstrs[0]]
@@ -88,16 +88,15 @@ def minimisetransform(tfs):
         elif pair[0] == "skewX": tmats.append(skewing(radians(pair[1][0]), 0))
         elif pair[0] == "skewY": tmats.append(skewing(0, radians(pair[1][0])))
     ctm = composition(*tmats)
-    ctf = collapsedtransform(ctm)
-    if ctf == None: return tfmt("matrix", *ctm)
-    sc, rt = ctf
-    if not sc: first = ""
-    elif sc[1] == 1: first = "" if floatinkrep(sc[0], True) == "1" else tfmt("scale", sc[0])
-    else: first = tfmt("scale", sc[0], -sc[0])
+    sc, rt = collapsedtransform(ctm)
+    if sc == 0: return tfmt("matrix", *ctm)
+    if not len(sc): first = ""
+    elif sc[1] == -1: first = tfmt("scale", sc[0], -sc[0])
+    else:
+        fac = floatinkrep(sc[0], True)
+        first = "" if fac == "1" else tfmt("scale", fac)
     if rt[1] != None:
-        if rt[0] == None:
-            if floatinkrep(rt[1].imag, True) == "1": second = tfmt("translate", rt[1].real)
-            else:                                    second = tfmt("translate", rt[1].real, rt[1].imag)
-        else: second = tfmt("rotate", rt[0], rt[1].real, rt[1].imag)
+        rt[1:] = [floatinkrep(rt[1].real, True), floatinkrep(rt[1].imag, True)]
+        second = tfmt("translate", *(rt[1:2] if rt[2] == "0" else rt[1:])) if rt[0] == None else tfmt("rotate", *rt)
     else: second = "" if rt[0] == None else tfmt("rotate", rt[0])
     return second + first

@@ -98,12 +98,14 @@ class bezier:
             if start == None: return self.split(end)[0].length()
             elif end == None: return self.split(start)[1].length()
             else: return self.split(end)[0].split(start / end)[1].length()
+        if self.deg == 1: return abs(self.p[1] - self.p[0])
         knots = [0] + sorted(self.inflections()) + [1]
         return sum([rombergquad(self.lenf(), knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
     def invlength(self, frac):
         """Computes the t value where self.length(t) / self.length() = frac. This and the corresponding elliptical arc function use the Illinois algorithm."""
         if frac <= 0: return 0
         if frac >= 1: return 1
+        if self.deg == 1: return frac
         whole = self.length()
         target, fa = frac * whole, self.length(frac)
         lower, higher = (frac, 1) if fa < target else (0, frac)

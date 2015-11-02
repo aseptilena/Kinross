@@ -265,6 +265,7 @@ class elliparc:
                 if fmid < target: lower, flower, status = mid, fmid, min(-1, status - 1)
                 elif fmid > target: higher, fire, status = mid, fmid, max(1, status + 1)
                 else: break
+            else: break
         return round(mid, 12)
     
     def affine(self, mat):

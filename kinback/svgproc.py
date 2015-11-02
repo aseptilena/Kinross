@@ -136,9 +136,6 @@ colop = {"fill": "fill-opacity",
          "flood-color": "flood-opacity",
          "lighting-color": None,
          "text-decoration-color": None}
-# Preclusions
-precld = {"stroke-dasharray": ("stroke-dashoffset"),
-          "stroke": ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset")}
 
 # Namespaces used by SVG and Inkscape, for ease of registering them with the XML parser
 svgnms = {"": "http://www.w3.org/2000/svg",
@@ -185,7 +182,7 @@ def styledict(node, preserve = False):
     if sp: sd.update(dict([a.split(':') for a in sp if a]))
     if not preserve: node.set("style", "")
     return sd
-def lipostyle(sd, dct, ignore = False):
+def rmdfstyle(sd, dct, ignore = False):
     """Removes default attributes from sd according to dct. ignore = True removes them regardless of what values dct has."""
     ra = [prop for prop in sd if sd[prop] == dct.get(prop) or ignore and prop in dct]
     for tra in ra: del sd[tra]
@@ -207,17 +204,17 @@ def whack(node, lpeoutput = False):
     for c in colop:
         if c in sd: sd[c] = tersecol(sd[c])
         if colop[c] != None and colop[c] in sd: sd[colop[c]] = decs[round(float(sd[colop[c]]) * 255)]
-    # Preclusions
-    for p in precld:
-        if p not in sd: sd[p] = defstyle[p]
-        matchrm(sd, {q: None for q in precld[p]}, {p: defstyle[p]})
-    if sd.get("stroke-linejoin", "miter") != "miter" and "stroke-miterlimit" in sd: del sd["stroke-miterlimit"]
+    if sd.get("stroke-dasharray", "none") == "none": sd.pop("stroke-dashoffset", 0)
+    if sd.get("stroke", "none") == "none":
+        for spr in ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"): sd.pop(spr, 0)
+    if sd.get("stroke-linejoin", "miter") != "miter": sd.pop("stroke-miterlimit", 0)
+    if sd.get("fill") == "none": sd.pop("fill-rule", 0)
     # Implied style property removal
-    lipostyle(sd, defstyle)
+    rmdfstyle(sd, defstyle)
     if node.tag in ("{http://www.w3.org/2000/svg}text", "{http://www.w3.org/2000/svg}tspan"):
-        lipostyle(sd, dstytext)
-        lipostyle(sd, styleplus)
-    else: lipostyle(sd, dstytext, True)
+        rmdfstyle(sd, dstytext)
+        rmdfstyle(sd, styleplus)
+    else: rmdfstyle(sd, dstytext, True)
     stylesplit(node, sd)
 # In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties).
 def weakwhack(node): stylesplit(node, styledict(node))

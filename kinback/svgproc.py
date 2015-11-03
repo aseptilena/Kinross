@@ -80,8 +80,7 @@ dstytext = {"baseline-shift": "baseline",
             "text-transform": "none",
             "white-space": "normal",
             "word-spacing": "normal",
-            "writing-mode": "lr-tb",
-            "-inkscape-font-specification": "Sans"}
+            "writing-mode": "lr-tb"}
 # Inkscape aliases the following default style properties for text as such. There is no corresponding "None-dictionary" as above because all its keys are in dstytext.
 styleplus = {"letter-spacing": "0px",
              "word-spacing": "0px",
@@ -124,6 +123,7 @@ defattrb = [(None, {"inkscape:connector-curvature": "0"}, {}),
             ("clipPath", {"clipPathUnits": "userSpaceOnUse"}, {}),
             ("mask", {"maskUnits": "userSpaceOnUse"}, {}),
             ("text", {"sodipodi:linespacing": "125%"}, {}),
+            ("tspan", {"sodipodi:role": "line"}, {}),
             
             (None, {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None}, {}),
             ("svg", {"version": None, "inkscape:version": None, "sodipodi:docname": None, "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None}, {})]
@@ -209,6 +209,7 @@ def whack(node, lpeoutput = False):
         for spr in ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"): sd.pop(spr, 0)
     if sd.get("stroke-linejoin", "miter") != "miter": sd.pop("stroke-miterlimit", 0)
     if sd.get("fill") == "none": sd.pop("fill-rule", 0)
+    sd.pop("-inkscape-font-specification", 0)
     # Implied style property removal
     rmdfstyle(sd, defstyle)
     if node.tag in ("{http://www.w3.org/2000/svg}text", "{http://www.w3.org/2000/svg}tspan"):

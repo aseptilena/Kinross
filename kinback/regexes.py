@@ -4,8 +4,9 @@
 import re
 huge0 = re.compile(r"0{3,}$")
 tiny0 = re.compile(r"^(-?)\.(0{3,})")
-numre = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
-spacere = re.compile(r"[ ,]*")
+nrgx = r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)"
+numre = re.compile(nrgx)
+pathre = re.compile(nrgx[1:-1] + r"|[MCSQTLHVAZmcsqtlhvaz]")
 rdigitnormal = lambda k: min(6, 8 - len(k))
 rdigitaffine = lambda k: 8 if k == "0" else 8 - len(k)
 transformbreaks = re.compile(r"(?:matrix|translate|scale|rotate|skewX|skewY)\s*\(.*?\)")
@@ -23,18 +24,14 @@ def floatinkrep(he, aflag = False):
 def tokenisepath(p):
     """Parses SVG path data into its tokens and converts numbers into floats.
     This does not further parse into curves and arcs afterwards, the task left instead to parserhythm() in svgpath."""
-    t, tokens = [], [c for c in numre.split(p) if not spacere.fullmatch(c)]
-    for v in tokens:
-        if " " in v or v.isalpha(): t.extend(v.replace(" ", ""))
-        else: t.append(float(v))
-    return t
+    return [t if t.isalpha() else float(t) for t in pathre.findall(p)]
 
 def tokenisetransform(s):
     """Parses a transform in SVG format, returning [transform 1, [parameters of transform 1], transform 2, [parameters of transform 2], ...] in last-to-first-applied order."""
     l, res = transformbreaks.findall(s), []
     for tf in l:
         typ, params = tf[:-1].split("(")
-        res.append([typ, [float(n) for n in numre.split(params) if not spacere.fullmatch(n)]])
+        res.append([typ, [float(n) for n in numre.findall(params)]])
     return res
 
 def numbercrunch(*strs):

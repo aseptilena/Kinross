@@ -38,19 +38,13 @@ def perpbisect(a, b):
 def printpoint(p): return "({}, {})".format(p.real, p.imag)
 def printline(l): return "Line from {} to {}".format(l[0], l[1])
 
-# INTERMISSION: 2-variable linear equation solver and line/line intersection
-def lineareq2(a, b, p, c, d, q):
-    """ax + by = p; cx + dy = q; returns (x, y)."""
-    det = a * d - b * c
-    if isclose(det, 0.): return (None, None)
-    return ((p * d - q * b) / det, (a * q - c * p) / det)
-def intersect_ll(l, m, real = True):
-    """Finds the intersection of two lines. real restricts to "real" intersections on both line segments that define the lines."""
-    v, w = l[1] - l[0], m[1] - m[0]
-    if not isclose(cross(v, w), 0):
-        p, q = lineareq2(v.real, -w.real, (m[0] - l[0]).real, v.imag, -w.imag, (m[0] - l[0]).imag)
-        if not real or 0. <= p <= 1. and 0. <= q <= 1.: return linterp(l[0], l[1], p)
-    return None
+def saltire(l, m):
+    """Intersects two lines to their common point – the figure looks like the Scottish cross, hence the name."""
+    v, w = l[0] - l[1], m[0] - m[1]
+    denom = cross(v, w)
+    if isclose(denom, 0): return None
+    lc, mc = cross(l[0], l[1]), cross(m[0], m[1])
+    return complex(lc * w.real - mc * v.real, lc * w.imag - mc * v.imag) / denom
 
 def pointbounds(pts):
     """The orthogonal bounding box of an array of points, represented as a tuple of opposing corners."""

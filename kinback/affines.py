@@ -1,12 +1,13 @@
 # Helper functions for Kinross: affine transformations
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from .vectors import hat, intersect_ll, perpbisect, signedangle
-from math import sin, cos, tan, degrees, radians
+from .vectors import hat, saltire, perpbisect, signedangle
+from math import sin, cos, tan, copysign, degrees, radians, nan
 from cmath import isclose, phase
-from .regexes import tokenisetransform, floatinkrep
+from .regexes import tokenisetransform, floatinkrep, numbercrunch
 
 # Affine transformations are 6-tuples of floats corresponding to the following matrix. Compositions are stored last-to-first-applied.
+#  x  y  o  <- identity transformation: 1, i and 0
 # [c0 c2 c4]
 # [c1 c3 c5]
 # [0  0  1 ]
@@ -33,52 +34,28 @@ def scaling(x, y = None): return (float(x), 0, 0, float(x if y == None else y), 
 def skewing(x, y): return (1, tan(y), tan(x), 1, 0, 0)
 def squeezing(a): return (float(a), 0, 0, 1 / a, 0, 0) # Not in the SVG specifications, but here to help the elliptical arc constructor
 
-# Transformations are separated into the following components applied in sequence:
-# scaling only in the y-axis, shearing in the x-axis, uniform scaling and flipping, combined rotation/translation (three-argument rotation).
-# The first two cannot be factored ("collapsed") into SVG elements without much more computation; the following function determines if the transformation doesn't contain them.
 def collapsibility(t):
-    """Returns 1 if the function is a scaling + rotation + translation, -1 for the same but with flipping and 0 otherwise."""
+    """1 if the affinity is a scaling + rotation + translation, -1 for the same but with flipping and 0 otherwise."""
     if isclose(t[0], t[3]) and isclose(t[1], -t[2]): return 1
     if isclose(t[0], -t[3]) and isclose(t[1], t[2]): return -1
     return 0
 
+def floataffrep(x): return floatinkrep(x, True)
 def collapsedtransform(t):
-    """If the transform is collapsible, returns [[z, flip], [th, o]] <=> scaling(z, flip * z) rotation(th, o), otherwise [0, 0]. flip = 1 or -1 and th is in degrees.
-    If the first list is empty, this indicates that no scaling/flipping is present. For the second:
-    * (None, o) indicates translate(o)
-    * (th, None) indicates rotate(th)
-    * (None, None) indicates pure scaling
-    z will normally be positive, but ((z, 1), (pi / 2, None)) is coerced to ((-z, 1), (None, None)) or scale(-z)."""
-    flip = collapsibility(t)
-    if not flip: return [0, 0]
-    # If the original ell has O = (0, 0), X = (1, 0) and Y = (0, 1) while the transformed ell has origin at O', hatted x-axis at X' and hatted y-axis at Y',
-    # the centre for the second component is the intersection of the perpendicular bisector of OO' and the perpendicular bisector of XX'.
-    # The angle rotated by is simply the signed angle from O to the intersection to O'.
-    v1 = complex(t[0], t[1])
-    o, z, l = complex(t[4], t[5]), hat(v1), abs(v1)
-    x = o + z
-    if isclose(o, 0): second = [None if isclose(x, 1) else degrees(phase(x)), None]
-    else:
-        g = 1 if isclose(x, 1) else intersect_ll(perpbisect(o, 0), perpbisect(x, 1), False)
-        second = [None, o] if g == None else [degrees(signedangle(o, 0, g)), g]
-    first = [] if isclose(l, 1) and flip == 1 else [l, flip]
-    if second[0] != None:
-        if second[0] < 0: second[0] += 360
-        if second[1] == None and flip == 1 and isclose(180, abs(second[0])): first, second = [-l, 1], [None, None]
-    return [first, second]
-
-def tfmt(tn, *ps):
-    """Formats a transformation with the given name and parameter list, removing delimiters wherever possible. Since this variant of number-crunching is only present here, it gets included in full here."""
-    if len(ps) == 1: return "{}({})".format(tn, floatinkrep(ps[0], True))
-    pstrs = [floatinkrep(n, True) for n in ps]
-    rlist = [pstrs[0]]
-    for n in pstrs[1:]:
-        if not (n[0] == '-' or n[0] == '.' and ('.' in rlist[-1] or 'e' in rlist[-1])): rlist.append(" ")
-        rlist.append(n)
-    return "{}({})".format(tn, "".join(rlist))
+    """If the transform is collapsible, returns the [rotation, scaling] components, else None. The second component (scaling) is [f, z] where f = 1 (no flip) / -1 (flip) and z is the scaling factor.
+    The first component (rotation/translation) is [th, or, oi]: th is the rotation angle in degrees (NaN for translation), or and oi the rotation centre's components (Δx, Δy for translation)."""
+    f = collapsibility(t)
+    if not f: return None
+    x = complex(t[0], t[1])
+    if isclose(t[1], 0): return [[nan, t[4], t[5]], [f, copysign(abs(x), t[0])]] # This handles the upright and upside-down cases, all at the same time!
+    o, sp = complex(t[4], t[5]), [f, abs(x)]
+    if isclose(o, 0): return [[degrees(phase(x)), 0, 0], sp]
+    if isclose(o + x, sp[1]): return [[degrees(phase(x)), sp[1], 0], sp]
+    rc = saltire(perpbisect(o, 0), perpbisect(o + x, sp[1]))
+    return [[degrees(signedangle(o, 0, rc)) % 360, rc.real, rc.imag], sp]
 
 def minimisetransform(tfs):
-    """If the transform is collapsible, returns its minimal representation according to collapsibility, otherwise returns tfs itself."""
+    """If the transform string is collapsible, returns the minimal representation, otherwise returns input."""
     tmats = []
     for pair in tokenisetransform(tfs):
         if   pair[0] == "matrix": tmats.append(pair[1])
@@ -88,15 +65,16 @@ def minimisetransform(tfs):
         elif pair[0] == "skewX": tmats.append(skewing(radians(pair[1][0]), 0))
         elif pair[0] == "skewY": tmats.append(skewing(0, radians(pair[1][0])))
     ctm = composition(*tmats)
-    sc, rt = collapsedtransform(ctm)
-    if sc == 0: return tfmt("matrix", *ctm)
-    if not len(sc): first = ""
-    elif sc[1] == -1: first = tfmt("scale", sc[0], -sc[0])
+    h = collapsedtransform(ctm)
+    if h == None: return "matrix({})".format(numbercrunch(*[floataffrep(v) for v in ctm]))
+    rt, sc = h
+    # Translation/rotation (left) part
+    dx, dy = floataffrep(rt[1]), floataffrep(rt[2])
+    if rt[0] is nan: rtstr = ("" if dx == "0" else "translate({})".format(dx)) if dy == "0" else "translate({})".format(numbercrunch(dx, dy))
     else:
-        fac = floatinkrep(sc[0], True)
-        first = "" if fac == "1" else tfmt("scale", fac)
-    if rt[1] != None:
-        rt[1:] = [floatinkrep(rt[1].real, True), floatinkrep(rt[1].imag, True)]
-        second = tfmt("translate", *(rt[1:2] if rt[2] == "0" else rt[1:])) if rt[0] == None else tfmt("rotate", *rt)
-    else: second = "" if rt[0] == None else tfmt("rotate", rt[0])
-    return second + first
+        thet = floataffrep(rt[0])
+        rtstr = "rotate({})".format(thet if dx == dy == "0" else numbercrunch(thet, dx, dy))
+    # Scaling (right) part
+    z = floataffrep(sc[1])
+    scstr = ("" if z == "1" else "scale({})".format(z)) if sc[0] == 1 else "scale({})".format(numbercrunch(z, floataffrep(-sc[1])))
+    return rtstr + scstr

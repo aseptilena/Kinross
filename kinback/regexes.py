@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 import re
 huge0 = re.compile(r"0{3,}$")
-tiny0 = re.compile(r"(-?)\.(0{3,})")
+tiny0 = re.compile(r"^(-?)\.(0{3,})")
 numre = re.compile(r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)")
 spacere = re.compile(r"[ ,]*")
 rdigitnormal = lambda k: min(6, 8 - len(k))
@@ -39,14 +39,13 @@ def tokenisetransform(s):
         res.append([typ, [float(n) for n in numre.split(params) if not spacere.fullmatch(n)]])
     return res
 
-def pathcrunch(vals):
-    """Concatenates the given numbers after converting them into the path precision, removing all delimiters where that keeps the string unambiguous to the regular expression parser."""
+def numbercrunch(*strs):
+    """Concatenates the given number strings, removing all redundant delimiters."""
     # A negative number (begin with -) can immediately follow any other number.
     # A positive float less than 1 (begin with .) can immediately follow exponential forms and numbers that also have a decimal point.
     # In all other cases, a space has to be inserted.
-    nums = [floatinkrep(n) for n in vals]
-    rlist = [nums[0]]
-    for n in nums[1:]:
+    rlist = [strs[0]]
+    for n in strs[1:]:
         if not (n[0] == '-' or n[0] == '.' and ('.' in rlist[-1] or 'e' in rlist[-1])): rlist.append(" ")
         rlist.append(n)
     return "".join(rlist)

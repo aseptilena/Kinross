@@ -104,7 +104,7 @@ def rytz(centre, a, b):
 def circ3pts(a, b, c):
     """Constructs the (circum)circle passing through the three points."""
     if collinear(a, b, c): return None
-    centre = intersect_ll(perpbisect(a, b), perpbisect(a, c), False)
+    centre = saltire(perpbisect(a, b), perpbisect(a, c))
     return circle(centre, abs(a - centre))
 
 def ell5pts(q, r, s, t, u):

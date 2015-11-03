@@ -11,9 +11,7 @@ rdigitaffine = lambda k: 8 if k == "0" else 8 - len(k)
 transformbreaks = re.compile(r"(?:matrix|translate|scale|rotate|skewX|skewY)\s*\(.*?\)")
 
 def floatinkrep(he, aflag = False):
-    """Returns the shortest SVG representation of a float. aflag controls whether the float is for paths (8 sf + 6 dp) or transformations (8 sf + 8 dp).
-    Note that this will accept strings too – it just pouts the string back."""
-    if type(he) == str: return he
+    """Returns the shortest SVG representation of a float. aflag controls whether the float is for paths (8 sf + 6 dp) or transformations (8 sf + 8 dp)."""
     istr = str( abs(int(he)) )
     dec = "{:.8f}".format(round(he, (rdigitaffine if aflag else rdigitnormal)(istr))).rstrip("0").rstrip(".").lstrip("0").replace("-0.", "-.")
     if dec in ("", "-0"): return "0"

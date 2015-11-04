@@ -65,7 +65,7 @@ def rarify(f):
             if dlm.get("id") == None: ud.append(dlm)
         for z in ud: df.remove(z)
         if not len(list(df)): rn.remove(df)
-    # Phase 3½: re-encoding of "path circles and ellipses" (the internal representations of these objects before 0.91) into actual circles and ellipses
+    # Phase 3½: transcoding of "path circles and ellipses" (the internal representations of these objects before 0.91) into actual circles and ellipses
     for pce in rn.findall(".//svg:path[@sodipodi:type='arc']", nm_findall):
         b = path2oval(pce)
         if b != None: pce.tag, pce.attrib = b

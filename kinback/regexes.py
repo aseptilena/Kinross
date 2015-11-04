@@ -39,8 +39,8 @@ def numbercrunch(*strs):
     # A negative number (begin with -) can immediately follow any other number.
     # A positive float less than 1 (begin with .) can immediately follow exponential forms and numbers that also have a decimal point.
     # In all other cases, a space has to be inserted.
-    rlist = [strs[0]]
-    for n in strs[1:]:
-        if not (n[0] == '-' or n[0] == '.' and ('.' in rlist[-1] or 'e' in rlist[-1])): rlist.append(" ")
-        rlist.append(n)
-    return "".join(rlist)
+    l = list(strs)
+    for i in range(len(l) - 1, 0, -1):
+        if l[i][0] == '-' or l[i][0] == '.' and ('.' in l[i - 1] or 'e' in l[i - 1]): continue
+        l.insert(i, " ")
+    return "".join(l)

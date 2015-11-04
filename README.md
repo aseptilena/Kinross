@@ -8,7 +8,7 @@ Parcly Taxel / Jeremy Tan, 2015
 Kinross is a town in Scotland whose sister Perth provided the Australian Perth's name, which is why the licence file is idiosyncratically named Perth.
 
 **Things in the cabinet of curiosities**  
-Rarify (the correct spelling is rar**e**fy but it got influenced by the MLPFIM unicorn Rarity) is an SVG optimiser better than the traditional [Scour](http://codedread.com/scour) in two respects: it saves more bytes and preserves editability of objects in the image (at least for Inkscape). For example, the [248702-byte SVG source](https://dl.dropboxusercontent.com/u/102416850/Luna's%20Cold%20Spot.svg) of [*Luna's Cold Spot*](https://derpiboo.ru/505397) becomes 137425 bytes (55.3%) with Scour but only 108350 bytes (43.6%) with Rarify. As Liam White once found out:
+Rarify (the correct spelling is rar**e**fy but it got influenced by the MLPFIM unicorn Rarity) is an SVG optimiser better than the traditional [Scour](http://codedread.com/scour) in two respects: it saves more bytes and preserves editability of objects in the image (at least for Inkscape). For example, the [248702-byte SVG source](https://dl.dropboxusercontent.com/u/102416850/Luna's%20Cold%20Spot.svg) of [*Luna's Cold Spot*](https://derpiboo.ru/505397) becomes 137425 bytes (55.3%) with Scour but only 105904 bytes (42.6%) with Rarify. As Liam White once found out:
 
     liam@liam-Desktop:~/horses$ ~/source/Kinross/rarify.py misery.svg
     misery.svg: 0.312, 693471 -> 214049 (30.87%)

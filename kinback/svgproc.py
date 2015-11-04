@@ -1,7 +1,6 @@
 # Helper functions for Kinross: SVG node processing and simplification (Rarify's "Sweetie Belle")
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-import xml.etree.ElementTree
 from .colours import repr2col, col2repr, decs
 
 # Default style properties
@@ -229,3 +228,19 @@ def refsof(node):
     tmp = node.get("{http://www.inkscape.org/namespaces/inkscape}path-effect")
     if tmp: rf["path-effect"] = tmp[1:]
     return rf
+
+def path2oval(arc):
+    """With a Sodipodi arc, returns the equivalent circle or ellipse node if it has no start or end, else None."""
+    # Prior to 0.91 circles and ellipses were stored in Inkscape as paths with corresponding Sodipodi attributes enabling their editability.
+    # That period is long gone, but node whacking does not take this into account, so this function rejuvenates these "path ovals".
+    if arc.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}start") != None: return None
+    atbs = arc.attrib.copy()
+    dimens = {suffix: atbs.pop(fullattr("sodipodi:" + suffix)) for suffix in ("cx", "cy", "rx", "ry")}
+    del atbs["{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}type"]
+    del atbs["d"]
+    if dimens["rx"] == dimens["ry"]:
+        atbs.update({"cx": dimens["cx"], "cy": dimens["cy"], "r": dimens["rx"]})
+        return ("circle", atbs)
+    else:
+        atbs.update(dimens)
+        return ("ellipse", atbs)

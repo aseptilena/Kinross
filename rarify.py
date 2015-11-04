@@ -3,9 +3,10 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 import os, time, argparse
+import xml.etree.ElementTree as t
 from kinback.svgproc import *
 from kinback.affines import minimisetransform
-t, tr, rn = xml.etree.ElementTree, None, None
+tr, rn = None, None
 
 def rarify(f):
     global t
@@ -64,6 +65,10 @@ def rarify(f):
             if dlm.get("id") == None: ud.append(dlm)
         for z in ud: df.remove(z)
         if not len(list(df)): rn.remove(df)
+    # Phase 3½: re-encoding of "path circles and ellipses" (the internal representations of these objects before 0.91) into actual circles and ellipses
+    for pce in rn.findall(".//svg:path[@sodipodi:type='arc']", nm_findall):
+        b = path2oval(pce)
+        if b != None: pce.tag, pce.attrib = b
     # Phase 4: transformation simplification
     for withtf in rn.findall(".//*[@transform]", nm_findall):
         mt = minimisetransform(withtf.get("transform"))
@@ -77,7 +82,7 @@ def rarify(f):
     outf.close()
     end = time.perf_counter()
     before, after = os.path.getsize(f), os.path.getsize(outfn)
-    print("{}: {:.3f}, {} -> {} ({:.2%})".format(f, end - begin, before, after, after / before))
+    print("{}: {:.3f}, {} → {} ({:.2%})".format(f, end - begin, before, after, after / before))
 
 for n in svgnms: t.register_namespace(n, svgnms[n])
 cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncouth SVG optimiser")

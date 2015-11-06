@@ -1,7 +1,7 @@
 # Helper functions for Kinross: affine transformations
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from .vectors import hat, saltire, perpbisect, signedangle
+from .vectors import saltire, perpbisect, signedangle
 from math import sin, cos, tan, copysign, degrees, radians, nan
 from cmath import isclose, phase
 from .regexes import tokenisetransform, floatinkrep, numbercrunch

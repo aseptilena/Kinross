@@ -121,8 +121,6 @@ defattrb = [(None, {"inkscape:connector-curvature": "0"}, {}),
             ("use", {"x": None, "y": None, "height": None, "width": None}, {}),
             ("clipPath", {"clipPathUnits": "userSpaceOnUse"}, {}),
             ("mask", {"maskUnits": "userSpaceOnUse"}, {}),
-            ("text", {"sodipodi:linespacing": "125%"}, {}),
-            ("tspan", {"sodipodi:role": "line"}, {}),
             
             (None, {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None}, {}),
             ("svg", {"version": None, "inkscape:version": None, "sodipodi:docname": None, "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None}, {})]

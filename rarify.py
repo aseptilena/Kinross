@@ -69,7 +69,7 @@ def rarify(f):
     for pce in rn.findall(".//svg:path[@sodipodi:type='arc']", nm_findall):
         b = path2oval(pce)
         if b != None: pce.tag, pce.attrib = b
-    # Phase 4: transformation simplification
+    # Phase 4: transformation simplification and collapse
     for withtf in rn.findall(".//*[@transform]", nm_findall):
         mt = minimisetransform(withtf.get("transform"))
         if mt == None: del withtf.attrib[transform]

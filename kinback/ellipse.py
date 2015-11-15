@@ -4,7 +4,7 @@
 from .vectors import *
 from .affines import affine, composition, translation, rotation, scaling 
 from .algebra import polynomroot, matdeterm, rombergquad
-from math import pi, sqrt, fabs, hypot, copysign, radians, floor, ceil
+from math import pi, sqrt, tan, atan, fabs, hypot, copysign, radians, floor, ceil
 from .regexes import floatinkrep
 hpi = pi / 2
 
@@ -276,3 +276,12 @@ class elliparc:
         if self.tstart < self.tend and start > end: end += 2 * pi
         if self.tstart > self.tend and start < end: start += 2 * pi
         return elliparc(start, nell, end)
+    def boundingbox(self):
+        """The elliptical arc's orthogonal bounding box."""
+        if isclose(self.ell.tilt, 0) or isclose(abs(self.ell.tilt), hpi): tbnds = (0, hpi)
+        else:
+            r = self.ell.ry / self.ell.rx
+            tbnds = (atan(-r * tan(self.ell.tilt)), atan(r / tan(self.ell.tilt)))
+        tl, tm = sorted([self.tstart, self.tend])
+        tangs = [[self.ell.parampoint(pi * i + c) for i in range(ceil((tl - c) / pi), floor((tm - c) / pi) + 1)] for c in tbnds]
+        return pointbounds(tangs[0] + tangs[1] + [self.start(), self.end()])

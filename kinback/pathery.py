@@ -1,7 +1,7 @@
 # Helper functions for Kinross: paths
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from math import sin, ceil
+from math import sin, ceil, inf
 from cmath import isclose
 from .vectors import angle, reflect
 from .ellipse import elliparc
@@ -105,6 +105,10 @@ def minmitrelimit(p):
         else: angles = [angle(sp[i].enddirc(), sp[i + 1].startdirc()) for i in range(len(sp) - 1)]
         mvals.append(min(angles, default=4))
     p = min(mvals)
-    if isclose(p, 0): return float("inf")
+    if isclose(p, 0): return inf
     if p == 4: return 4
     return max(ceil(1 / sin(p / 2)), 4)
+
+def affinepath(mat, p):
+    """Transforms the entire path by the given matrix."""
+    return [[0 if sg == 0 else sg.affine(mat) for sg in sp] for sp in p]

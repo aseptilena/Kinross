@@ -27,7 +27,7 @@ def tokenisepath(p):
     return [t if t.isalpha() else float(t) for t in pathre.findall(p)]
 
 def tokenisetransform(s):
-    """Parses a transform in SVG format, returning [transform 1, [parameters of transform 1], transform 2, [parameters of transform 2], ...] in last-to-first-applied order."""
+    """Parses a transform in SVG format, returning [[transform 1, [parameters of transform 1]], [transform 2, [parameters of transform 2]], ...] in last-to-first-applied order."""
     l, res = transformbreaks.findall(s), []
     for tf in l:
         typ, params = tf[:-1].split("(")

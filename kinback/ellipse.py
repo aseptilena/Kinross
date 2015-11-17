@@ -1,23 +1,28 @@
-# Helper functions for Kinross: circles, ellipses and arcs
+# Helper functions for Kinross: circles, ellipses and arcs (part of Rarify phase 4)
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from .vectors import *
-from .affines import affine, composition, translation, rotation, scaling 
+from .affines import affine, composition, translation, rotation, scaling, parsetransform
 from .algebra import polynomroot, matdeterm, rombergquad
-from math import pi, sqrt, tan, atan, fabs, hypot, copysign, radians, floor, ceil
-from .regexes import floatinkrep
+from math import pi, sqrt, tan, atan, fabs, hypot, copysign, degrees, radians, floor, ceil
+from .regexes import floatinkrep, tokenisetransform
 hpi = pi / 2
 
 # Ellipses have a centre, two axis lengths and the signed angle of +x relative to semi-first axis. This last angle is normalised to (-pi/2, pi/2].
 class ellipse:
-    def __init__(self, centre, rx, ry, tilt = 0.):
+    def __init__(self, centre = 0j, rx = 1, ry = 1, tilt = 0):
         self.centre, self.rx, self.ry = centre, fabs(rx), fabs(ry)
         self.tilt = tilt - pi * int(tilt / pi) # (-pi, pi)
         if self.tilt <= -hpi: self.tilt += pi
         if self.tilt > hpi: self.tilt -= pi
     def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(printpoint(self.centre), self.rx, self.ry, self.tilt)
     def __repr__(self): return "ellipse({}, {}, {}, {})".format(self.centre, self.rx, self.ry, self.tilt)
-    def dup(self): return ellipse(self.centre, self.rx, self.ry, self.tilt)
+    def svgrepr(self):
+        """Returns the minimal SVG representation of this ellipse {cx, cy, rx, ry, th}, where all items are string representations and th is applied as part of a transformation."""
+        oc = turn(self.centre, -self.tilt)
+        x, y, a, b = [floatinkrep(v, True) for v in (oc.real, oc.imag, self.rx, self.ry)]
+        th = "rotate({})".format(floatinkrep(degrees(self.tilt), True))
+        return {"cx": x, "cy": y, "rx": a, "ry": b, "transform": th}
     
     def a(self): return max(self.rx, self.ry) # Semi-major axis length
     def b(self): return min(self.rx, self.ry) # Semi-minor axis length
@@ -92,7 +97,7 @@ class circle:
 def rytz(centre, a, b):
     """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
     Used to remove the transformation matrix from SVG ellipses (and a lot of other things)."""
-    if isclose(dot(a, b, centre), 0): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
+    if isclose(angle(a, b, centre), hpi): return ellipse(centre, abs(a - centre), abs(b - centre), phase(a - centre))
     else:
         c = rturn(a, centre)
         m = between(b, c)
@@ -100,6 +105,18 @@ def rytz(centre, a, b):
         mb, mc = lenvec(b, d, m), lenvec(c, d, m)
         v1, v2 = lenvec(mb, abs(mc - b), centre), lenvec(mc, abs(mb - b), centre)
         return ellipse(centre, abs(v1 - centre), abs(v2 - centre), phase(v1 - centre))
+
+def ellipsecollapse(oval):
+    """Given a transformed ellipse element, collapses the transform into the ellipse if it has no stroke."""
+    sty = oval.get("style", "")
+    if oval.get("stroke") == None and ";stroke:" not in sty and not sty.startswith("stroke:"):
+        tkdtf = tokenisetransform(oval.get("transform")) # The calling function must guarantee that the ellipse has a transform, so tkdtf is not empty
+        if len(tkdtf) != 1 or tkdtf[0][0] != "rotate" or len(tkdtf[0][1]) > 1:
+            outp = ellipse(complex(float(oval.get("cx", "0")), float(oval.get("cy", "0"))), float(oval.get("rx")), float(oval.get("ry"))).affine(parsetransform(oval.get("transform"))).svgrepr()
+            oval.attrib.update(outp)
+            if outp["cx"] == "0": del oval.attrib["cx"]
+            if outp["cy"] == "0": del oval.attrib["cy"]
+            if outp["transform"] == "rotate(0)": del oval.attrib["transform"]
 
 def circ3pts(a, b, c):
     """Constructs the (circum)circle passing through the three points."""
@@ -224,7 +241,7 @@ class elliparc:
                 elliparc(linterp(self.tstart, self.tend, t), self.ell, self.tend)]
     def reverse(self):
         """Returns the arc reversed."""
-        return elliparc(self.tend, self.ell.dup(), self.tstart)
+        return elliparc(self.tend, ellipse(self.ell.centre, self.ell.rx, self.ell.ry, self.ell.tilt), self.tstart)
     
     def velocity(self, t):
         """Returns the velocity (first derivative) of the curve at parameter t."""

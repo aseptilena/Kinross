@@ -5,7 +5,8 @@
 import os, time, argparse
 import xml.etree.ElementTree as t
 from kinback.svgproc import *
-from kinback.affines import minimisetransform
+from kinback.affines import minimisetransform, lingradcollapse
+from kinback.ellipse import ellipsecollapse
 tr, rn = None, None
 
 def rarify(f):
@@ -69,11 +70,16 @@ def rarify(f):
     for pce in rn.findall(".//svg:path[@sodipodi:type='arc']", nm_findall):
         b = path2oval(pce)
         if b != None: pce.tag, pce.attrib = b
-    # Phase 4: transformation simplification and collapse
-    for withtf in rn.findall(".//*[@transform]", nm_findall):
-        mt = minimisetransform(withtf.get("transform"))
-        if mt == None: del withtf.attrib[transform]
-        else: withtf.set("transform", mt)
+    # Phase 4: transformation processing (-ap flag)
+    if flags.affineparse:
+        # 4a: collapsing into gradients and unstroked ellipses
+        for tlg in rn.findall(".//svg:linearGradient[@gradientTransform]", nm_findall): lingradcollapse(tlg)
+        for tfell in rn.findall(".//svg:ellipse[@transform]", nm_findall): ellipsecollapse(tfell)
+        # 4b: simplification
+        for withtf in rn.findall(".//*[@transform]", nm_findall):
+            mt = minimisetransform(withtf.get("transform"))
+            if mt == None: del withtf.attrib[transform]
+            else: withtf.set("transform", mt)
     # Final output
     outfn = "{0}-rarified.svg".format(f[:-4])
     outf = open(outfn, 'w')
@@ -91,6 +97,7 @@ cdl.add_argument("-d", "--dimens", action="store_true", default=False, help="rem
 cdl.add_argument("-s", "--scripts", action="store_false", default=True, help="don't remove scripts")
 cdl.add_argument("-l", "--lpeoutput", action="store_true", default=False, help="preserve LPE output for rendering by other applications")
 cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
+cdl.add_argument("-ap", "--affineparse", action="store_true", default=False, help="process affine transformations (TODO handle transformed linear gradients on transformed ellipses)")
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()
 for f in flags.files: rarify(f)

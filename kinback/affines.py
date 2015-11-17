@@ -54,8 +54,8 @@ def collapsedtransform(t):
     rc = saltire(perpbisect(o, 0), perpbisect(o + x, sp[1]))
     return [[degrees(signedangle(o, 0, rc)) % 360, rc.real, rc.imag], sp]
 
-def minimisetransform(tfs):
-    """If the transform string is collapsible, returns the minimal representation, otherwise returns input."""
+def parsetransform(tfs):
+    """Parses a transform string and returns the overall transformation matrix."""
     tmats = []
     for pair in tokenisetransform(tfs):
         if   pair[0] == "matrix": tmats.append(pair[1])
@@ -64,7 +64,18 @@ def minimisetransform(tfs):
         elif pair[0] == "rotate": tmats.append(rotation(radians(pair[1][0]), None if len(pair[1]) == 1 else complex(pair[1][1], pair[1][2])))
         elif pair[0] == "skewX": tmats.append(skewing(radians(pair[1][0]), 0))
         elif pair[0] == "skewY": tmats.append(skewing(0, radians(pair[1][0])))
-    ctm = composition(*tmats)
+    return composition(*tmats)
+
+def lingradcollapse(lg):
+    """Given a linear gradient with a transformation, collapses the transformation."""
+    p1, p2, mat = complex(float(lg.get("x1")), float(lg.get("y1"))), complex(float(lg.get("x2")), float(lg.get("y2"))), parsetransform(lg.get("gradientTransform"))
+    p1, p2 = affine(mat, p1), affine(mat, p2)
+    del lg.attrib["gradientTransform"]
+    lg.attrib.update({"x1": floataffrep(p1.real), "y1": floataffrep(p1.imag), "x2": floataffrep(p2.real), "y2": floataffrep(p2.imag)})
+
+def minimisetransform(tfs):
+    """If the transform string is collapsible, returns its minimal representation, otherwise returns input."""
+    ctm = parsetransform(tfs)
     h = collapsedtransform(ctm)
     if h == None: return "matrix({})".format(numbercrunch(*[floataffrep(v) for v in ctm]))
     rt, sc = h

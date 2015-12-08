@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 from math import sin, ceil, inf
 from cmath import isclose
-from .vectors import angle, reflect
+from .vectors import angle, reflect, pointbounds
 from .ellipse import elliparc
 from .beziers import bezier
 from .regexes import tokenisepath
@@ -79,11 +79,9 @@ def parsepath(p):
                 else: N += 1
             else: break
     return out
-
 def prettypath(p):
     """Return a pretty string representation of a Kinross path, with <> for Bézier curves and {} for arcs rather than their class names."""
     return "\n".join([" ".join([str(seg) for seg in sp]) for sp in p])
-
 def outputpath(r):
     """Converts Kinross paths into short SVG representations. It may not be the shortest, but it gets close."""
     pass # TODO
@@ -94,7 +92,6 @@ def reversepath(p):
         if sp[-1] == 0: out.append([p.reverse() for p in sp[-2::-1]] + [0])
         else: out.append([p.reverse() for p in sp[::-1]])
     return out[::-1]
-
 def minmitrelimit(p):
     """Returns the minimum integer mitre limit (floored at 4, the default value) required to have mitre joins for all middle nodes."""
     mvals = []
@@ -108,7 +105,16 @@ def minmitrelimit(p):
     if isclose(p, 0): return inf
     if p == 4: return 4
     return max(ceil(1 / sin(p / 2)), 4)
-
 def affinepath(mat, p):
     """Transforms the entire path by the given matrix."""
     return [[0 if sg == 0 else sg.affine(mat) for sg in sp] for sp in p]
+def pathbounds(p):
+    """Returns the bounding box of the entire path."""
+    bps = []
+    for sp in p:
+        for sg in sp:
+            if sg: bps.extend(sg.boundingbox())
+    return pointbounds(bps)
+def pathlength(p):
+    """The total length of all segments of p."""
+    return sum([sum([sg.length() for sg in sp if sg]) for sp in p])

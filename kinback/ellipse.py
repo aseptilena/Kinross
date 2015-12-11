@@ -249,6 +249,25 @@ class elliparc:
         return turn(complex(-sin(et) * self.ell.rx, cos(et) * self.ell.ry) * (1 if tstart < tend else -1), self.ell.tilt)
     def startdirc(self): return self.velocity(0)
     def enddirc(self): return -self.velocity(1)
+    
+    def affine(self, mat):
+        """Transforms the arc by the given matrix."""
+        nell, pst, pen = self.ell.affine(mat), affine(mat, self.start()), affine(mat, self.end())
+        z = nell.uc_affine()
+        start, end = phase(affine(z, pst)), phase(affine(z, pen))
+        if self.tstart < self.tend and start > end: end += 2 * pi
+        if self.tstart > self.tend and start < end: start += 2 * pi
+        return elliparc(start, nell, end)
+    def boundingbox(self):
+        """The elliptical arc's orthogonal bounding box."""
+        if isclose(self.ell.tilt, 0) or isclose(abs(self.ell.tilt), hpi): tbnds = (0, hpi)
+        else:
+            r = self.ell.ry / self.ell.rx
+            tbnds = (atan(-r * tan(self.ell.tilt)), atan(r / tan(self.ell.tilt)))
+        tl, tm = sorted([self.tstart, self.tend])
+        tangs = [[self.ell.parampoint(pi * i + c) for i in range(ceil((tl - c) / pi), floor((tm - c) / pi) + 1)] for c in tbnds]
+        return pointbounds(tangs[0] + tangs[1] + [self.start(), self.end()])
+    
     def lenf(self):
         """The function that is integrated to obtain the length of this arc."""
         def z(t): return hypot(sin(t) * self.ell.rx, cos(t) * self.ell.ry)
@@ -284,21 +303,3 @@ class elliparc:
                 else: break
             else: break
         return round(mid, 12)
-    
-    def affine(self, mat):
-        """Transforms the arc by the given matrix."""
-        nell, pst, pen = self.ell.affine(mat), affine(mat, self.start()), affine(mat, self.end())
-        z = nell.uc_affine()
-        start, end = phase(affine(z, pst)), phase(affine(z, pen))
-        if self.tstart < self.tend and start > end: end += 2 * pi
-        if self.tstart > self.tend and start < end: start += 2 * pi
-        return elliparc(start, nell, end)
-    def boundingbox(self):
-        """The elliptical arc's orthogonal bounding box."""
-        if isclose(self.ell.tilt, 0) or isclose(abs(self.ell.tilt), hpi): tbnds = (0, hpi)
-        else:
-            r = self.ell.ry / self.ell.rx
-            tbnds = (atan(-r * tan(self.ell.tilt)), atan(r / tan(self.ell.tilt)))
-        tl, tm = sorted([self.tstart, self.tend])
-        tangs = [[self.ell.parampoint(pi * i + c) for i in range(ceil((tl - c) / pi), floor((tm - c) / pi) + 1)] for c in tbnds]
-        return pointbounds(tangs[0] + tangs[1] + [self.start(), self.end()])

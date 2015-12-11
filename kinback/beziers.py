@@ -2,6 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from cmath import isclose
+from itertools import product
 from .vectors import linterp, pointbounds
 from .affines import affine
 from .algebra import rombergquad, polynomroot
@@ -51,6 +52,9 @@ class bezier:
             N -= 1
         return -1
     
+    def affine(self, mat):
+        """Transforms the curve by the given matrix."""
+        return bezier(*[affine(mat, n) for n in self.p])
     def coordpolynoms(self):
         """Returns the (x-component, y-component) polynomial coefficients of this curve."""
         cp = self.p
@@ -58,6 +62,11 @@ class bezier:
         elif self.deg == 2: pp = (cp[0], 2 * (cp[1] - cp[0]), cp[2] - 2 * cp[1] + cp[0])
         elif self.deg == 1: pp = (cp[0], cp[1] - cp[0])
         return (tuple(map(lambda p: p.real, pp)), tuple(map(lambda p: p.imag, pp)))
+    def boundingbox(self):
+        """The orthogonal bounding box of this curve as a tuple of two opposite points."""
+        if self.deg == 1: return pointbounds(self.p)
+        xtremat, ytremat = tuple(map(lambda l: [t for t in polynomroot([i * l[i] for i in range(1, len(l))])[0] if 0 < t < 1], self.coordpolynoms()))
+        return pointbounds([self(t) for t in xtremat] + [self(t) for t in ytremat] + [self.start(), self.end()])
     def inflections(self):
         """Returns the inflection points of this curve."""
         if self.deg == 3:
@@ -103,12 +112,8 @@ class bezier:
                 else: break
             else: break
         return round(mid, 12)
-    
-    def affine(self, mat):
-        """Transforms the curve by the given matrix."""
-        return bezier(*[affine(mat, n) for n in self.p])
-    def boundingbox(self):
-        """The orthogonal bounding box of this curve as a tuple of two opposite points."""
-        if self.deg == 1: return pointbounds(self.p)
-        xtremat, ytremat = tuple(map(lambda l: [t for t in polynomroot([i * l[i] for i in range(1, len(l))])[0] if 0 < t < 1], self.coordpolynoms()))
-        return pointbounds([self(t) for t in xtremat] + [self(t) for t in ytremat] + [self.start(), self.end()])
+    def areacontrib(self):
+        """By Green's theorem, the (unsigned) area of a closed path is a line integral over said path. This function determines this curve's contribution to the area."""
+        a, b, r = self.coordpolynoms()[0], self.derivative().coordpolynoms()[1], [0] * 2 * self.deg
+        for c in product(range(len(a)), range(len(b))): r[sum(c)] += a[c[0]] * b[c[1]]
+        return abs(sum([r[w] / (w + 1) for w in range(len(r))])) # |∫(0, 1) (x(t) y'(t)) dt|

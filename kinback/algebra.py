@@ -2,6 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from cmath import isclose
+from itertools import product
 from decimal import Decimal as D, getcontext
 getcontext().prec = 60
 zero = D(0)
@@ -30,32 +31,24 @@ class polynomial:
         """Returns an independent duplicate of the polynomial."""
         return polynomial(self.a)
     def __add__(self, q):
-        res = []
-        for p in range(max(len(self), len(q))):
-            if p >= len(self): res.append(q[p])
-            elif p >= len(q): res.append(self[p])
-            else: res.append(self[p] + q[p])
+        res = self.a + [zero] * max(0, len(q) - len(self))
+        for i in range(len(q)): res[i] += q[i]
         return polynomial(res)
     def __sub__(self, q):
-        res = []
-        for p in range(max(len(self), len(q))):
-            if p >= len(self): res.append(-q[p])
-            elif p >= len(q): res.append(self[p])
-            else: res.append(self[p] - q[p])
+        res = self.a + [zero] * max(0, len(q) - len(self))
+        for i in range(len(q)): res[i] -= q[i]
         return polynomial(res)
     def __neg__(self): return polynomial([-c for c in self.a])
     def addzeroroots(self, n = 1):
         """The polynomial is multiplied by x^n, thereby introducing n roots of zero."""
         return polynomial([0] * n + self.a)
     def __mul__(self, q):
-        if type(q) in (int, float, D): return polynomial([c * D(q) for c in self.a])
-        else:
-            res = polynomial()
-            for i in range(len(q)): res += (self * q[i]).addzeroroots(i)
-            return res
+        if type(q) != polynomial: return polynomial([c * D(q) for c in self.a])
+        res = [zero] * (len(self) + len(q) - 1)
+        for p in product(range(len(self)), range(len(q))): res[sum(p)] += self[p[0]] * q[p[1]]
+        return polynomial(res)
     def __rmul__(self, q): return self * q
-    def __divmod__(self, b):
-        # Euclidean algorithm for polynomials
+    def __divmod__(self, b): # Euclidean algorithm for polynomials
         q, r, d, c = polynomial(), self.dup(), b.deg(), b[-1]
         while r.deg() >= d:
             s = polynomial(r[-1] / c).addzeroroots(r.deg() - d)
@@ -191,13 +184,11 @@ def matdeterm(m, exact = False):
 def rombergquad(f, a, b, e = 1e-18):
     """∫(a, b) f(x) dx by Romberg's method."""
     fa, fm, fb, h = f(a), f((a + b) / 2), f(b), (b - a) / 2
-    first = (fa + fb) * h
-    second = (fa + 2 * fm + fb) * h / 2
-    third = (4 * second - first) / 3
-    v = [[second, third]]
-    while abs(v[-1][-1] - v[-1][-2]) > e:
+    one = (fa + 2 * fm + fb) * h / 2
+    two = (4 * one - (fa + fb) * h) / 3
+    v = [one, two]
+    while abs(v[-1] - v[-2]) > e:
         h /= 2
-        v.append([v[-1][0] / 2 + h * sum([f(a + i * h) for i in range(1, 1 << len(v[-1]), 2)])])
-        cur = v[-1]
-        for i in range(len(v[-2])): cur.append(cur[-1] + (cur[-1] - v[-2][i]) / (4 ** (i + 1) - 1))
-    return v[-1][-1]
+        v.insert(0, v[0] / 2 + h * sum([f(a + i * h) for i in range(1, 1 << len(v), 2)]))
+        for i in range(1, len(v)): v[i] = v[i - 1] + (v[i - 1] - v[i]) / (4 ** i - 1)
+    return v[-1]

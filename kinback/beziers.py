@@ -33,10 +33,10 @@ class bezier:
         return bezier(*self.p[::-1])
     
     def derivative(self):
-        """The derivative Bézier curve of this Bézier curve."""
+        """The derivative of this Bézier curve."""
         return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])
     def velocity(self, t):
-        """The velocity (first derivative) of this curve at parameter t."""
+        """The velocity (derivative) of this curve at parameter t."""
         return self.derivative()(t)
     def startdirc(self):
         N = 1
@@ -60,15 +60,6 @@ class bezier:
         return (tuple(map(lambda p: p.real, pp)), tuple(map(lambda p: p.imag, pp)))
     def inflections(self):
         """Returns the inflection points of this curve."""
-        # For a cubic curve:
-        # x = A, B, C, D; y = E, F, G, H
-        # x' = A', B', C'; y' = E', F', G' (t from 0 to 1)
-        # x'' = A'', B''; y'' = E'', F''
-        # Then numerator of signed curvature = x'y'' - y''x'
-        # =   E'' F''      A'' B''
-        #  A' 3   2     E' 3   2
-        # 2B' 2   1  - 2F' 2   1
-        #  C' 1   0     G' 1   0 (numbers denote powers of 1 - t in term)
         if self.deg == 3:
             d1 = self.derivative()
             d2 = d1.derivative()
@@ -78,28 +69,18 @@ class bezier:
             second = 2 * xp[1] * ypp[0] + xp[0] * ypp[1] - (2 * yp[1] * xpp[0] + yp[0] * xpp[1])
             third  = xp[2] * ypp[0] + 2 * xp[1] * ypp[1] - (yp[2] * xpp[0] + 2 * yp[1] * xpp[1])
             fourth = xp[2] * ypp[1] - yp[2] * xpp[1]
-            # p(t) coeffs:       3  2  1  0
-            # first contributes -1 +3 -3 +1
-            # second            +1 -2 +1
-            # third             -1 +1
-            # fourth            +1
-            # Roots of p(t) between 0 and 1 = inflection points
             tentinflect = polynomroot([first, second - 3 * first, 3 * first - 2 * second + third, fourth - third + second - first])[0]
-            return [t for t in tentinflect if 0 <= t <= 1]
+            return tentinflect
         return []
     
     def lenf(self):
         """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
         def z(t): return abs(self.velocity(t))
         return z
-    def length(self, end = None, start = None):
-        """The length of this curve between the specified endpoint parameters (omitted start and end values correspond to 0 and 1 respectively)."""
-        if end != None or start != None:
-            if start == None: return self.split(end)[0].length()
-            elif end == None: return self.split(start)[1].length()
-            else: return self.split(end)[0].split(start / end)[1].length()
+    def length(self, end = 1, start = 0):
+        """The length of this curve between the specified endpoint parameters."""
         if self.deg == 1: return abs(self.p[1] - self.p[0])
-        knots = [0] + sorted(self.inflections()) + [1]
+        knots = [start] + sorted([t for t in self.inflections() if start < t < end]) + [end]
         return sum([rombergquad(self.lenf(), knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
     def invlength(self, frac):
         """Computes the t value where self.length(t) / self.length() = frac. This and the corresponding elliptical arc function use the Illinois algorithm."""

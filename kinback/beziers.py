@@ -138,8 +138,3 @@ class bezier:
                 else: break
             else: break
         return round(mid, 12)
-    def areacontrib(self):
-        """By Green's theorem, the (unsigned) area of a closed path is a line integral over said path. This function determines this curve's contribution to the area."""
-        a, b, r = self.coordpolynoms()[0], self.derivative().coordpolynoms()[1], [0] * 2 * self.deg
-        for c in product(range(len(a)), range(len(b))): r[sum(c)] += a[c[0]] * b[c[1]]
-        return abs(sum([r[w] / (w + 1) for w in range(len(r))])) # |∫(0, 1) (x(t) y'(t)) dt|

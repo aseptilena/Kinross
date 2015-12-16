@@ -8,8 +8,7 @@ getcontext().prec = 60
 zero = D(0)
 
 class polynomial:
-    """A polynomial stores a list of decimal coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on.
-    Note that because of this only real coefficients are supported."""
+    """A polynomial stores a list of coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on."""
     def __init__(self, coeffs = 0):
         if type(coeffs) in (int, float, D): self.a = [D(coeffs)]
         else: self.a = [D(c) for c in coeffs]

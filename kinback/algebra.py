@@ -1,4 +1,4 @@
-# Helper functions for Kinross: numerical algebra
+# Helper functions for Kinross: numerical algebra and methods
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
 from cmath import isclose

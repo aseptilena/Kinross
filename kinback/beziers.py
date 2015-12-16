@@ -3,8 +3,8 @@
 # http://parclytaxel.tumblr.com
 from cmath import isclose
 from itertools import product
-from .vectors import linterp, pointbounds
-from .affines import affine
+from .vectors import linterp, pointbounds, collinear
+from .affines import affine, backaffine
 from .algebra import rombergquad, polynomroot
 from .regexes import floatinkrep
 
@@ -81,6 +81,32 @@ class bezier:
             tentinflect = polynomroot([first, second - 3 * first, 3 * first - 2 * second + third, fourth - third + second - first])[0]
             return tentinflect
         return []
+    def kind(self):
+        """Returns the kind of this Bézier curve according to canonical form (https://pomax.github.io/bezierinfo/#canonical) along with any significant points.
+        N ∈ {0, 1, 2} for loopless curves with N inflection points with parameters of said inflections; -1 for loopy curves with coinciding parameters."""
+        nothing = (0, []) # What is returned when there are no inflections or loops
+        if self.deg < 3: return nothing
+        if collinear(*self.p[:3]):
+            if collinear(*self.p[1:]): return nothing
+            p11, p01, p00 = self.p[1:]
+            p4 = self.p[0]
+        else:
+            p00, p01, p11 = self.p[:3]
+            p4 = self.p[3]
+        p10 = p00 + p11 - p01
+        xv, yv = p10 - p00, p01 - p00
+        clue = backaffine((xv.real, xv.imag, yv.real, yv.imag, p00.real, p00.imag), p4)
+        x, y = clue.real, clue.imag
+        if y >= 1 and x < 1 or y > 1 and x >= 1: num = 1
+        elif x * (x - 2) + 4 * y >= 3 and x < 1: num = 2
+        else:
+            K = x * (x - 3)
+            if K + 3y > 0 and x < 0 or K + y * (x + y) > 0 and x < 1 and y > 0: num = -1
+            else: return nothing
+        if num > 0:
+            return (num, []) # TODO compute inflection points
+        else:
+            return (num, []) # TODO compute self-intersections
     
     def lenf(self):
         """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""

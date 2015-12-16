@@ -101,7 +101,7 @@ class bezier:
         elif x * (x - 2) + 4 * y >= 3 and x < 1: num = 2
         else:
             K = x * (x - 3)
-            if K + 3y > 0 and x < 0 or K + y * (x + y) > 0 and x < 1 and y > 0: num = -1
+            if K + 3 * y > 0 and x < 0 or K + y * (x + y) > 0 and x < 1 and y > 0: num = -1
             else: return nothing
         if num > 0:
             return (num, []) # TODO compute inflection points

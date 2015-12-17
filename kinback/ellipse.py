@@ -20,8 +20,8 @@ class ellipse:
     def svgrepr(self):
         """Returns the minimal SVG representation of this ellipse {cx, cy, rx, ry, th}, where all items are string representations and th is applied as part of a transformation."""
         oc = turn(self.centre, -self.tilt)
-        x, y, a, b = [floatinkrep(v, True) for v in (oc.real, oc.imag, self.rx, self.ry)]
-        th = "rotate({})".format(floatinkrep(degrees(self.tilt), True))
+        x, y, a, b = [floatinkrep(v) for v in (oc.real, oc.imag, self.rx, self.ry)]
+        th = "rotate({})".format(floatinkrep(degrees(self.tilt)))
         return {"cx": x, "cy": y, "rx": a, "ry": b, "transform": th}
     
     def a(self): return max(self.rx, self.ry) # Semi-major axis length

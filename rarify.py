@@ -5,7 +5,7 @@
 import os, time, argparse
 import xml.etree.ElementTree as t
 from kinback.svgproc import *
-from kinback.affines import minimisetransform, lingradcollapse
+from kinback.affines import minimisetransform
 from kinback.ellipse import ellipsecollapse
 tr, rn = None, None
 

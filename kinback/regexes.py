@@ -3,23 +3,28 @@
 # http://parclytaxel.tumblr.com
 import re
 huge0 = re.compile(r"0{3,}$")
-tiny0 = re.compile(r"^(-?)\.(0{3,})")
+tiny0 = re.compile(r"(\.0{3,})(\d+)")
 nrgx = r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)"
 numre = re.compile(nrgx)
 pathre = re.compile(nrgx[1:-1] + r"|[MCSQTLHVAZmcsqtlhvaz]")
-rdigitnormal = lambda k: min(6, 8 - len(k))
-rdigitaffine = lambda k: 8 if k == "0" else 8 - len(k)
 transformbreaks = re.compile(r"(?:matrix|translate|scale|rotate|skewX|skewY)\s*\(.*?\)")
 
-def floatinkrep(he, aflag = False):
-    """Returns the shortest SVG representation of a float. aflag controls whether the float is for paths (8 sf + 6 dp) or transformations (8 sf + 8 dp)."""
-    istr = str( abs(int(he)) )
-    dec = "{:.8f}".format(round(he, (rdigitaffine if aflag else rdigitnormal)(istr))).rstrip("0").rstrip(".").lstrip("0").replace("-0.", "-.")
-    if dec in ("", "-0"): return "0"
-    em, sm = huge0.search(dec), tiny0.search(dec)
-    if em: dec = "{}e{}".format(dec[:em.start()], len(em.group()))
-    elif sm: dec = "{}{}e-{}".format(sm.group(1), dec[sm.end():], len(dec) - len(sm.group(1)) - 1)
-    return dec
+def floatinkrep(sf, N = 8):
+    """Returns the shortest Inkscape representation of a float: 8 significant digits + N decimal places."""
+    s, f = "-" if sf < 0 else "", abs(sf)
+    left = len(str(int(f)).lstrip("0"))
+    rf = round(f, min(8 - left, N))
+    if not rf: return "0"
+    if rf == int(rf):
+        dec = str(int(rf))
+        em = huge0.search(dec)
+        if em: dec = "{}e{}".format(dec[:em.start()], len(em.group()))
+    elif not left:
+        dec = "{:.8f}".format(rf).rstrip("0")[1:]
+        sm = tiny0.search(dec)
+        if sm: dec = "{}e-{}".format(sm.group(2), len(sm.group(1)))
+    else: dec = str(rf)
+    return s + dec
 
 def tokenisepath(p):
     """Parses SVG path data into its tokens and converts numbers into floats.

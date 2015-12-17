@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.5
 # Tests for the Kinback library. The expected output is on right.
-from kinback.ellipse import *
+'''from kinback.ellipse import *
 from kinback.pathery import *
 from kinback.affines import *
 import time
@@ -19,4 +19,6 @@ for b in (b0, b1, b2, bl):
     for q in range(100): l = b.length()
     end = time.perf_counter()
     print(l) # 7.504871040167711, 6.4788922059020155, 6.879770127854843, 6.982407360576698
-    print((end - start) * 10) # Approximate times in milliseconds for a Lenovo U41: 3.5, 4.5, 5, 16 (TODO implement self-intersection detection)
+    print((end - start) * 10) # Approximate times in milliseconds for a Lenovo U41: 3.5, 4.5, 5, 16 (TODO implement self-intersection detection)'''
+from kinback.algebra import polyn
+print(polyn(-1, 3, -3, 1).roots())

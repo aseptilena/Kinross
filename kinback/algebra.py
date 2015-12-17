@@ -4,28 +4,22 @@
 from math import sqrt, hypot
 from cmath import isclose
 from itertools import product
-from decimal import Decimal as D, getcontext
-import time
-getcontext().prec = 60
-zero = D(0)
+from decimal import Decimal as D
 
 class polyn:
     """A polyn(omial) stores a list of (real) coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on."""
     def __init__(self, *coeffs): self.a = list(coeffs)
-    def __getitem__(self, n): return self.a[n] # The coefficient associated with the nth power; leading coefficient is self[-1]
+    def __getitem__(self, n): return self.a[n]
     def __setitem__(self, n, v): self.a[n] = v
     def __len__(self): return len(self.a)
     def deg(self): return len(self) - 1
     def powers(self): return range(len(self) - 1, -1, -1) # High-to-low iterator over the polynomial's powers
     def __str__(self): return " + ".join(["{}*x^{}".format(self[i], i) for i in self.powers()])
     def __repr__(self): return "polyn(" + ", ".join([str(c) for c in self.a]) + ")"
-    def __call__(self, x): # Horner scheme
+    def __call__(self, x):
         res = 0
         for i in self.powers(): res = res * x + self[i]
         return res
-    def dup(self):
-        """Returns an independent duplicate of the polynomial."""
-        return polyn(self.a)
     
     def __add__(self, q):
         res = self.a + [0] * max(0, len(q) - len(self))
@@ -44,7 +38,7 @@ class polyn:
     def __rmul__(self, q): return self * q
     def __divmod__(self, b):
         if type(b) != polyn: return (polyn(*[c / b for c in self.a]), polyn(0))
-        r, d, q = self.a[:], b.a, [] # d is the divisor
+        r, d, q = self.a[:], b.a, []
         while len(r) >= len(d):
             q.append(r[-1] / d[-1])
             for i in range(-1, -len(d) - 1, -1): r[i] -= q[-1] * d[i]
@@ -56,6 +50,9 @@ class polyn:
     def deriv(self): return polyn(*[i * self[i] for i in range(1, len(self))])
     def antideriv(self): return polyn(*([0] + [self[i] / (i + 1) for i in range(len(self))]))
     
+    def ruffini(self, r):
+        """Divides the polynomial by x - r with Ruffini's rule, returning (quotient, remainder). If r is a root, this amounts to deflation."""
+        pass # TODO
     def quadruffini(self, u, v):
         """Divides the polynomial by x^2 + ux + v with a Ruffini-like scheme, returning (quotient, c, d) where the remainder is cx + d."""
         q = [0, 0]
@@ -88,6 +85,16 @@ class polyn:
             else:
                 if b < 0: out[0].extend([c / (-b + e) * 2, (-b + e) / a / 2])
                 else: out[0].extend([-(b + e) / a / 2, -c / (b + e) * 2])
+        elif p.deg() == 3: # Fast numerical method for solving a cubic from http://derpy.me/samuelsoncubic
+            d, c, b = [v / p[3] for v in p[:3]]
+            fl = -b / 3
+            if isclose(p(fl), 0, abs_tol=1e-15): # inflection point is root
+                out[0].append(fl)
+                # TODO
+            else:
+                Z = b * b - 3 * c
+                if isclose(Z, 0, abs_tol=1e-15):
+                    # TODO 
         else:
             odd = p.deg() % 2 # Bairstow's method is ill-behaved on odd-degree polynomials
             if odd: p *= polyn(-1, 1) # ∴ salt with x - 1 and catch later
@@ -95,7 +102,7 @@ class polyn:
                 u, v, x, y = p[-2] / p[-1], p[-3] / p[-1], None, None
                 while x == None and y == None:
                     try: x, y = p.bairstowstep(u, v)
-                    except ZeroDivisionError: u, v = u + 0.1, v + 0.1
+                    except ZeroDivisionError: u, v = u + 0.1, v + 0.1 # nudge, nudge, wink, wink, say no more
                 for q in range(256):
                     if not isclose(hypot(x, y), 0, abs_tol=1e-15):
                         x, y = p.bairstowstep(u, v)
@@ -113,6 +120,10 @@ class polyn:
                     if isclose(out[0][i], 1, abs_tol=1e-15):
                         out[0].pop(i)
                         break
+        for i in range(len(out[1]) - 1, 0, -2):
+            if isclose(out[1][i].imag, 0, abs_tol=1e-14):
+                out[0].extend([out[1][i].real] * 2)
+                del out[1][i:i + 2]
         return out
 
 def polynomroot(coeffs, precdigits = 15):
@@ -123,7 +134,7 @@ def polynomroot(coeffs, precdigits = 15):
     out = [[], []]
     for rn in raw[0]: out[0].append(float(round(rn, precdigits)))
     for cn in raw[1]:
-        if isclose(cn[1], zero, abs_tol=prec): out[0].append(float(round(cn[0], precdigits)))
+        if isclose(cn[1], 0, abs_tol=prec): out[0].append(float(round(cn[0], precdigits)))
         else: out[1].append(complex(round(cn[0], precdigits), round(cn[1], precdigits)))
     return out
 

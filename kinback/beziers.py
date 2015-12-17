@@ -5,7 +5,7 @@ from cmath import isclose
 from itertools import product
 from .vectors import linterp, pointbounds, collinear
 from .affines import affine, backaffine
-from .algebra import rombergquad, polynomroot
+from .algebra import rombergquad, polyn
 from .regexes import floatinkrep
 
 class bezier:
@@ -55,35 +55,22 @@ class bezier:
     def affine(self, mat):
         """Transforms the curve by the given matrix."""
         return bezier(*[affine(mat, n) for n in self.p])
-    def coordpolynoms(self):
-        """Returns the (x-component, y-component) polynomial coefficients of this curve."""
+    def xypolyns(self):
+        """Returns the (x-component, y-component) polynomials of this curve."""
         cp = self.p
-        if   self.deg == 3: pp = (cp[0], 3 * (cp[1] - cp[0]), 3 * (cp[2] - 2 * cp[1] + cp[0]), cp[3] - 3 * cp[2] + 3 * cp[1] - cp[0])
-        elif self.deg == 2: pp = (cp[0], 2 * (cp[1] - cp[0]), cp[2] - 2 * cp[1] + cp[0])
-        elif self.deg == 1: pp = (cp[0], cp[1] - cp[0])
-        return (tuple(map(lambda p: p.real, pp)), tuple(map(lambda p: p.imag, pp)))
+        if   self.deg == 3: l = (cp[0], 3 * (cp[1] - cp[0]), 3 * (cp[2] - 2 * cp[1] + cp[0]), cp[3] - 3 * cp[2] + 3 * cp[1] - cp[0])
+        elif self.deg == 2: l = (cp[0], 2 * (cp[1] - cp[0]), cp[2] - 2 * cp[1] + cp[0])
+        elif self.deg == 1: l = (cp[0], cp[1] - cp[0])
+        return (polyn(*[n.real for n in l]), polyn(*[n.imag for n in l]))
     def boundingbox(self):
         """The orthogonal bounding box of this curve as a tuple of two opposite points."""
         if self.deg == 1: return pointbounds(self.p)
-        xtremat, ytremat = tuple(map(lambda l: [t for t in polynomroot([i * l[i] for i in range(1, len(l))])[0] if 0 < t < 1], self.coordpolynoms()))
-        return pointbounds([self(t) for t in xtremat] + [self(t) for t in ytremat] + [self.start(), self.end()])
-    def inflections(self):
-        """Returns the inflection points of this curve."""
-        if self.deg == 3:
-            d1 = self.derivative()
-            d2 = d1.derivative()
-            xp, yp = tuple(zip(*((c.real, c.imag) for c in d1.p)))
-            xpp, ypp = tuple(zip(*((c.real, c.imag) for c in d2.p)))
-            first  = xp[0] * ypp[0] - yp[0] * xpp[0]
-            second = 2 * xp[1] * ypp[0] + xp[0] * ypp[1] - (2 * yp[1] * xpp[0] + yp[0] * xpp[1])
-            third  = xp[2] * ypp[0] + 2 * xp[1] * ypp[1] - (yp[2] * xpp[0] + 2 * yp[1] * xpp[1])
-            fourth = xp[2] * ypp[1] - yp[2] * xpp[1]
-            tentinflect = polynomroot([first, second - 3 * first, 3 * first - 2 * second + third, fourth - third + second - first])[0]
-            return tentinflect
-        return []
+        xb, yb = [[self(t) for t in pn.deriv().rroots() if 0 < t < 1] for pn in self.xypolyns()]
+        return pointbounds(xb + yb + [self.start(), self.end()])
+    
     def kind(self):
         """Returns the kind of this Bézier curve according to canonical form (https://pomax.github.io/bezierinfo/#canonical) along with any significant points.
-        N ∈ {0, 1, 2} for loopless curves with N inflection points with parameters of said inflections; -1 for loopy curves with coinciding parameters."""
+        N ∈ {0, 1, 2} for loopless curves with N inflection points with parameters of said inflections (may fall outside (0, 1)); -1 for loopy curves with coinciding parameters."""
         nothing = (0, []) # What is returned when there are no inflections or loops
         if self.deg < 3: return nothing
         if collinear(*self.p[:3]):
@@ -104,7 +91,10 @@ class bezier:
             if K > -3 * y and x < 0 or K > -y * (x + y) and x < 1 and y > 0: num = -1
             else: return nothing
         if num > 0:
-            return (num, []) # TODO compute inflection points
+            d1 = self.derivative()
+            xp, yp = d1.xypolyns()
+            xpp, ypp = d1.derivative().xypolyns()
+            return (num, (xp * ypp - yp * xpp).rroots())
         else:
             return (num, []) # TODO compute self-intersections
     
@@ -115,7 +105,7 @@ class bezier:
     def length(self, end = 1, start = 0):
         """The length of this curve between the specified endpoint parameters."""
         if self.deg == 1: return abs(self.p[1] - self.p[0])
-        knots = [start] + sorted([t for t in self.inflections() if start < t < end]) + [end]
+        knots = [start] + [t for t in self.kind()[1] if start < t < end] + [end]
         return sum([rombergquad(self.lenf(), knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
     def invlength(self, frac):
         """Computes the t value where self.length(t) / self.length() = frac. This and the corresponding elliptical arc function use the Illinois algorithm."""

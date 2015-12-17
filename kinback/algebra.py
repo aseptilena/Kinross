@@ -1,10 +1,8 @@
 # Helper functions for Kinross: numerical algebra and methods
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from math import sqrt, hypot
-from cmath import isclose
+from math import sqrt, hypot, isclose, copysign
 from itertools import product
-from decimal import Decimal as D
 
 class polyn:
     """A polyn(omial) stores a list of (real) coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on."""
@@ -16,10 +14,12 @@ class polyn:
     def powers(self): return range(len(self) - 1, -1, -1) # High-to-low iterator over the polynomial's powers
     def __str__(self): return " + ".join(["{}*x^{}".format(self[i], i) for i in self.powers()])
     def __repr__(self): return "polyn(" + ", ".join([str(c) for c in self.a]) + ")"
-    def __call__(self, x):
-        res = 0
-        for i in self.powers(): res = res * x + self[i]
-        return res
+    def ruffini(self, r):
+        """Divides the polynomial by x - r with Ruffini's rule, returning (quotient, remainder/p(r)). If r is a root, this amounts to deflation."""
+        res = [0]
+        for i in self.powers(): res.append(res[-1] * r + self[i])
+        return (polyn(*res[-2:0:-1]), res[-1])
+    def __call__(self, x): return self.ruffini(x)[1]
     
     def __add__(self, q):
         res = self.a + [0] * max(0, len(q) - len(self))
@@ -50,9 +50,6 @@ class polyn:
     def deriv(self): return polyn(*[i * self[i] for i in range(1, len(self))])
     def antideriv(self): return polyn(*([0] + [self[i] / (i + 1) for i in range(len(self))]))
     
-    def ruffini(self, r):
-        """Divides the polynomial by x - r with Ruffini's rule, returning (quotient, remainder). If r is a root, this amounts to deflation."""
-        pass # TODO
     def quadruffini(self, u, v):
         """Divides the polynomial by x^2 + ux + v with a Ruffini-like scheme, returning (quotient, c, d) where the remainder is cx + d."""
         q = [0, 0]
@@ -75,7 +72,7 @@ class polyn:
         p = polyn(*cfs)
         if p.deg() == 0: pass
         elif p.deg() == 1: out[0].append(-p[0] / p[1])
-        elif p.deg() == 2: # derivation from https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+        elif p.deg() == 2: # Derivation from https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
             a, b, c = p[2], p[1], p[0]
             d = b * b - 4 * a * c
             e = sqrt(abs(d))
@@ -85,16 +82,36 @@ class polyn:
             else:
                 if b < 0: out[0].extend([c / (-b + e) * 2, (-b + e) / a / 2])
                 else: out[0].extend([-(b + e) / a / 2, -c / (b + e) * 2])
-        elif p.deg() == 3: # Fast numerical method for solving a cubic from http://derpy.me/samuelsoncubic
+        elif p.deg() == 3: # Halley-based numerical method for solving a cubic from http://derpy.me/samuelsoncubic
             d, c, b = [v / p[3] for v in p[:3]]
             fl = -b / 3
-            if isclose(p(fl), 0, abs_tol=1e-15): # inflection point is root
-                out[0].append(fl)
-                # TODO
+            fv = p(fl)
+            if isclose(fv, 0, abs_tol=1e-15):
+                j = fl + b
+                k = j * fl + c
+                last = polyn(k, j, 1).roots()
+                last[0].append(fl)
+                out[0].extend(last[0])
+                out[1].extend(last[1])
             else:
                 Z = b * b - 3 * c
-                if isclose(Z, 0, abs_tol=1e-15):
-                    # TODO 
+                if isclose(Z, 0, abs_tol=1e-15): out[0].extend([fl - fv ** (1 / 3)] * 3)
+                else:
+                    iterate = fl if Z < 0 else fl - copysign(sqrt(Z) * 2 / 3, fv)
+                    num = polyn(c * d, c * c + 2 * b * d, 3 * (b * c + d), 2 * (2 * c + b * b), 5 * b, 3)
+                    denom = polyn(c * c - b * d, 3 * (b * c - d), 3 * (b * b + c), 8 * b, 6)
+                    delta = 1
+                    for q in range(16):
+                        if not isclose(delta, 0, abs_tol=1e-15):
+                            delta = num(iterate) / denom(iterate)
+                            iterate -= delta
+                        else: break
+                    j = iterate + b
+                    k = j * iterate + c
+                    last = polyn(k, j, 1).roots()
+                    last[0].append(iterate)
+                    out[0].extend(last[0])
+                    out[1].extend(last[1])
         else:
             odd = p.deg() % 2 # Bairstow's method is ill-behaved on odd-degree polynomials
             if odd: p *= polyn(-1, 1) # ∴ salt with x - 1 and catch later
@@ -125,18 +142,21 @@ class polyn:
                 out[0].extend([out[1][i].real] * 2)
                 del out[1][i:i + 2]
         return out
+    def rroots(self):
+        """Like roots() but only returns the real ones, sorted ascending."""
+        return sorted(self.roots()[0])
 
-def polynomroot(coeffs, precdigits = 15):
-    """Finds all the roots of polynomial(coeffs) to [precdigits] decimal places.
-    This function not only saves the need for creating a new instance, it also coerces to floats/complexes and suppresses small complex components."""
-    prec = D("1e-" + str(precdigits))
-    raw = polynomial(coeffs).roots(prec)
-    out = [[], []]
-    for rn in raw[0]: out[0].append(float(round(rn, precdigits)))
-    for cn in raw[1]:
-        if isclose(cn[1], 0, abs_tol=prec): out[0].append(float(round(cn[0], precdigits)))
-        else: out[1].append(complex(round(cn[0], precdigits), round(cn[1], precdigits)))
-    return out
+def rombergquad(f, a, b, e = 1e-18):
+    """∫(a, b) f(x) dx by Romberg's method."""
+    fa, fm, fb, h = f(a), f((a + b) / 2), f(b), (b - a) / 2
+    one = (fa + 2 * fm + fb) * h / 2
+    two = (4 * one - (fa + fb) * h) / 3
+    v = [one, two]
+    while abs(v[-1] - v[-2]) > e:
+        h /= 2
+        v.insert(0, v[0] / 2 + h * sum([f(a + i * h) for i in range(1, 1 << len(v), 2)]))
+        for i in range(1, len(v)): v[i] = v[i - 1] + (v[i - 1] - v[i]) / (4 ** i - 1)
+    return v[-1]
 
 def matdeterm(m, exact = False):
     """Bareiss's determinant algorithm as given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
@@ -163,15 +183,3 @@ def matdeterm(m, exact = False):
         for i in range(k, N):
             for j in range(k, N): a[i][j] = divf(a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j], 1 if not kk else a[k - 2][k - 2])
     return a[-1][-1]
-
-def rombergquad(f, a, b, e = 1e-18):
-    """∫(a, b) f(x) dx by Romberg's method."""
-    fa, fm, fb, h = f(a), f((a + b) / 2), f(b), (b - a) / 2
-    one = (fa + 2 * fm + fb) * h / 2
-    two = (4 * one - (fa + fb) * h) / 3
-    v = [one, two]
-    while abs(v[-1] - v[-2]) > e:
-        h /= 2
-        v.insert(0, v[0] / 2 + h * sum([f(a + i * h) for i in range(1, 1 << len(v), 2)]))
-        for i in range(1, len(v)): v[i] = v[i - 1] + (v[i - 1] - v[i]) / (4 ** i - 1)
-    return v[-1]

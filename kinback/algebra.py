@@ -63,7 +63,7 @@ class polyn:
         frac = g * K + h * L
         return ((d * g - c * h) / frac, (c * K + d * L) / frac)
     def roots(self):
-        """Finds all ([real], [complex]) roots of the polynomial; cubic and higher degrees are handled by Bairstow's method."""
+        """Finds all ([real], [complex]) roots of the polynomial; quartic and higher degrees are handled by Bairstow's method."""
         cfs, out = self.a[:], ([], [])
         while isclose(cfs[-1], 0, abs_tol=1e-15) and len(cfs) > 1: cfs.pop() # scrub high and low zeros to make things easier
         while isclose(cfs[0], 0, abs_tol=1e-15) and len(cfs) > 1:

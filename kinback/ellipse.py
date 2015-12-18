@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 from .vectors import *
 from .affines import affine, composition, translation, rotation, scaling, parsetransform
-from .algebra import polynomroot, matdeterm, rombergquad
+from .algebra import polyn, matdeterm, rombergquad
 from math import pi, sqrt, tan, atan, fabs, hypot, copysign, degrees, radians, floor, ceil
 from .regexes import floatinkrep, tokenisetransform
 hpi = pi / 2
@@ -136,14 +136,14 @@ def ell5pts(q, r, s, t, u):
     if isclose(matdeterm([[a * 2, b, d], [b, c * 2, e], [d, e, f * 2]]), 0) or qd <= 0: return None
     centre = complex((b * e - 2 * c * d) / qd, (b * d - 2 * a * e) / qd)
     cx, cy = centre.real, centre.imag
-    axes = [1., 1j] if isclose(b, 0) else [hat(complex(b / 2, l - a)) for l in polynomroot((qd, -(a + c) * 4, 4))[0]]
+    axes = [1., 1j] if isclose(b, 0) else [hat(complex(b / 2, l - a)) for l in polyn(qd, -(a + c) * 4, 4).rroots()]
     lens = [0., 0.]
     for i in (0, 1):
         dx, dy = axes[i].real, axes[i].imag
         qa = a * dx * dx + b * dx * dy + c * dy * dy
         qb = 2 * a * cx * dx + b * (cx * dy + cy * dx) + 2 * c * cy * dy + d * dx + e * dy
         qc = a * cx * cx + b * cx * cy + c * cy * cy + d * cx + e * cy + f
-        lens[i] = max(polynomroot((qc, qb, qa))[0])
+        lens[i] = max(polyn(qc, qb, qa).rroots())
     return ellipse(centre, lens[0], lens[1], phase(axes[0]))
 
 def intersect_cl(c, l):

@@ -69,8 +69,8 @@ class bezier:
         return pointbounds(xb + yb + [self.start(), self.end()])
     
     def kind(self):
-        """Returns the kind of this Bézier curve according to canonical form (https://pomax.github.io/bezierinfo/#canonical) along with any significant points.
-        N = {0, 1, 2} for loopless curves with N inflection points with parameters of said inflections (may fall outside (0, 1)); -1 for loopy curves with coinciding parameters."""
+        """Returns the kind of this Bézier curve according to https://pomax.github.io/bezierinfo/#canonical with any significant points.
+        N = 0 to 2 for loopless curves with inflection parameters (may fall outside (0, 1)); -1 for loops with self-intersection parameters."""
         nothing = (0, []) # What is returned when there are no inflections or loops
         if self.deg < 3: return nothing
         if collinear(*self.p[:3]):
@@ -96,28 +96,16 @@ class bezier:
             xpp, ypp = d1.derivative().xypolyns()
             return (num, (xp * ypp - yp * xpp).rroots())
         else:
-            # Now this code is extremely sneaky; when I solved the problem the euphoria sent sparks flying from my horn
-            # and I had to lie in bed for a few hours just to calm down, like Twilight Sparkle when she's finished reading a book.
+            # Because the curve is cubic the equations are conic sections and solving is quite simple.
             [c, b, a], [f, e, d] = [f.a[1:] for f in self.xypolyns()]
-            # The crucial observation is that there are two quadratic equations in two unknowns (i.e. conic sections):
-            # C = {a, a, a, b, b, c} = 0 and D = {d, d, d, e, e, f} = 0 (powers from left to right are x², xy, y², x, y, 1)
-            # Both polynomials are symmetric, which is expected since swapping the pair of solution parameters does not yield a different solution.
-            # As is well-known, the pencil formed by these two conics will contain a degenerate conic that contains the solutions;
-            # this entails solving det(C + zD) = 0, which after some tedious mathematics reduces to a + dz = 0 or z = -a / d.
-            # Back-substituting this into C + zD yields the degenerate
-            # [     0      0 Q(z)/2]
-            # [     0      0 Q(z)/2]
-            # [Q(z)/2 Q(z)/2   R(z)] where Q(z) = b + ez and R(z) = c + fz,
-            # or in polynomial form Q(z) * x + Q(z) * y + R(z) = 0,
-            # which yields the sum of the solution parameters as -R(z) / Q(z),
-            # an expression which reduces to the form below.
+            # These conics are {a, a, a, b, b, c} and {d, d, d, e, e, f} (powers from left to right are x², xy, y², x, y, 1).
+            # The degenerate conic between them is (b + ez)(x + y) + (c + fz) = 0 where z = -a / d, so the sum of solutions (x + y) is:
             J = (a * f - c * d) / (b * d - a * e)
-            # Back-substituting this expression into either of the two polynomials, coupled with even more mathematical cunning,
-            # yields the product of the solutions as the polynomial evaluation below.
+            # Adding axy on both sides of the x-coordinate equation yields ax² + 2axy + ay² + bx + by + c = axy,
+            # which reduces to aJ² + bJ + c = axy. The product of solutions (xy) is thus:
             K = polyn(c / a, b / a, 1)(J)
-            # Hence a polynomial can be constructed whose roots are the desired self-intersection parameters.
+            # A polynomial with x and y as its roots can then be constructed and the self-intersection parameters found.
             return (num, polyn(K, -J, 1).rroots())
-    
     def lenf(self):
         """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
         def z(t): return abs(self.velocity(t))

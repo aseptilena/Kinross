@@ -203,20 +203,20 @@ def repr2col(tups, four = False):
 
 # Conversions between colour spaces: sRGB, CIEXYZ, CIELAB
 def xyz2rgb(c):
-    def delinearise(k): return 12.92 * k if k <= .0031308 else 1.055 * k ** (1 / 2.4) - .055
+    def delinearise(k): return 12.92 * k if k <= 0.0031308 else 1.055 * k ** (1 / 2.4) - 0.055
     cc = [3.24062548 * c[0] - 1.53720797 * c[1] -  .49862860 * c[2],
           -.96893071 * c[0] + 1.87575606 * c[1] +  .04151752 * c[2],
            .05571012 * c[0] -  .20402105 * c[1] + 1.05699594 * c[2]]
     z = [delinearise(k) for k in cc]
     return (z[0], z[1], z[2], c[3])
 def rgb2xyz(c):
-    def linearise(k): return k / 12.92 if k <= .04045 else ((k + .055) / 1.055) ** 2.4
+    def linearise(k): return k / 12.92 if k <= 0.04045 else ((k + 0.055) / 1.055) ** 2.4
     cc = [linearise(k) for k in c[:3]]
     z = [.4124 * cc[0] + .3576 * cc[1] + .1805 * cc[2],
          .2126 * cc[0] + .7152 * cc[1] + .0722 * cc[2],
          .0193 * cc[0] + .1192 * cc[1] + .9505 * cc[2]]
     return (z[0], z[1], z[2], c[3])
-xn, yn, zn = .95047, 1., 1.08883 # D65 tristimulus values
+xn, yn, zn = 0.95047, 1, 1.08883 # D65 tristimulus values
 def xyz2lab(c):
     def cise(k): return k ** (1 / 3) if k > 216 / 24389 else k * 841 / 108 + 4 / 29
     z = [116 * cise(c[1] / yn) - 16,
@@ -234,7 +234,7 @@ def rgb2lab(c): return xyz2lab(rgb2xyz(c))
 def lab2rgb(c): return xyz2rgb(lab2xyz(c))
 
 # Calculations may occasionally produce values outside [0, 1]; this function clips them to the desired range.
-def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)
+def clip01(c): return tuple(1 if p > 1 else (0 if p < 0 else p) for p in c)
 
 # Three alpha-compositing functions, the latter two of which used to be in other places.
 # Let the (back)ground be B, the "source" (tint) S and the result (comp) R, then
@@ -242,13 +242,13 @@ def clip01(c): return tuple(1. if p > 1. else (0. if p < 0. else p) for p in c)
 # R_R = (S_R * S_A + B_R * B_A * (1 - S_A)) / R_A, 0 if R_A = 0, same for the other two primaries
 def alphacomp(back, tint): # tint over back = comp
     resa = back[3] * (1 - tint[3]) + tint[3]
-    if isclose(resa, 0.): return (0., 0., 0., 0.)
+    if isclose(resa, 0): return (0, 0, 0, 0)
     else: return clip01([(tint[i] * tint[3] + back[i] * back[3] * (1 - tint[3])) / resa for i in range(3)] + [resa])
 # B_A = (R_A - S_A) / (1 - S_A)
 # B_R = (R_R * R_A - S_R * S_A) / (R_A - S_A)
 def alphaback(tint, comp):
-    if isclose(tint[3], 1.): return (0., 0., 0., 1.)
-    elif isclose(tint[3], comp[3]): return (0., 0., 0., 0.)
+    if isclose(tint[3], 1): return (0, 0, 0, 1)
+    elif isclose(tint[3], comp[3]): return (0, 0, 0, 0)
     else:
         rgb = [(comp[i] * comp[3] - tint[i] * tint[3]) / (comp[3] - tint[3]) for i in range(3)]
         rgb.append((comp[3] - tint[3]) / (1 - tint[3]))
@@ -266,7 +266,7 @@ def alphaback(tint, comp):
 # The three pairs of primaries yield at most three values for S_A.
 # The average is back-substituted to find S_R values for both background/composite pairs, which are again averaged.
 def alphatint(back1, comp1, back2, comp2):
-    p, ta, kval, out = 0, 0., [], []
+    p, ta, kval, out = 0, 0, [], []
     for i in range(3):
         k1 = (comp1[i] - back1[i]) * comp1[3]
         k2 = (comp2[i] - back2[i]) * comp2[3]
@@ -274,9 +274,9 @@ def alphatint(back1, comp1, back2, comp2):
         if not isclose(back1[i], back2[i]):
             p += 1
             ta += (k2 - k1) / (back1[i] - back2[i])
-    if p == 0: return (0., 0., 0., .5)
+    if p == 0: return (0, 0, 0, 0.5)
     ta /= p
-    if isclose(ta, 0.): return (0., 0., 0., 0.)
+    if isclose(ta, 0): return (0, 0, 0, 0)
     for i in range(3):
         c1 = kval[i][0] / ta + back1[i]
         c2 = kval[i][1] / ta + back2[i]

@@ -1,11 +1,12 @@
 # Helper functions for Kinross: numerical algebra and methods
 # Parcly Taxel / Jeremy Tan, 2015
 # http://parclytaxel.tumblr.com
-from math import sqrt, hypot, isclose, copysign
+from math import sqrt, isclose, copysign
+from cmath import sqrt as csqrt
 from itertools import product
 
 class polyn:
-    """A polyn(omial) stores a list of (real) coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on."""
+    """A polyn stores a list of (real) coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on."""
     def __init__(self, *coeffs): self.a = list(coeffs)
     def __getitem__(self, n): return self.a[n]
     def __setitem__(self, n, v): self.a[n] = v
@@ -49,24 +50,29 @@ class polyn:
     def __mod__(self, b): return divmod(self, b)[1]
     def deriv(self): return polyn(*[i * self[i] for i in range(1, len(self))])
     def antideriv(self): return polyn(*([0] + [self[i] / (i + 1) for i in range(len(self))]))
+    def norm(self): return self / self[-1]
     
     def quadruffini(self, u, v):
         """Divides the polynomial by x^2 + ux + v with a Ruffini-like scheme, returning (quotient, c, d) where the remainder is cx + d."""
         q = [0, 0]
         for i in range(self.deg(), 1, -1): q.append(self[i] - u * q[-1] - v * q[-2])
         return (polyn(*q[:1:-1]), self[1] - u * q[-1] - v * q[-2], self[0] - v * q[-1])
-    def bairstowstep(self, u, v):
-        """Calculates one step of Bairstow's method for the given constants (divisor is x^2 + ux + v) to be added to the current guess."""
-        q, c, d = self.quadruffini(u, v)
-        g, h = q.quadruffini(u, v)[1:]
-        K, L = -g * v, g * u - h
-        frac = g * K + h * L
-        return ((d * g - c * h) / frac, (c * K + d * L) / frac)
+    def laguerrestep(self, x):
+        """Calculates one step of Laguerre's method for the given iterate."""
+        r = self(x)
+        if abs(r) < 1e-15: return 0
+        dp = self.deriv()
+        s, t, n = dp(x), dp.deriv()(x), self.deg()
+        u = s / r
+        v = u * u - t / r
+        rooty = csqrt((n - 1) * (n * v - u * u))
+        d0, d1 = u + rooty, u - rooty
+        return n / d0 if abs(d0) >= abs(d1) else n / d1
     def roots(self):
-        """Finds all ([real], [complex]) roots of the polynomial; quartic and higher degrees are handled by Bairstow's method."""
+        """Finds all ([real], [complex]) roots of the polynomial."""
         cfs, out = self.a[:], ([], [])
-        while isclose(cfs[-1], 0, abs_tol=1e-15) and len(cfs) > 1: cfs.pop() # scrub high and low zeros to make things easier
-        while isclose(cfs[0], 0, abs_tol=1e-15) and len(cfs) > 1:
+        while abs(cfs[-1]) <= 1e-15 and len(cfs) > 1: cfs.pop() # scrub high and low zeros to make things easier
+        while abs(cfs[0]) <= 1e-15 and len(cfs) > 1:
             cfs.pop(0)
             out[0].append(0)
         p = polyn(*cfs)
@@ -77,16 +83,14 @@ class polyn:
             d = b * b - 4 * a * c
             e = sqrt(abs(d))
             if d < 0:
-                r, i = -b / a / 2, e / a / 2
+                r, i = -b / (2 * a), e / (2 * a)
                 out[1].extend([complex(r, -i), complex(r, i)])
-            else:
-                if b < 0: out[0].extend([c / (-b + e) * 2, (-b + e) / a / 2])
-                else: out[0].extend([-(b + e) / a / 2, -c / (b + e) * 2])
+            else: out[0].extend([2 * c / (-b + e), (-b + e) / (2 * a)] if b < 0 else [-(b + e) / (2 * a), -2 * c / (b + e)])
         elif p.deg() == 3: # Halley-based numerical method for solving a cubic from http://derpy.me/samuelsoncubic
             d, c, b = [v / p[3] for v in p[:3]]
             fl = -b / 3
             fv = p(fl)
-            if isclose(fv, 0, abs_tol=1e-15):
+            if abs(fv) <= 1e-15:
                 j = fl + b
                 k = j * fl + c
                 last = polyn(k, j, 1).roots()
@@ -95,14 +99,14 @@ class polyn:
                 out[1].extend(last[1])
             else:
                 Z = b * b - 3 * c
-                if isclose(Z, 0, abs_tol=1e-15): out[0].extend([fl - fv ** (1 / 3)] * 3)
+                if abs(Z) <= 1e-15: out[0].extend([fl - fv ** (1 / 3)] * 3)
                 else:
                     iterate = fl if Z < 0 else fl - copysign(sqrt(Z) * 2 / 3, fv)
                     num = polyn(c * d, c * c + 2 * b * d, 3 * (b * c + d), 2 * (2 * c + b * b), 5 * b, 3)
                     denom = polyn(c * c - b * d, 3 * (b * c - d), 3 * (b * b + c), 8 * b, 6)
                     delta = 1
                     for q in range(16):
-                        if not isclose(delta, 0, abs_tol=1e-15):
+                        if abs(delta) > 1e-15:
                             delta = num(iterate) / denom(iterate)
                             iterate -= delta
                         else: break
@@ -112,33 +116,26 @@ class polyn:
                     last[0].append(iterate)
                     out[0].extend(last[0])
                     out[1].extend(last[1])
-        else:
-            odd = p.deg() % 2 # Bairstow's method is ill-behaved on odd-degree polynomials
-            if odd: p *= polyn(-1, 1) # ∴ salt with x - 1 and catch later
+        else: # Laguerre's method
+            p = p.norm()
             while p.deg() > 2:
-                u, v, x, y = p[-2] / p[-1], p[-3] / p[-1], None, None
-                while x == None and y == None:
-                    try: x, y = p.bairstowstep(u, v)
-                    except ZeroDivisionError: u, v = u + 0.1, v + 0.1 # nudge, nudge, wink, wink, say no more
-                for q in range(256):
-                    if not isclose(hypot(x, y), 0, abs_tol=1e-15):
-                        x, y = p.bairstowstep(u, v)
-                        u, v = u + x, v + y
+                iterate, delta = 0, 1
+                for q in range(64):
+                    if abs(delta) > 1e-15:
+                        delta = p.laguerrestep(iterate)
+                        iterate -= delta
                     else: break
-                p = p.quadruffini(u, v)[0]
-                new = polyn(v, u, 1).roots()
-                out[0].extend(new[0])
-                out[1].extend(new[1])
+                if abs(iterate.imag) < 1e-14:
+                    out[0].append(iterate.real)
+                    p = p.ruffini(iterate.real)[0]
+                else:
+                    out[1].extend([iterate, iterate.conjugate()])
+                    p = p.quadruffini(-2 * iterate.real, iterate.real * iterate.real + iterate.imag + iterate.imag)[0]
             last = p.roots()
             out[0].extend(last[0])
             out[1].extend(last[1])
-            if odd:
-                for i in range(len(out[0])):
-                    if isclose(out[0][i], 1, abs_tol=1e-15):
-                        out[0].pop(i)
-                        break
         for i in range(len(out[1]) - 1, 0, -2):
-            if isclose(out[1][i].imag, 0, abs_tol=1e-14):
+            if abs(out[1][i].imag) <= 1e-14:
                 out[0].extend([out[1][i].real] * 2)
                 del out[1][i:i + 2]
         return out

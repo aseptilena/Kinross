@@ -80,8 +80,7 @@ class bezier:
         else:
             p00, p01, p11 = self.p[:3]
             p4 = self.p[3]
-        p10 = p00 + p11 - p01
-        xv, yv = p10 - p00, p01 - p00
+        xv, yv = p11 - p01, p01 - p00
         clue = backaffine((xv.real, xv.imag, yv.real, yv.imag, p00.real, p00.imag), p4)
         x, y = clue.real, clue.imag
         if y >= 1 and x < 1 or y > 1 and x >= 1: num = 1

@@ -8,12 +8,13 @@ print(prettypath(celestia)) # <2.9,-.4 3.8,-.9 4.6,-1.1 4.9,0> <4.9,0 5.2,1.1 6.
 print(pathbounds(celestia)) # ((2.500000000000001-0.8023751982484959j), (6.38190799272728+1.622963821293495j))
 print(pathlength(celestia)) # 10.191302138062916
 print()
-# Performance tests for arc length of Bézier curves. The required time depends on "curvature variation" (reflected in inflection point and self-intersection count).
-b0 = bezier(0, 3j, 3j, 5) # 0
-b1 = bezier(0, 3j, 0, 5) # 1
-b2 = bezier(0, 3j, -1+1j, 5) # 2
-bl = bezier(0, 3j, -2, 5) # loop (-1)
+# Performance tests for arc length of Bézier curves. The comments immediately below show the expected output for the first line in the loop (curve kind).
+b0 = bezier(0, 3j, 3j, 5) # (0, [])
+b1 = bezier(0, 3j, 0, 5) # (1, [0, 0.5])
+b2 = bezier(0, 3j, -1+1j, 5) # (2, [0.16233115592918057, 0.5435511970119958])
+bl = bezier(0, 3j, -2, 5) # (-1, [0.2005445095326301, 0.4869554904673699])
 for b in (b0, b1, b2, bl):
+    print(b.kind())
     start = time.perf_counter()
     for q in range(100): l = b.length()
     end = time.perf_counter()

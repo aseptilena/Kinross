@@ -116,7 +116,7 @@ class polyn:
                     last[0].append(iterate)
                     out[0].extend(last[0])
                     out[1].extend(last[1])
-        else: # Laguerre's method. NOT Haycartes' method.
+        else: # Laguerre's method. NOT Haycartes's method.
             p = p.norm()
             while p.deg() > 2:
                 iterate, delta = 0, 1

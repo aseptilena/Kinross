@@ -86,7 +86,7 @@ class bezier:
         if y >= 1 and x < 1 or y > 1 and x >= 1: num = 1
         elif x * (x - 2) + 4 * y >= 3 and x < 1: num = 2
         else:
-            K = -x * (x - 3)
+            K = x * (3 - x)
             if K < 3 * y and x < 0 or K < y * (x + y) and x < 1 and y > 0: num = -1
             else: return nothing
         if num > 0:
@@ -135,3 +135,6 @@ class bezier:
                 else: break
             else: break
         return round(mid, 12)
+    def projection(self, z):
+        """The parameter t corresponding to the projection of z onto the curve (i.e. minimises |B(t) - z|. If there happens to be more than one closest t, all are returned."""
+        pass # TODO

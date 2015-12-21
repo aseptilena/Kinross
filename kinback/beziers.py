@@ -33,12 +33,12 @@ class bezier:
         """Returns the curve reversed."""
         return bezier(*self.p[::-1])
     
-    def derivative(self):
+    def deriv(self):
         """The derivative of this Bézier curve."""
         return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])
     def velocity(self, t):
         """The velocity (derivative) of this curve at parameter t."""
-        return self.derivative()(t)
+        return self.deriv()(t)
     def startdirc(self):
         N = 1
         while N <= self.deg:
@@ -90,9 +90,9 @@ class bezier:
             if K < 3 * y and x < 0 or K < y * (x + y) and x < 1 and y > 0: num = -1
             else: return nothing
         if num > 0:
-            d1 = self.derivative()
+            d1 = self.deriv()
             xp, yp = d1.xypolyns()
-            xpp, ypp = d1.derivative().xypolyns()
+            xpp, ypp = d1.deriv().xypolyns()
             return (num, (xp * ypp - yp * xpp).rroots())
         else:
             # Because the curve is cubic the equations are conic sections and solving is quite simple.
@@ -136,5 +136,9 @@ class bezier:
             else: break
         return round(mid, 12)
     def projection(self, z):
-        """The parameter t corresponding to the projection of z onto the curve (i.e. minimises |B(t) - z|. If there happens to be more than one closest t, all are returned."""
-        pass # TODO
+        """The parameter t corresponding to the projection of z onto the curve; the smallest t is returned if two or more parameters tie for shortest distance."""
+        def dist(t): return abs(self(t) - z)
+        x, y = self.xypolyns()
+        dx, dy = self.deriv().xypolyns()
+        x[0], y[0] = x[0] - z.real, y[0] - z.imag
+        return sorted([0] + [t for t in (x * dx + y * dy).rroots() if 0 < t < 1] + [1], key=dist)[0]

@@ -14,7 +14,7 @@ def rarify(f):
     tr = t.parse(f)
     rn = tr.getroot()
     begin = time.perf_counter()
-    # Phase 1: node tree operations
+    # 1: node tree operations
     for nv in rn.findall("sodipodi:namedview", nm_findall): rn.remove(nv)
     # Embrittlement of zero-length groups
     N = 1
@@ -33,19 +33,21 @@ def rarify(f):
         for md in rn.findall("svg:title", nm_findall): rn.remove(md)
     if flags.scripts:
         for sc in rn.findall("svg:script", nm_findall): rn.remove(sc)
-    # Phase 2: individual node attribute/style property processing
-    # Isolated clipping paths can be stripped of all style except for clip-rule:evenodd
+    # 2: individual node attribute/style property processing
+    # 2a: isolated clipping paths
     for clips in rn.findall(".//svg:clipPath/svg:path", nm_findall):
         if "clip-rule:evenodd" in clips.get("style", ""): clips.set("style", "clip-rule:evenodd")
         else: matchrm(clips.attrib, {"style": None})
-    # Bespokely placed paths and metadata are processed differently
+    # 2b: removal of unnecessary attributes, colour canonisation
     templates = set(rn.findall(".//svg:defs/svg:path", nm_findall))
     mdelem = set(rn.findall(".//svg:title", nm_findall) + rn.findall(".//svg:metadata", nm_findall) + rn.findall(".//svg:metadata//*", nm_findall))
     actual = set([rn] + rn.findall(".//*")) - templates - mdelem
     for n in actual: whack(n, flags.lpeoutput)
     for t in templates: weakwhack(t)
     if flags.dimens: matchrm(rn.attrib, {"height": None, "width": None, "viewBox": None})
-    # Phase 3: reference tree pruning
+    # 2c: further processing on text objects
+    for words in rn.findall(".//svg:text", nm_findall): textwhack(words)
+    # 3: reference tree pruning
     # 3a: reference map with temporary IDs
     rd, cnt, reob = {}, 0, set() # rd = reference dictionary
     for k in rn.findall(".//*"):
@@ -66,11 +68,11 @@ def rarify(f):
             if dlm.get("id") == None: ud.append(dlm)
         for z in ud: df.remove(z)
         if not len(list(df)): rn.remove(df)
-    # Phase 3½: transcoding of "path circles and ellipses" (the internal representations of these objects before 0.91) into actual circles and ellipses
+    # 3½: transcoding of "path circles and ellipses" (the internal representations of these objects before 0.91) into actual circles and ellipses
     for pce in rn.findall(".//svg:path[@sodipodi:type='arc']", nm_findall):
         b = path2oval(pce)
         if b != None: pce.tag, pce.attrib = b
-    # Phase 4: transformation processing
+    # 4: transformation processing
     # 4a: collapsing into unstroked ellipses that reference no other objects
     for tfell in rn.findall(".//svg:ellipse[@transform]", nm_findall):
         if not refsof(tfell): ellipsecollapse(tfell)

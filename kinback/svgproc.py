@@ -89,6 +89,7 @@ styleplus = {"letter-spacing": "0px",
 defattrb = [(None, {"inkscape:connector-curvature": "0"}, {}),
             (None, {"sodipodi:nodetypes": None}, {}),
             
+            ("rect", {"x": "0", "y": "0"}, {}),
             ("circle", {"cx": "0", "cy": "0"}, {}),
             ("ellipse", {"cx": "0", "cy": "0"}, {}),
             ("path", {"d": None, "inkscape:rounded": "0", "inkscape:randomized": "0", "inkscape:flatsided": "false"}, {"sodipodi:type": "star"}),
@@ -167,8 +168,8 @@ def tersecol(c):
     if c[0] == "u" or c == "none": return c
     return repr2col(col2repr(c))[0]
 
-def styledict(node, preserve = False):
-    """Returns the style dictionary; if the second argument is True, also wipes it from the node."""
+def styledict(node, preserve):
+    """Returns the style dictionary; if the second argument is False, also wipes it from the node."""
     sd, sa = {}, []
     for p in node.attrib:
         if p in defstyle or p in dstytext:
@@ -193,7 +194,7 @@ def stylesplit(node, sd):
 
 def whack(node, lpeoutput = False):
     """Phases 1 and 2 of the old Rarify script on the node level. lpeoutput, if True, preserves the d of paths with LPEs (which would normally be removed) so that other applications can render them correctly."""
-    sd = styledict(node)
+    sd = styledict(node, False)
     for aset in defattrb:
         if aset[0] == None or node.tag == treename(aset[0]): matchrm(node.attrib, aset[1], aset[2])
     if not lpeoutput and node.tag == "{http://www.w3.org/2000/svg}path": matchrm(node.attrib, {"d": None}, {"inkscape:original-d": None})
@@ -215,7 +216,15 @@ def whack(node, lpeoutput = False):
     else: rmdfstyle(sd, dstytext, True)
     stylesplit(node, sd)
 # In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties).
-def weakwhack(node): stylesplit(node, styledict(node))
+def weakwhack(node): stylesplit(node, styledict(node, False))
+# Extra processing for text objects, which may contain tspans with redundant style properties
+def textwhack(node):
+    td, tit = styledict(node, True), node.iter()
+    next(tit)
+    for t in tit:
+        sd = styledict(t, False)
+        rmdfstyle(sd, td)
+        stylesplit(t, sd)
 def refsof(node):
     """Works out which nodes the input node references, whether by hashes or URIs."""
     rf, sd = {}, styledict(node, True)

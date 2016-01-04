@@ -1,9 +1,9 @@
 # Helper functions for Kinross: affine transformations
-# Parcly Taxel / Jeremy Tan, 2015
+# Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
-from .vectors import saltire, perpbisect, signedangle
 from math import sin, cos, tan, copysign, degrees, radians, nan
 from cmath import isclose, phase
+from .vectors import saltire, perpbisect, signedangle
 from .regexes import tokenisetransform, floatinkrep, numbercrunch
 
 # Affine transformations are 6-tuples of floats corresponding to the following matrix. Compositions are stored last-to-first-applied.

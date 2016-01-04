@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.5
 # Tests for the Kinback library. The expected output is on right.
-from kinback.ellipse import *
 from kinback.pathery import *
 import time
 celestia = parsepath("m2.9-.4c.9-.5 1.7-.7 2 .4s1.5.8 1.2-.2c.6.7.2 1.6-.8 1.8s-1.4-1-2.8 0") # part of my Princess Celestia cutie mark vector

@@ -1,5 +1,5 @@
 # Helper functions for Kinross: vector functions
-# Parcly Taxel / Jeremy Tan, 2015
+# Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 from math import sin, cos, acos
 from cmath import phase, rect, isclose

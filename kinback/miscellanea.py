@@ -1,5 +1,5 @@
 # Helper functions for Kinross: miscellaneous things
-# Parcly Taxel / Jeremy Tan, 2015
+# Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 
 def taxellogo():

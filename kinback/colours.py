@@ -1,5 +1,5 @@
 # Helper functions for Kinross: colours in all their colours
-# Parcly Taxel / Jeremy Tan, 2015
+# Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 from math import isclose
 

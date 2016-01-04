@@ -1,5 +1,5 @@
 # Helper functions for Kinross: numerical algebra and methods
-# Parcly Taxel / Jeremy Tan, 2015
+# Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 from math import sqrt, isclose, copysign
 from cmath import sqrt as csqrt

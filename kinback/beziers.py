@@ -1,5 +1,5 @@
 # Helper functions for Kinross: linear, quadratic and cubic Bézier curves
-# Parcly Taxel / Jeremy Tan, 2015
+# Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 from cmath import isclose
 from itertools import product

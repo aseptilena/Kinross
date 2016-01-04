@@ -1,12 +1,12 @@
 # Helper functions for Kinross: paths
-# Parcly Taxel / Jeremy Tan, 2015
+# Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 from math import sin, ceil, inf
 from cmath import isclose
 from .vectors import angle, reflect, pointbounds
-from .ellipse import elliparc
-from .beziers import bezier
 from .regexes import tokenisepath
+from .beziers import bezier
+from .ovalarc import elliparc
 
 def parsepath(p):
     """Converts SVG paths to Kinross paths; see the readme for specifications."""

@@ -5,33 +5,38 @@ from math import pi, sqrt, hypot, tan, atan, radians, floor, ceil
 from .vectors import *
 from .algebra import rombergquad
 from .regexes import floatinkrep
-from .affines import affine, composition, translation, rotation, squeezing
+from .affines import affine, backaffine
 from .ellipse import oval
 hpi = pi / 2
 
 class elliparc:
-    def __init__(self, start, in_rx, in_ry, in_phi = None, large = None, sweep = None, end = None):
-        """Initialises with the arc's Kinross representation (tstart, ell, tend), where tstart < tend if the arc is positive-angle and vice versa.
-        phi should be given in degrees, as happens in SVG path parsing."""
+    def __init__(self, *data):
+        """Initialises the Kinross arc. tstart to tend is increasing if the arc turns clockwise; phi is in degrees."""
         self.deg = -1
-        if in_phi == None: self.tstart, self.ell, self.tend = float(start), in_rx, float(in_ry)
-        elif isclose(start, end): self.tstart = self.ell = self.tend = self.sf = self.ef = None
-        else:
-            midarc, phi = between(start, end), radians(in_phi)
-            startp = affine(composition(rotation(-phi), translation(-midarc)), start)
-            rx, ry = abs(in_rx), abs(in_ry)
-            delta = hypot(startp.real / rx, startp.imag / ry)
-            if delta > 1: rx, ry, centrep = rx * delta, ry * delta, 0
+        if len(data) == 3: # tstart, ell, tend (Kinross representation)
+            self.tstart, self.ell, self.tend = data
+        elif len(data) == 7: # start, rx, ry, phi, large, sweep, end (SVG representation)
+            start, rx, ry, phi, large, sweep, end = data
+            if isclose(start, end): self.tstart, self.tend, self.ell = 7, 7, [start, end]
             else:
-                k = (rturn if bool(large) == bool(sweep) else lturn)(affine(squeezing(ry / rx), startp))
-                centrep = k * sqrt(1 / (delta * delta) - 1)
-            centre = affine(composition(translation(midarc), rotation(phi)), centrep)
-            self.ell = oval(centre, rx, ry, phi)
-            taff = self.ell.uc_affine()
-            self.tstart, self.tend = phase(affine(taff, start)), phase(affine(taff, end))
-            if bool(sweep) and self.tstart > self.tend: self.tend += 2 * pi
-            if not bool(sweep) and self.tstart < self.tend: self.tstart += 2 * pi
-        if self.ell:
+                rx, ry, phi = abs(rx), abs(ry), radians(phi)
+                if rx < 1e-8 or ry < 1e-8: self.tstart, self.tend, self.ell = 8, 8, [start, end]
+                else:
+                    z1, z2, mid = turn(rx, phi), turn(ry * 1j, phi), between(start, end)
+                    uc2e = (z1.real, z1.imag, z2.real, z2.imag, mid.real, mid.imag)
+                    astt, aend = backaffine(uc2e, start), backaffine(uc2e, end)
+                    large, sweep = large != 0, sweep != 0 # True = 1, False = 0
+                    if abs(astt - aend) >= 2: # There is only one ellipse or the ellipse is too small
+                        c, self.tstart, self.tend = mid, phase(astt), phase(aend)
+                    else:
+                        l = abs(astt)
+                        rac = sqrt(1 - l * l)
+                        ac = rect(rac, phase(astt) + hpi * (1 if large == sweep else -1))
+                        c, self.tstart, self.tend = affine(uc2e, ac), phase(astt - ac), phase(aend - ac)
+                    self.ell = oval(c, rx, ry, phi)
+                    if self.tstart > self.tend and     sweep: self.tend += 2 * pi
+                    if self.tstart < self.tend and not sweep: self.tend -= 2 * pi
+        if type(self.ell) == oval: # These values aid the arc length computation
             sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
             self.sf, self.ef = sr(self.tstart / hpi), er(self.tend / hpi)
     def __str__(self):
@@ -47,8 +52,8 @@ class elliparc:
     def end(self): return self.ell.parampoint(self.tend)
     def split(self, t):
         """Splits the arc at parameter t, returning a list that can then be inserted."""
-        return [elliparc(self.tstart, self.ell, linterp(self.tstart, self.tend, t)),
-                elliparc(linterp(self.tstart, self.tend, t), self.ell, self.tend)]
+        mv = linterp(self.tstart, self.tend, t)
+        return [elliparc(self.tstart, self.ell, mv), elliparc(mv, self.ell, self.tend)]
     def reverse(self):
         """Returns the arc reversed."""
         return elliparc(self.tend, oval(self.ell.centre, self.ell.rx, self.ell.ry, self.ell.tilt), self.tstart)

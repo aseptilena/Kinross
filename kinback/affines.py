@@ -32,7 +32,6 @@ def rotation(th, o = None):
     else: return composition(translation(o), rotation(th), translation(-o))
 def scaling(x, y = None): return (float(x), 0, 0, float(x if y == None else y), 0, 0)
 def skewing(x, y): return (1, tan(y), tan(x), 1, 0, 0)
-def squeezing(a): return (float(a), 0, 0, 1 / a, 0, 0) # Not in the SVG specifications, but here to help the elliptical arc constructor
 
 def collapsibility(t):
     """1 if the affinity is a scaling + rotation + translation, -1 for the same but with flipping and 0 otherwise."""

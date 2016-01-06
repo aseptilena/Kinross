@@ -11,7 +11,7 @@ from .ovalarc import elliparc
 def parsepath(p):
     """Converts SVG paths to Kinross paths; see the readme for specifications."""
     t, pos = tokenisepath(p), 0
-    out, current = [], complex(0, 0)
+    out, current = [], 0
     take, prevailing, params = 2, "M", []
     while pos < len(t):
         # Obtain the command and its parameters
@@ -25,7 +25,7 @@ def parsepath(p):
             elif val in "Aa": take = 7
             prevailing, params = val, t[pos + 1:pos + take + 1]
             pos += take + 1
-        else:
+        else: # pos landed on a float, command is unchanged
             params = t[pos:pos + take]
             pos += take
         # Absolutise coordinates
@@ -52,32 +52,27 @@ def parsepath(p):
         else: params = [current] + [complex(params[2 * i], params[2 * i + 1]) for i in range(len(params) // 2)]
         # Construct the next segment
         if rhtype == "m":
-            if type(t[pos - 3]) != str: out[-1].append(bezier(*params))
-            else: out.append([])
+            if type(t[pos - 3]) != str: out[-1].append(bezier(*params)) # Implied moveto
+            else: out.append([]) # Explicit moveto
             current = params[1]
         elif rhtype == "z":
             spstart, spend = out[-1][0].start(), out[-1][-1].end()
-            if not isclose(spstart, spend): out[-1].append(bezier(spend, spstart))
+            if not isclose(spstart, spend): out[-1].append(bezier(spend, spstart)) # The bridging line need not be drawn if nothing is bridged
             out[-1].append(0)
-            if pos < len(t) and t[pos].lower() != "m":
+            if pos < len(t) and t[pos].lower() != "m": # zC, zL, etc.
                 out.append([])
                 current = spstart
         else:
-            nextseg = (elliparc if rhtype == "a" else bezier)(*params)
-            out[-1].append(nextseg)
-            current = nextseg.end()
-    # Remove degenerate segments
-    for sp in out:
-        N = 0
-        while N < len(sp):
-            seg = sp[N]
-            if type(seg) == bezier:
-                if min([isclose(seg.p[-1], seg.p[i]) for i in range(len(seg.p) - 1)]): del sp[N]
-                else: N += 1
-            elif type(seg) == elliparc:
-                if seg.ell == None: del sp[N]
-                else: N += 1
-            else: break
+            if rhtype == "a":
+                nextseg = elliparc(*params)
+                if nextseg.tstart >= 7:
+                    if nextseg.tstart == 8: nextseg = bezier(*nextseg.ell)
+                    out[-1].append(nextseg)
+            else:
+                nextseg = bezier(*params)
+                if not nextseg.isdegenerate():
+                    out[-1].append(nextseg)
+            current = params[-1]
     return out
 def prettypath(p):
     """Return a pretty string representation of a Kinross path, with <> for Bézier curves and {} for arcs rather than their class names."""

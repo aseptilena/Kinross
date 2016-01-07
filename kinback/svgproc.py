@@ -1,7 +1,22 @@
 # Helper functions for Kinross: SVG node processing and simplification (Rarify's "Sweetie Belle", phases 2 and 3)
 # Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
+from xml.etree.ElementTree import tostring
+from xml.dom.minidom import parseString
 from .colours import repr2col, col2repr, decs
+def formalxml(rn):
+    """Returns the formatted string of the element rn and its children (tab = two spaces)."""
+    return parseString(tostring(rn, "unicode")).toprettyxml("  ")
+
+def satellitedish():
+    """As an aside, returns the SVG representation of my "satellite dish" logo."""
+    from math import sqrt
+    k, l, m = sqrt(13.5), sqrt(2), (31 + 12 * sqrt(3)) / 23
+    t = sqrt(69 / (4 * (1 + m * m)))
+    p, q = (l - k) / 2 - t, (l + k) / 2 - m * t
+    d = [p, -q, l, -l, q, -p]
+    c = [str(round(i * sqrt(2 / 3) + 4, 7)) for i in d]
+    return '<svg><rect fill="#230f38" width="8" height="8"/><path style="fill:none;stroke:#6dc6fb;stroke-width:.2109375;stroke-linecap:round;stroke-linejoin:round" d="M1 1 {0} 7 7"/></svg>'.format(" ".join(c))
 
 # Default style properties
 defstyle = {"display": "inline",

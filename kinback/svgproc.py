@@ -4,6 +4,9 @@
 from xml.etree.ElementTree import tostring
 from xml.dom.minidom import parseString
 from .colours import repr2col, col2repr, decs
+from .regexes import stylecrunch, singlerotation
+from .affines import parsetransform
+from .ellipse import oval
 def formalxml(rn):
     """Returns the formatted string of the element rn and its children (tab = two spaces)."""
     return parseString(tostring(rn, "unicode")).toprettyxml("  ")
@@ -18,6 +21,16 @@ def satellitedish():
     c = [str(round(i * sqrt(2 / 3) + 4, 7)) for i in d]
     return '<svg><rect fill="#230f38" width="8" height="8"/><path style="fill:none;stroke:#6dc6fb;stroke-width:.2109375;stroke-linecap:round;stroke-linejoin:round" d="M1 1 {0} 7 7"/></svg>'.format(" ".join(c))
 
+# SVG namespace strings in round brackets
+_svg = "{http://www.w3.org/2000/svg}"
+_ink = "{http://www.inkscape.org/namespaces/inkscape}"
+_sod = "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}"
+_xln = "{http://www.w3.org/1999/xlink}"
+# Namespace dictionary for findall
+nm_findall = {"svg": _svg[1:-1], "inkscape": _ink[1:-1], "sodipodi": _sod[1:-1]}
+# Namespace dictionary for the element tree parser
+svgnms = {"": _svg[1:-1], "inkscape": _ink[1:-1], "sodipodi": _sod[1:-1], "xlink": _xln[1:-1],
+          "dc": "http://purl.org/dc/elements/1.1/", "cc": "http://creativecommons.org/ns#", "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}
 # Default style properties
 defstyle = {"display": "inline",
             "overflow": "visible",
@@ -95,51 +108,53 @@ dstytext = {"baseline-shift": "baseline",
             "white-space": "normal",
             "word-spacing": "normal",
             "writing-mode": "lr-tb"}
+# Convenience SET of all style properties.
+allstyle = set(defstyle.keys()) | set(dstytext.keys()) 
 # Inkscape aliases the following default style properties for text as such. There is no corresponding "None-dictionary" as above because all its keys are in dstytext.
 styleplus = {"letter-spacing": "0px",
              "word-spacing": "0px",
              "line-height": "125%",
              "font-weight": "500"}
 # Default attributes of objects; None denotes any string. The LPE output tuple, the reason Rarify was written in the first place, is separate so as to enable controlling its execution.
-defattrb = [(None, {"inkscape:connector-curvature": "0"}, {}),
-            (None, {"sodipodi:nodetypes": None}, {}),
+defattrb = [(None, {_ink + "connector-curvature": "0"}, {}),
+            (None, {_sod + "nodetypes": None}, {}),
             
-            ("rect", {"x": "0", "y": "0"}, {}),
-            ("circle", {"cx": "0", "cy": "0"}, {}),
-            ("ellipse", {"cx": "0", "cy": "0"}, {}),
-            ("path", {"d": None, "inkscape:rounded": "0", "inkscape:randomized": "0", "inkscape:flatsided": "false"}, {"sodipodi:type": "star"}),
+            (_svg + "rect", {"x": "0", "y": "0"}, {}),
+            (_svg + "circle", {"cx": "0", "cy": "0"}, {}),
+            (_svg + "ellipse", {"cx": "0", "cy": "0"}, {}),
+            (_svg + "path", {"d": None, _ink + "rounded": "0", _ink + "randomized": "0", _ink + "flatsided": "false"}, {_sod + "type": "star"}),
             
-            ("inkscape:path-effect", {"is_visible": "true"}, {}),
-            ("inkscape:path-effect", {"interpolator_type": "CubicBezierFit",
-                                      "miter_limit": "4",
-                                      "linejoin_type": "extrp_arc",
-                                      "sort_points": "true",
-                                      "interpolator_beta": "0.2",
-                                      "start_linecap_type": "butt",
-                                      "end_linecap_type": "butt"}, {"effect": "powerstroke"}),
-            ("inkscape:path-effect", {"xx": "true",
-                                      "yy": "true",
-                                      "bendpath1-nodetypes": None,
-                                      "bendpath2-nodetypes": None,
-                                      "bendpath3-nodetypes": None,
-                                      "bendpath4-nodetypes": None}, {"effect": "envelope"}),
-            ("inkscape:path-effect", {"copytype": "single_stretched",
-                                      "fuse_tolerance": "0",
-                                      "normal_offset": "0",
-                                      "pattern-nodetypes": None,
-                                      "prop_scale": "1",
-                                      "prop_units": "false",
-                                      "scale_y_rel": "false",
-                                      "spacing": "0",
-                                      "tang_offset": "0",
-                                      "vertical_pattern": "false"}, {"effect": "skeletal"}),
+            (_ink + "path-effect", {"is_visible": "true"}, {}),
+            (_ink + "path-effect", {"interpolator_type": "CubicBezierFit",
+                                    "miter_limit": "4",
+                                    "linejoin_type": "extrp_arc",
+                                    "sort_points": "true",
+                                    "interpolator_beta": "0.2",
+                                    "start_linecap_type": "butt",
+                                    "end_linecap_type": "butt"}, {"effect": "powerstroke"}),
+            (_ink + "path-effect", {"xx": "true",
+                                    "yy": "true",
+                                    "bendpath1-nodetypes": None,
+                                    "bendpath2-nodetypes": None,
+                                    "bendpath3-nodetypes": None,
+                                    "bendpath4-nodetypes": None}, {"effect": "envelope"}),
+            (_ink + "path-effect", {"copytype": "single_stretched",
+                                    "fuse_tolerance": "0",
+                                    "normal_offset": "0",
+                                    "pattern-nodetypes": None,
+                                    "prop_scale": "1",
+                                    "prop_units": "false",
+                                    "scale_y_rel": "false",
+                                    "spacing": "0",
+                                    "tang_offset": "0",
+                                    "vertical_pattern": "false"}, {"effect": "skeletal"}),
             
-            ("use", {"x": None, "y": None, "height": None, "width": None}, {}),
-            ("clipPath", {"clipPathUnits": "userSpaceOnUse"}, {}),
-            ("mask", {"maskUnits": "userSpaceOnUse"}, {}),
+            (_svg + "use", {"x": None, "y": None, "height": None, "width": None}, {}),
+            (_svg + "clipPath", {"clipPathUnits": "userSpaceOnUse"}, {}),
+            (_svg + "mask", {"maskUnits": "userSpaceOnUse"}, {}),
             
-            (None, {"inkscape:collect": "always", "inkscape:transform-center-x": None, "inkscape:transform-center-y": None}, {}),
-            ("svg", {"version": None, "inkscape:version": None, "sodipodi:docname": None, "inkscape:export-filename": None, "inkscape:export-xdpi": None, "inkscape:export-ydpi": None}, {})]
+            (None, {_ink + "collect": "always", _ink + "transform-center-x": None, _ink + "transform-center-y": None}, {}),
+            (_svg + "svg", {"version": None, _ink + "version": None, _sod + "docname": None, _ink + "export-filename": None, _ink + "export-xdpi": None, _ink + "export-ydpi": None}, {})]
 # Colour properties and their corresponding opacities
 colop = {"fill": "fill-opacity",
          "stroke": "stroke-opacity",
@@ -150,119 +165,99 @@ colop = {"fill": "fill-opacity",
          "lighting-color": None,
          "text-decoration-color": None}
 
-# Namespaces used by SVG and Inkscape, for ease of registering them with the XML parser
-svgnms = {"": "http://www.w3.org/2000/svg",
-          "inkscape": "http://www.inkscape.org/namespaces/inkscape",
-          "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
-          "xlink": "http://www.w3.org/1999/xlink",
-          "dc": "http://purl.org/dc/elements/1.1/",
-          "cc": "http://creativecommons.org/ns#",
-          "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"}
-# A reduced namespace for the two namespace-expanding functions and findall
-nm_findall = {"svg": "http://www.w3.org/2000/svg", "inkscape": "http://www.inkscape.org/namespaces/inkscape", "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"}
-def treename(t):
-    """On node tags, returns their names as stored in the element tree."""
-    a = t.split(':')
-    if len(a) == 1: return "{http://www.w3.org/2000/svg}" + t
-    return "{{{0}}}{1}".format(nm_findall[a[0]], a[1])
-def fullattr(t):
-    """Expands the namespaces of attributes to match their names in the tree. Not to be confused with treename."""
-    a = t.split(':')
-    if len(a) == 1: return t
-    return "{{{0}}}{1}".format(nm_findall[a[0]], a[1])
+# TODO integrate matchrm into rm_default
+def rm_default(sd, dct, ignore = False):
+    """Removes default attributes from sd according to dct. ignore = True removes them regardless of what values dct has."""
+    ra = [prop for prop in sd if sd[prop] == dct.get(prop) or ignore and prop in dct]
+    for tra in ra: del sd[tra]
 def matchrm(d, pr, cond = {}):
     """Dictionary match-and-remove with namespaces. pr is the list of pairs to remove and cond gives pairs which must all be there."""
-    rute = True
-    for c in cond:
-        rute &= fullattr(c) in d and cond[c] in (d[fullattr(c)], None)
-    if rute:
+    if not cond or min([c in d and cond[c] in (d.get(c, ""), None) for c in cond]):
         for p in pr:
-            if fullattr(p) in d and pr[p] in (d[fullattr(p)], None): del d[fullattr(p)]
+            if pr[p] in (d.get(p, ""), None): d.pop(p, 0)
+
 def tersecol(c):
     """Returns the shortest representation of an RGB colour (without the opacity)."""
     if c[0] == "u" or c == "none": return c
     return repr2col(col2repr(c))[0]
 
-def styledict(node, preserve):
-    """Returns the style dictionary; if the second argument is False, also wipes it from the node."""
-    sd, sa = {}, []
-    for p in node.attrib:
-        if p in defstyle or p in dstytext:
-            sd[p] = node.get(p)
-            if not preserve: sa.append(p)
-    for a in sa: del node.attrib[a]
-    sp = node.get("style", "").split(';')
-    if sp: sd.update(dict([a.split(':') for a in sp if a]))
-    if not preserve: node.set("style", "")
-    return sd
-def rmdfstyle(sd, dct, ignore = False):
-    """Removes default attributes from sd according to dct. ignore = True removes them regardless of what values dct has."""
-    ra = [prop for prop in sd if sd[prop] == dct.get(prop) or ignore and prop in dct]
-    for tra in ra: del sd[tra]
-def stylesplit(node, sd):
-    """Sets the style, minimising occupied space."""
-    if len(sd) < 1: del node.attrib["style"]
-    elif len(sd) < 4:
-        del node.attrib["style"]
-        for p in sd: node.set(p, sd[p])
-    else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
+def expungestyle(node):
+    """Takes all style attributes from the node and expunges them, then returns the dictionary of properties."""
+    res = {s: node.attrib.pop(s) for s in allstyle & set(node.keys())}
+    res.update(stylecrunch(node.attrib.pop("style", "")))
+    return res
+def obtainstyle(node):
+    """Like expungestyle but does not remove the style properties."""
+    res = {s: node.get(s) for s in allstyle & set(node.keys())}
+    res.update(stylecrunch(node.get("style", "")))
+    return res
+def distributestyle(node, sd):
+    """On a node with no style, sets it while minimising occupied space."""
+    if sd:
+        if len(sd) < 4: [node.set(p, sd[p]) for p in sd]
+        else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
 
 def whack(node, lpeoutput = False):
     """Phases 1 and 2 of the old Rarify script on the node level. lpeoutput, if True, preserves the d of paths with LPEs (which would normally be removed) so that other applications can render them correctly."""
-    sd = styledict(node, False)
+    sd = expungestyle(node)
+    # Non-styling default attributes
     for aset in defattrb:
-        if aset[0] == None or node.tag == treename(aset[0]): matchrm(node.attrib, aset[1], aset[2])
-    if not lpeoutput and node.tag == "{http://www.w3.org/2000/svg}path": matchrm(node.attrib, {"d": None}, {"inkscape:original-d": None})
+        if aset[0] == node.tag or not aset[0]: matchrm(node.attrib, aset[1], aset[2])
+    if not lpeoutput and node.tag.endswith("}path"): matchrm(node.attrib, {"d": None}, {_ink + "original-d": None})
     # Colour normalisation; work on the RGB separately from the A
     for c in colop:
         if c in sd: sd[c] = tersecol(sd[c])
         if colop[c] != None and colop[c] in sd: sd[colop[c]] = decs[round(float(sd[colop[c]]) * 255)]
+    # Properties rendered useless if other properties are set certain ways
     if sd.get("stroke-dasharray", "none") == "none": sd.pop("stroke-dashoffset", 0)
     if sd.get("stroke", "none") == "none":
         for spr in ("stroke-opacity", "stroke-width", "stroke-linejoin", "stroke-linecap", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset"): sd.pop(spr, 0)
     if sd.get("stroke-linejoin", "miter") != "miter": sd.pop("stroke-miterlimit", 0)
     if sd.get("fill") == "none": sd.pop("fill-rule", 0)
     sd.pop("-inkscape-font-specification", 0)
-    # Implied style property removal
-    rmdfstyle(sd, defstyle)
-    if node.tag in ("{http://www.w3.org/2000/svg}text", "{http://www.w3.org/2000/svg}tspan"):
-        rmdfstyle(sd, dstytext)
-        rmdfstyle(sd, styleplus)
-    else: rmdfstyle(sd, dstytext, True)
-    stylesplit(node, sd)
+    # Default style property removal
+    rm_default(sd, defstyle)
+    if node.tag.endswith("}text") or node.tag.endswith("}tspan"):
+        rm_default(sd, dstytext)
+        rm_default(sd, styleplus)
+    else: rm_default(sd, dstytext, True)
+    # Final distribution into the node
+    distributestyle(node, sd)
 # In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties).
-def weakwhack(node): stylesplit(node, styledict(node, False))
+def weakwhack(node): distributestyle(node, expungestyle(node))
 # Extra processing for text objects, which may contain tspans with redundant style properties
 def textwhack(node):
-    td, tit = styledict(node, True), node.iter()
+    td, tit = obtainstyle(node), node.iter()
     next(tit)
     for t in tit:
-        sd = styledict(t, False)
-        rmdfstyle(sd, td)
-        stylesplit(t, sd)
+        sd = expungestyle(t)
+        rm_default(sd, td)
+        distributestyle(t, sd)
 def refsof(node):
-    """Works out which nodes the input node references, whether by hashes or URIs."""
-    rf, sd = {}, styledict(node, True)
+    """Works out which nodes the input node references, whether by hashes or URIs. Assumes the style has already been canonised."""
+    rf, sd = {}, obtainstyle(node)
     for a in ("fill", "stroke", "clip-path", "mask", "filter"):
         if a in sd and sd[a][0] == 'u': rf[a] = sd[a][5:-1]
-    tmp = node.get("{http://www.w3.org/1999/xlink}href")
+    tmp = node.get(_xln + "href")
     if tmp: rf["use"] = tmp[1:]
-    tmp = node.get("{http://www.inkscape.org/namespaces/inkscape}path-effect")
+    tmp = node.get(_ink + "path-effect")
     if tmp: rf["path-effect"] = tmp[1:]
     return rf
 
+# Higher-order functions (involving some maths) follow
 def path2oval(arc):
-    """With a Sodipodi arc, returns the equivalent circle or ellipse node if it has no start or end, else None."""
-    # Prior to 0.91 circles and ellipses were stored in Inkscape as paths with corresponding Sodipodi attributes enabling their editability.
-    # That period is long gone, but node whacking does not take this into account, so this function rejuvenates these "path ovals".
-    if arc.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}start") != None: return None
-    atbs = arc.attrib.copy()
-    dimens = {suffix: atbs.pop(fullattr("sodipodi:" + suffix)) for suffix in ("cx", "cy", "rx", "ry")}
-    del atbs["{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}type"]
-    del atbs["d"]
-    if dimens["rx"] == dimens["ry"]:
-        atbs.update({"cx": dimens["cx"], "cy": dimens["cy"], "r": dimens["rx"]})
-        return ("circle", atbs)
-    else:
-        atbs.update(dimens)
-        return ("ellipse", atbs)
+    """With a Sodipodi arc that is also an ellipse, converts it into a real ellipse; does not process transformations or further simplify into a circle."""
+    if arc.get(_sod + "start") == None: # If it has no start attribute it also has no end attribute
+        for param in ("cx", "cy", "rx", "ry"): arc.set(param, arc.attrib.pop(_sod + param))
+        del arc.attrib[_sod + "type"]
+        arc.attrib.pop("d", 0)
+        arc.tag = _svg + "ellipse"
+def ellipsecollapse(ell):
+    """Given a transformed ellipse element, collapses the transform into the ellipse if it has no stroke and then converts into a circle if applicable."""
+    if ell.get("stroke") == None and "stroke" not in stylecrunch(ell.get("style", "")): # ensures that no transformation of the stroke is lost
+        tfstr = ell.get("transform", "rotate(0)")
+        if not singlerotation.fullmatch(tfstr): # avoids wasting time on already-optimised ellipses (whitespace is processed later)
+            newps = oval(complex(float(ell.get("cx", "0")), float(ell.get("cy", "0"))), float(ell.get("rx")), float(ell.get("ry"))).affine(parsetransform(tfstr)).svgrepr()
+            for param in {"cx", "cy", "rx", "ry", "transform"} & set(ell.keys()): del ell.attrib[param]
+            ell.tag = _svg + newps[0]
+            ell.attrib.update(newps[1])

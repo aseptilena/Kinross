@@ -8,6 +8,8 @@ nrgx = r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)"
 numre = re.compile(nrgx)
 pathre = re.compile(nrgx[1:-1] + r"|[MCSQTLHVAZmcsqtlhvaz]")
 transformbreaks = re.compile(r"(?:matrix|translate|scale|rotate|skewX|skewY)\s*\(.*?\)")
+semicolons = re.compile(r"[^;]+")
+singlerotation = re.compile(r"\s*rotate\s*\(\s*" + nrgx + r"\s*\)\s*")
 
 def floatinkrep(sf, N = 8):
     """Returns the shortest Inkscape representation of a float: 8 significant digits + N decimal places."""
@@ -49,3 +51,7 @@ def numbercrunch(*strs):
         if l[i][0] == '-' or l[i][0] == '.' and ('.' in l[i - 1] or 'e' in l[i - 1]): continue
         l.insert(i, " ")
     return "".join(l)
+
+def stylecrunch(stystr):
+    """Style string as input, dictionary of its attributes as output. Multiple and misplaced semicolons are skipped over seamlessly."""
+    return dict(pair.split(":") for pair in semicolons.findall(stystr))

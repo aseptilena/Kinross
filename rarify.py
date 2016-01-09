@@ -1,12 +1,11 @@
 #!/usr/bin/env python3.5
 # Rarify, the uncouth SVG optimiser
-# Parcly Taxel / Jeremy Tan, 2015
+# Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 import os, time, argparse
 import xml.etree.ElementTree as t
 from kinback.svgproc import *
 from kinback.affines import minimisetransform
-from kinback.ellipse import ellipsecollapse
 tr, rn = None, None
 
 def rarify(f):
@@ -37,14 +36,14 @@ def rarify(f):
     # 2a: isolated clipping paths
     for clips in rn.findall(".//svg:clipPath/svg:path", nm_findall):
         if "clip-rule:evenodd" in clips.get("style", ""): clips.set("style", "clip-rule:evenodd")
-        else: matchrm(clips.attrib, {"style": None})
+        else: clips.attrib.pop("style", 0)
     # 2b: removal of unnecessary attributes, colour canonisation
     templates = set(rn.findall(".//svg:defs/svg:path", nm_findall))
     mdelem = set(rn.findall(".//svg:title", nm_findall) + rn.findall(".//svg:metadata", nm_findall) + rn.findall(".//svg:metadata//*", nm_findall))
     actual = set([rn] + rn.findall(".//*")) - templates - mdelem
     for n in actual: whack(n, flags.lpeoutput)
     for t in templates: weakwhack(t)
-    if flags.dimens: matchrm(rn.attrib, {"height": None, "width": None, "viewBox": None})
+    if flags.dimens: [rn.attrib.pop(span, 0) for span in ("height", "width", "viewBox")]
     # 2c: further processing on text objects
     for words in rn.findall(".//svg:text", nm_findall): textwhack(words)
     # 3: reference tree pruning
@@ -68,14 +67,12 @@ def rarify(f):
             if dlm.get("id") == None: ud.append(dlm)
         for z in ud: df.remove(z)
         if not len(list(df)): rn.remove(df)
-    # 3½: transcoding of "path circles and ellipses" (the internal representations of these objects before 0.91) into actual circles and ellipses
-    for pce in rn.findall(".//svg:path[@sodipodi:type='arc']", nm_findall):
-        b = path2oval(pce)
-        if b != None: pce.tag, pce.attrib = b
+    # 3.5: transcoding of ellipses represented as paths into actual circles and ellipses
+    for pce in rn.findall(".//svg:path[@sodipodi:type='arc']", nm_findall): path2oval(pce)
     # 4: transformation processing
-    # 4a: collapsing into unstroked ellipses that reference no other objects
-    for tfell in rn.findall(".//svg:ellipse[@transform]", nm_findall):
-        if not refsof(tfell): ellipsecollapse(tfell)
+    # 4a: collapsing into unstroked, untransformed ellipses that reference no other objects
+    for b in rn.findall(".//svg:ellipse", nm_findall):
+        if not refsof(b): ellipsecollapse(b)
     # 4b: simplification
     for withtf in rn.findall(".//*[@transform]", nm_findall):
         mt = minimisetransform(withtf.get("transform"))
@@ -83,10 +80,9 @@ def rarify(f):
         else: withtf.set("transform", mt)
     # Final output
     outfn = "{0}-rarified.svg".format(f[:-4])
-    outf = open(outfn, 'w')
-    if flags.xml: outf.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
-    tr.write(outf, "unicode")
-    outf.close()
+    with open(outfn, 'w') as outf:
+        if flags.xml: outf.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
+        tr.write(outf, "unicode")
     end = time.perf_counter()
     before, after = os.path.getsize(f), os.path.getsize(outfn)
     print("{}: {:.3f}, {} → {} ({:.2%})".format(f, end - begin, before, after, after / before))

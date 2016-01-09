@@ -3,9 +3,9 @@
 # http://parclytaxel.tumblr.com
 from math import pi, sqrt, hypot, degrees
 from .vectors import *
-from .regexes import floatinkrep, tokenisetransform
+from .regexes import floatinkrep
 from .algebra import polyn, matdeterm
-from .affines import affine, composition, translation, rotation, scaling, parsetransform
+from .affines import affine
 hpi = pi / 2
 
 class oval:
@@ -17,11 +17,16 @@ class oval:
     def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(printpoint(self.centre), self.rx, self.ry, self.tilt)
     def __repr__(self): return "oval({}, {}, {}, {})".format(self.centre, self.rx, self.ry, self.tilt)
     def svgrepr(self):
-        """Returns the minimal SVG representation of this ellipse {cx, cy, rx, ry, th}, where all items are string representations and th is applied as part of a transformation."""
-        oc = turn(self.centre, -self.tilt)
-        x, y, a, b = [floatinkrep(v) for v in (oc.real, oc.imag, self.rx, self.ry)]
-        th = "rotate({})".format(floatinkrep(degrees(self.tilt)))
-        return {"cx": x, "cy": y, "rx": a, "ry": b, "transform": th}
+        """Returns the minimal SVG representation of the oval: tag, {attributes}."""
+        a, b = floatinkrep(self.rx), floatinkrep(self.ry)
+        if a == b: tag, resd = "circle", {"cx": floatinkrep(self.centre.real), "cy": floatinkrep(self.centre.imag), "r": a} # circle
+        else:
+            oc, theta = turn(self.centre, -self.tilt), floatinkrep(degrees(self.tilt))
+            tag, resd = "ellipse", {"cx": floatinkrep(oc.real), "cy": floatinkrep(oc.imag), "rx": a, "ry": b}
+            if theta != "0": resd["transform"] = "rotate({})".format(theta)
+        if resd["cx"] == "0": del resd["cx"]
+        if resd["cy"] == "0": del resd["cy"]
+        return tag, resd
     
     def a(self): return max(self.rx, self.ry)
     def b(self): return min(self.rx, self.ry)
@@ -36,7 +41,7 @@ class oval:
     def parampoint(self, th):
         """The point on this ellipse with eccentric anomaly (or parameter of the classic parametric form) th relative to the zero vertex."""
         return self.centre + turn(complex(self.rx * cos(th), self.ry * sin(th)), self.tilt)
-    # The two functions below give perpendicular vertices of the ellipse
+    # The two functions below give perpendicular vertices of the ellipse, one at 0 and the other at +pi/2
     def v0(self): return self.centre + rect(self.rx, self.tilt)
     def v1(self): return self.centre + rect(self.ry, self.tilt + hpi)
     def anglepoint(self, th = 0.):
@@ -66,11 +71,14 @@ class oval:
         """Transforms the ellipse by the given matrix."""
         return rytz(affine(mat, self.centre), affine(mat, self.v0()), affine(mat, self.v1()))
     def uc_affine(self):
-        """The transformation that maps this ellipse to the centred unit circle."""
-        return composition(scaling(1 / self.rx, 1 / self.ry), rotation(-self.tilt), translation(-self.centre))
+        """The transformation that maps this ellipse to the centred unit circle, which has a nice closed form."""
+        s, c = sin(self.tilt), cos(self.tilt)
+        return (c / self.ry, s / self.ry, -s / self.rx, c / self.rx, -(s * self.centre.imag + c * self.centre.real) / self.rx,
+                                                                      (s * self.centre.real - c * self.centre.imag) / self.ry)
     def uc_invaffine(self):
-        """The inverse of uc_affine() (i.e. the transformation from the unit circle to this ellipse). This is calculated separately to reduce floating-point error."""
-        return composition(translation(self.centre), rotation(self.tilt), scaling(self.rx, self.ry))
+        """The inverse of uc_affine() (i.e. the transformation from the unit circle to this ellipse), whose form is even simpler."""
+        s, c = sin(self.tilt), cos(self.tilt)
+        return (c * self.rx, s * self.rx, -s * self.ry, c * self.ry, self.centre.real, self.centre.imag)
 
 def rytz(centre, a, b):
     """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
@@ -83,18 +91,6 @@ def rytz(centre, a, b):
         mb, mc = lenvec(b, d, m), lenvec(c, d, m)
         z1, z2 = lenvec(mb, abs(mc - b), centre), lenvec(mc, abs(mb - b), centre)
         return oval(centre, abs(z1 - centre), abs(z2 - centre), phase(z1 - centre))
-
-def ellipsecollapse(w):
-    """Given a transformed ellipse element, collapses the transform into the ellipse if it has no stroke."""
-    sty = w.get("style", "")
-    if w.get("stroke") == None and ";stroke:" not in sty and not sty.startswith("stroke:"):
-        tkdtf = tokenisetransform(w.get("transform")) # The calling function must guarantee that the ellipse has a transform, so tkdtf is not empty
-        if len(tkdtf) != 1 or tkdtf[0][0] != "rotate" or len(tkdtf[0][1]) > 1:
-            outp = oval(complex(float(w.get("cx", "0")), float(w.get("cy", "0"))), float(w.get("rx")), float(w.get("ry"))).affine(parsetransform(w.get("transform"))).svgrepr()
-            w.attrib.update(outp)
-            if outp["cx"] == "0": del w.attrib["cx"]
-            if outp["cy"] == "0": del w.attrib["cy"]
-            if outp["transform"] == "rotate(0)": del w.attrib["transform"]
 
 def ell5pts(q, r, s, t, u):
     """Constructs the ellipse passing through the five points. The algorithms are from the equivalent Pernsteiner extension (http://pernsteiner.org/inkscape/ellipse_5pts)."""

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.4
 # Script for magically generating pony colour schemes.
-# They may not make sense from a colour harmony perspective and they don't come with highlights,
-# but at least they're good starts.
+# They may not make sense from a colour harmony perspective and they don't come with highlights, but at least they're good starts.
+# See http://parclytaxel.tumblr.com/post/136659988109/the-distribution-of-pony-colours for the workings and data behind this script.
 # Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 import random, sys

@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 from math import isclose
 
-# An RGBA colour is a 4-tuple of floats in [0, 1]; operations, especially alpha compositing and its reverse, are easier in this format.
+# An RGBA/LABI/LCHI colour is a 4-tuple of floats.
 # The CSS colour aliases follow in the order Wikipedia gives them:
 aliases = {"pink": (255, 192, 203), # Pink
            "lightpink": (255, 182, 193),
@@ -200,6 +200,12 @@ def repr2col(tups, four = False):
         else: code = "#" + "".join(["{:x}".format(i >> 4) for i in rgb])
         if nm == None or len(code) <= len(nm): nm = code
         return (nm, decs[round(tups[3] * 255)]) # Alpha is rounded to the smallest possible display differential, 1 / 255
+def shortcolour(c):
+    """Given an RGB colour, returns its shortest representation."""
+    return c if c == "none" or c[0] == 'u' else repr2col(col2repr(c))[0]
+def shortdiaph(d):
+    """The same as shortcolour, but working on opacities (diaphanities)."""
+    return decs[round(float(d) * 255)]
 
 # Conversions between colour spaces: sRGB, CIEXYZ, CIELAB
 def xyz2rgb(c):

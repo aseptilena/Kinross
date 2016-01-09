@@ -3,7 +3,7 @@
 # http://parclytaxel.tumblr.com
 from xml.etree.ElementTree import tostring
 from xml.dom.minidom import parseString
-from .colours import repr2col, col2repr, decs
+from .colours import shortcolour, shortdiaph
 from .regexes import stylecrunch, singlerotation
 from .affines import parsetransform
 from .ellipse import oval
@@ -155,15 +155,9 @@ defattrb = [(None, {_ink + "connector-curvature": "0"}, {}),
             
             (None, {_ink + "collect": "always", _ink + "transform-center-x": None, _ink + "transform-center-y": None}, {}),
             (_svg + "svg", {"version": None, _ink + "version": None, _sod + "docname": None, _ink + "export-filename": None, _ink + "export-xdpi": None, _ink + "export-ydpi": None}, {})]
-# Colour properties and their corresponding opacities
-colop = {"fill": "fill-opacity",
-         "stroke": "stroke-opacity",
-         "stop-color": "stop-opacity",
-         "color": "opacity",
-         "solid-color": "solid-opacity",
-         "flood-color": "flood-opacity",
-         "lighting-color": None,
-         "text-decoration-color": None}
+# Colour and opacity properties
+chromaprops = ("fill", "stroke", "stop-color", "color", "solid-color", "flood-color", "lighting-color", "text-decoration-color")
+diaphanities = ("fill-opacity", "stroke-opacity", "stop-opacity", "opacity", "solid-opacity", "flood-opacity")
 
 # TODO integrate matchrm into rm_default
 def rm_default(sd, dct, ignore = False):
@@ -175,11 +169,6 @@ def matchrm(d, pr, cond = {}):
     if not cond or min([c in d and cond[c] in (d.get(c, ""), None) for c in cond]):
         for p in pr:
             if pr[p] in (d.get(p, ""), None): d.pop(p, 0)
-
-def tersecol(c):
-    """Returns the shortest representation of an RGB colour (without the opacity)."""
-    if c[0] == "u" or c == "none": return c
-    return repr2col(col2repr(c))[0]
 
 def expungestyle(node):
     """Takes all style attributes from the node and expunges them, then returns the dictionary of properties."""
@@ -199,15 +188,16 @@ def distributestyle(node, sd):
 
 def whack(node, lpeoutput = False):
     """Phases 1 and 2 of the old Rarify script on the node level. lpeoutput, if True, preserves the d of paths with LPEs (which would normally be removed) so that other applications can render them correctly."""
-    sd = expungestyle(node)
     # Non-styling default attributes
     for aset in defattrb:
         if aset[0] == node.tag or not aset[0]: matchrm(node.attrib, aset[1], aset[2])
     if not lpeoutput and node.tag.endswith("}path"): matchrm(node.attrib, {"d": None}, {_ink + "original-d": None})
-    # Colour normalisation; work on the RGB separately from the A
-    for c in colop:
-        if c in sd: sd[c] = tersecol(sd[c])
-        if colop[c] != None and colop[c] in sd: sd[colop[c]] = decs[round(float(sd[colop[c]]) * 255)]
+    # Style dictionary, then colour/opacity shortening
+    sd = expungestyle(node)
+    for c in chromaprops:
+        if c in sd: sd[c] = shortcolour(sd[c])
+    for d in diaphanities:
+        if d in sd: sd[d] = shortdiaph(sd[d])
     # Properties rendered useless if other properties are set certain ways
     if sd.get("stroke-dasharray", "none") == "none": sd.pop("stroke-dashoffset", 0)
     if sd.get("stroke", "none") == "none":

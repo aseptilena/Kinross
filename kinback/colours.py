@@ -3,8 +3,7 @@
 # http://parclytaxel.tumblr.com
 from math import isclose
 
-# An RGBA/LABI/LCHI colour is a 4-tuple of floats.
-# The CSS colour aliases follow in the order Wikipedia gives them:
+# An RGBA/LABI/LCHI colour is a 4-tuple of floats. CSS aliases follow in the order Wikipedia gives them:
 aliases = {"pink": (255, 192, 203), # Pink
            "lightpink": (255, 182, 193),
            "hotpink": (255, 105, 180),
@@ -147,6 +146,10 @@ aliases = {"pink": (255, 192, 203), # Pink
            "slategray": (112, 128, 144),
            "darkslategray": (47, 79, 79),
            "black": (0, 0, 0)}
+# To speed up the conversion back into a CSS colour, here is a dictionary of the 31 distinct aliases which are strictly shorter than the colours they represent.
+shortaliases = {w: aliases[w] for w in ("azure", "beige", "bisque", "brown", "coral", "gold", "green", "grey", "indigo", "ivory",
+                                        "khaki", "linen", "maroon", "navy", "olive", "orange", "orchid", "peru", "pink", "plum",
+                                        "purple", "red", "salmon", "sienna", "silver", "snow", "tan", "teal", "tomato", "violet", "wheat")}
 
 # decs[n] = shortest string that when converted to float, multiplied by 255 and rounded to nearest integer (even in ties) will yield n
 decs = ("0"   , ".004", ".008", ".01" , ".016", ".02" , ".024", ".028", ".03" , ".036", ".04" , ".044", ".048", ".05" , ".056", ".06" ,
@@ -187,22 +190,17 @@ def col2repr(col, alpha = None):
         a = int(col[7:], 16) / 255 if len(col) == 9 else 1
         if alpha != None: a = float(alpha)
         return (rgb[0], rgb[1], rgb[2], a)
-# four causes an eight-hex RGBA string to be returned instead of a six-hex RGB string or alias and an opacity float for pasting into Inkscape's fill/stroke dialogue.
-def repr2col(tups, four = False):
-    if four: return "".join(["{0:02x}".format(round(comp * 255)) for comp in tups])
-    else:
-        nm = None
-        rgb = tuple(round(i * 255) for i in tups[:3])
-        for a in aliases:
-            if rgb == aliases[a]: nm = a
-        if nm == "gray": nm = "grey"
-        if max(i % 17 for i in rgb): code = "#" + "".join(["{:02x}".format(i) for i in rgb])
-        else: code = "#" + "".join(["{:x}".format(i >> 4) for i in rgb])
-        if nm == None or len(code) <= len(nm): nm = code
-        return (nm, decs[round(tups[3] * 255)]) # Alpha is rounded to the smallest possible display differential, 1 / 255
+def repr2col(tups):
+    """Returns the shortest representation of the RGBA tuple (alias, 6 hexes or 8 hexes)."""
+    quant = tuple(round(comp * 255) for comp in tups)
+    if quant[3] != 255: return "".join(["{0:02x}".format(m) for m in quant])
+    quant = quant[:3]
+    for w in shortaliases:
+        if quant == shortaliases[w]: return w
+    return "#" + "".join(["{:02x}".format(n) if max(n % 17 for n in quant) else "{:x}".format(n >> 4) for n in quant])
 def shortcolour(c):
     """Given an RGB colour, returns its shortest representation."""
-    return c if c == "none" or c[0] == 'u' else repr2col(col2repr(c))[0]
+    return c if c == "none" or c[0] == 'u' else repr2col(col2repr(c))
 def shortdiaph(d):
     """The same as shortcolour, but working on opacities (diaphanities)."""
     return decs[round(float(d) * 255)]

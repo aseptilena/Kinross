@@ -206,33 +206,33 @@ def shortdiaph(d):
     return decs[round(float(d) * 255)]
 
 # Conversions between colour spaces: sRGB, CIEXYZ, CIELAB
+def rgb_lin(k): return k / 12.92 if k <= 0.040449936 else ((k + 0.055) / 1.055) ** 2.4
+def rgb_inv(k): return 12.92 * k if k <= 0.0031308 else 1.055 * k ** (1 / 2.4) - 0.055
+xn, yn, zn = 0.95047, 1, 1.08883 # D65 tristimulus values
+def lumroot(k): return k ** (1 / 3) if k > 216 / 24389 else k * 841 / 108 + 4 / 29
+def lumcube(k): return k ** 3 if k > 6 / 29 else 108 / 841 * (k - 4 / 29)
 def xyz2rgb(c):
-    def delinearise(k): return 12.92 * k if k <= 0.0031308 else 1.055 * k ** (1 / 2.4) - 0.055
-    cc = [3.24062548 * c[0] - 1.53720797 * c[1] -  .49862860 * c[2],
-          -.96893071 * c[0] + 1.87575606 * c[1] +  .04151752 * c[2],
-           .05571012 * c[0] -  .20402105 * c[1] + 1.05699594 * c[2]]
-    z = [delinearise(k) for k in cc]
+    cc = [3.2406 * c[0] - 1.5372 * c[1] -  .4986 * c[2],
+          -.9689 * c[0] + 1.8758 * c[1] +  .0415 * c[2],
+           .0557 * c[0] -  .2040 * c[1] + 1.0570 * c[2]]
+    z = [rgb_inv(k) for k in cc]
     return (z[0], z[1], z[2], c[3])
 def rgb2xyz(c):
-    def linearise(k): return k / 12.92 if k <= 0.04045 else ((k + 0.055) / 1.055) ** 2.4
-    cc = [linearise(k) for k in c[:3]]
-    z = [.4124 * cc[0] + .3576 * cc[1] + .1805 * cc[2],
-         .2126 * cc[0] + .7152 * cc[1] + .0722 * cc[2],
-         .0193 * cc[0] + .1192 * cc[1] + .9505 * cc[2]]
+    cc = [rgb_lin(k) for k in c[:3]]
+    z = [.4123955889674142 * cc[0] + .3575834307637148 * cc[1] + .18049264738170157 * cc[2],
+         .21258623078559552 * cc[0] + .7151703037034108 * cc[1] + .07220049864333623 * cc[2],
+         .019297215491746945 * cc[0] + .11918386458084852 * cc[1] + .9504971251315797 * cc[2]]
     return (z[0], z[1], z[2], c[3])
-xn, yn, zn = 0.95047, 1, 1.08883 # D65 tristimulus values
 def xyz2lab(c):
-    def cise(k): return k ** (1 / 3) if k > 216 / 24389 else k * 841 / 108 + 4 / 29
-    z = [116 * cise(c[1] / yn) - 16,
-         500 * (cise(c[0] / xn) - cise(c[1] / yn)),
-         200 * (cise(c[1] / yn) - cise(c[2] / zn))]
+    z = [116 * lumroot(c[1] / yn) - 16,
+         500 * (lumroot(c[0] / xn) - cise(c[1] / yn)),
+         200 * (lumroot(c[1] / yn) - cise(c[2] / zn))]
     return (z[0], z[1], z[2], c[3])
 def lab2xyz(c):
-    def icise(k): return k ** 3 if k > 6 / 29 else 108 / 841 * (k - 4 / 29)
     l0 = (c[0] + 16) / 116
-    z = [xn * icise(l0 + c[1] / 500),
-         yn * icise(l0),
-         zn * icise(l0 - c[2] / 200)]
+    z = [xn * lumcube(l0 + c[1] / 500),
+         yn * lumcube(l0),
+         zn * lumcube(l0 - c[2] / 200)]
     return (z[0], z[1], z[2], c[3])
 def rgb2lab(c): return xyz2lab(rgb2xyz(c))
 def lab2rgb(c): return xyz2rgb(lab2xyz(c))

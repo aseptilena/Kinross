@@ -164,7 +164,7 @@ def rm_default(sd, dct, cond = {}):
     """Removes keys from sd according to the default dictionary dct. cond gives conditions; all keys in cond must be in sd
     and the corresponding values must match. None can be used in dct and cond to match any value. Dictionaries are assumed to have only string values."""
     for c in cond:
-        if c not in sd or cond[c] not in (None, sd.get(c)): return
+        if c not in sd or cond[c] not in (None, sd[c]): return
     k = list(sd.keys())
     for i in k:
         if i in dct and dct[i] in (None, sd[i]): del sd[i]

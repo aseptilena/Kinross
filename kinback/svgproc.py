@@ -108,23 +108,24 @@ dstytext = {"baseline-shift": "baseline",
             "white-space": "normal",
             "word-spacing": "normal",
             "writing-mode": "lr-tb"}
+dstytextnone = {v: None for v in dstytext}
 # Convenience SET of all style properties.
 allstyle = set(defstyle.keys()) | set(dstytext.keys()) 
-# Inkscape aliases the following default style properties for text as such. There is no corresponding "None-dictionary" as above because all its keys are in dstytext.
+# Inkscape aliases the following default style properties for text as such:
 styleplus = {"letter-spacing": "0px",
              "word-spacing": "0px",
              "line-height": "125%",
              "font-weight": "500"}
 # Default attributes of objects; None denotes any string. The LPE output tuple, the reason Rarify was written in the first place, is separate so as to enable controlling its execution.
-defattrb = [(None, {_ink + "connector-curvature": "0"}, {}),
-            (None, {_sod + "nodetypes": None}, {}),
+defattrb = [(None, {_ink + "connector-curvature": "0"}),
+            (None, {_sod + "nodetypes": None}),
             
-            (_svg + "rect", {"x": "0", "y": "0"}, {}),
-            (_svg + "circle", {"cx": "0", "cy": "0"}, {}),
-            (_svg + "ellipse", {"cx": "0", "cy": "0"}, {}),
+            (_svg + "rect", {"x": "0", "y": "0"}),
+            (_svg + "circle", {"cx": "0", "cy": "0"}),
+            (_svg + "ellipse", {"cx": "0", "cy": "0"}),
             (_svg + "path", {"d": None, _ink + "rounded": "0", _ink + "randomized": "0", _ink + "flatsided": "false"}, {_sod + "type": "star"}),
             
-            (_ink + "path-effect", {"is_visible": "true"}, {}),
+            (_ink + "path-effect", {"is_visible": "true"}),
             (_ink + "path-effect", {"interpolator_type": "CubicBezierFit",
                                     "miter_limit": "4",
                                     "linejoin_type": "extrp_arc",
@@ -149,27 +150,24 @@ defattrb = [(None, {_ink + "connector-curvature": "0"}, {}),
                                     "tang_offset": "0",
                                     "vertical_pattern": "false"}, {"effect": "skeletal"}),
             
-            (_svg + "use", {"x": None, "y": None, "height": None, "width": None}, {}),
-            (_svg + "clipPath", {"clipPathUnits": "userSpaceOnUse"}, {}),
-            (_svg + "mask", {"maskUnits": "userSpaceOnUse"}, {}),
+            (_svg + "use", {"x": None, "y": None, "height": None, "width": None}),
+            (_svg + "clipPath", {"clipPathUnits": "userSpaceOnUse"}),
+            (_svg + "mask", {"maskUnits": "userSpaceOnUse"}),
             
-            (None, {_ink + "collect": "always", _ink + "transform-center-x": None, _ink + "transform-center-y": None}, {}),
-            (_svg + "svg", {"version": None, _ink + "version": None, _sod + "docname": None, _ink + "export-filename": None, _ink + "export-xdpi": None, _ink + "export-ydpi": None}, {})]
+            (None, {_ink + "collect": "always", _ink + "transform-center-x": None, _ink + "transform-center-y": None}),
+            (_svg + "svg", {"version": None, _ink + "version": None, _sod + "docname": None, _ink + "export-filename": None, _ink + "export-xdpi": None, _ink + "export-ydpi": None})]
 # Colour and opacity properties
 chromaprops = ("fill", "stroke", "stop-color", "color", "solid-color", "flood-color", "lighting-color", "text-decoration-color")
 diaphanities = ("fill-opacity", "stroke-opacity", "stop-opacity", "opacity", "solid-opacity", "flood-opacity")
 
-# TODO integrate matchrm into rm_default
-def rm_default(sd, dct, ignore = False):
-    """Removes default attributes from sd according to dct. ignore = True removes them regardless of what values dct has."""
-    ra = [prop for prop in sd if sd[prop] == dct.get(prop) or ignore and prop in dct]
-    for tra in ra: del sd[tra]
-def matchrm(d, pr, cond = {}):
-    """Dictionary match-and-remove with namespaces. pr is the list of pairs to remove and cond gives pairs which must all be there."""
-    if not cond or min([c in d and cond[c] in (d.get(c, ""), None) for c in cond]):
-        for p in pr:
-            if pr[p] in (d.get(p, ""), None): d.pop(p, 0)
-
+def rm_default(sd, dct, cond = {}):
+    """Removes keys from sd according to the default dictionary dct. cond gives conditions; all keys in cond must be in sd
+    and the corresponding values must match. None can be used in dct and cond to match any value. Dictionaries are assumed to have only string values."""
+    for c in cond:
+        if c not in sd or cond[c] not in (None, sd.get(c)): return
+    k = list(sd.keys())
+    for i in k:
+        if i in dct and dct[i] in (None, sd[i]): del sd[i]
 def expungestyle(node):
     """Takes all style attributes from the node and expunges them, then returns the dictionary of properties."""
     res = {s: node.attrib.pop(s) for s in allstyle & set(node.keys())}
@@ -190,8 +188,8 @@ def whack(node, lpeoutput = False):
     """Phases 1 and 2 of the old Rarify script on the node level. lpeoutput, if True, preserves the d of paths with LPEs (which would normally be removed) so that other applications can render them correctly."""
     # Non-styling default attributes
     for aset in defattrb:
-        if aset[0] == node.tag or not aset[0]: matchrm(node.attrib, aset[1], aset[2])
-    if not lpeoutput and node.tag.endswith("}path"): matchrm(node.attrib, {"d": None}, {_ink + "original-d": None})
+        if aset[0] == node.tag or not aset[0]: rm_default(node.attrib, *aset[1:])
+    if not lpeoutput and node.tag.endswith("}path"): rm_default(node.attrib, {"d": None}, {_ink + "original-d": None})
     # Style dictionary, then colour/opacity shortening
     sd = expungestyle(node)
     for c in chromaprops:
@@ -210,7 +208,7 @@ def whack(node, lpeoutput = False):
     if node.tag.endswith("}text") or node.tag.endswith("}tspan"):
         rm_default(sd, dstytext)
         rm_default(sd, styleplus)
-    else: rm_default(sd, dstytext, True)
+    else: rm_default(sd, dstytextnone)
     # Final distribution into the node
     distributestyle(node, sd)
 # In cases where the "redundant" attributes will matter later, do a weak whacking (canonise the style properties).

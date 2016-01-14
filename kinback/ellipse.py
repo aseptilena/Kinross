@@ -14,7 +14,7 @@ class oval:
         self.tilt = tilt - pi * int(tilt / pi) # (-pi, pi)
         if self.tilt <= -hpi: self.tilt += pi
         if self.tilt > hpi: self.tilt -= pi
-    def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(printpoint(self.centre), self.rx, self.ry, self.tilt)
+    def __str__(self): return "Ellipse centred on {} with axes {} and {}, the first axis tilted by {}".format(self.centre, self.rx, self.ry, self.tilt)
     def __repr__(self): return "oval({}, {}, {}, {})".format(self.centre, self.rx, self.ry, self.tilt)
     def svgrepr(self):
         """Returns the minimal SVG representation of the oval: tag, {attributes}."""

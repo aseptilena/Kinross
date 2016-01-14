@@ -68,8 +68,15 @@ class oval:
     def quartrarc(self): return self.semiperimeter() / 2
     
     def affine(self, mat):
-        """Transforms the ellipse by the given matrix."""
-        return rytz(affine(mat, self.centre), affine(mat, self.v0()), affine(mat, self.v1()))
+        """Transforms the ellipse by the given matrix; uses Rytz's construction."""
+        tc, a, b = (affine(mat, p) for p in (self.centre, self.v0(), self.v1()))
+        if isclose(angle(a, b, tc), hpi): return oval(tc, abs(a - tc), abs(b - tc), phase(a - tc))
+        c = rturn(a, tc)
+        m = between(b, c)
+        d = abs(m - tc)
+        mb, mc = lenvec(b, d, m), lenvec(c, d, m)
+        z1, z2 = lenvec(mb, abs(mc - b), tc), lenvec(mc, abs(mb - b), tc)
+        return oval(tc, abs(z1 - tc), abs(z2 - tc), phase(z1 - tc))
     def uc_affine(self):
         """The transformation that maps this ellipse to the centred unit circle, which has a nice closed form."""
         s, c = sin(self.tilt), cos(self.tilt)
@@ -79,18 +86,6 @@ class oval:
         """The inverse of uc_affine() (i.e. the transformation from the unit circle to this ellipse), whose form is even simpler."""
         s, c = sin(self.tilt), cos(self.tilt)
         return (c * self.rx, s * self.rx, -s * self.ry, c * self.ry, self.centre.real, self.centre.imag)
-
-def rytz(centre, a, b):
-    """Rytz's construction for finding axes from conjugated diameters or equivalently a transformed rectangle.
-    Used to remove the transformation matrix from SVG ellipses (and a lot of other things)."""
-    if isclose(angle(a, b, centre), hpi): return oval(centre, abs(a - centre), abs(b - centre), phase(a - centre))
-    else:
-        c = rturn(a, centre)
-        m = between(b, c)
-        d = abs(m - centre)
-        mb, mc = lenvec(b, d, m), lenvec(c, d, m)
-        z1, z2 = lenvec(mb, abs(mc - b), centre), lenvec(mc, abs(mb - b), centre)
-        return oval(centre, abs(z1 - centre), abs(z2 - centre), phase(z1 - centre))
 
 def ell5pts(q, r, s, t, u):
     """Constructs the ellipse passing through the five points. The algorithms are from the equivalent Pernsteiner extension (http://pernsteiner.org/inkscape/ellipse_5pts)."""

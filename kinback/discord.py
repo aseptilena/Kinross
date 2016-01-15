@@ -53,4 +53,8 @@ def trianglepointpick(v1 = 1, v2 = 1j, o = 0):
 def bridsondisc(c2 = 64+64j, c1 = 0, r = 1):
     """Poisson-samples the given rectangular region with all distances between points at least r using Bridson's algorithm; returns the points sampled."""
     # http://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf
-    pass # TODO
+    rvec, msh = c2 - c1, 1.4142135623730951 / r # msh is the reciprocal of the mesh width, leading to a more accurate multiplication
+    grid = [[-1 for q in range(ceil(abs(rvec.real) * msh))] for q in range(ceil(abs(rvec.imag) * msh))] # origin is c1
+    p0 = rectpointpick(c2, c1)
+    grid[int(p0.imag * msh)][int(p0.real * msh)] = p0
+    # TODO

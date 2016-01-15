@@ -184,12 +184,13 @@ def distributestyle(node, sd):
         if len(sd) < 4: [node.set(p, sd[p]) for p in sd]
         else: node.set("style", ";".join([p + ":" + sd[p] for p in sd]))
 
-def whack(node, lpeoutput = False):
-    """Phases 1 and 2 of the old Rarify script on the node level. lpeoutput, if True, preserves the d of paths with LPEs (which would normally be removed) so that other applications can render them correctly."""
+def whack(node, lpecrush = False):
+    """Phases 1 and 2 of the old Rarify script on the node level. lpecrush, if True, removes the Inkscape-generated d attributes of LPE-affected paths for smaller file sizes,
+    at the cost of breaking the view in browsers and the like."""
     # Non-styling default attributes
     for aset in defattrb:
         if aset[0] == node.tag or not aset[0]: rm_default(node.attrib, *aset[1:])
-    if not lpeoutput and node.tag.endswith("}path"): rm_default(node.attrib, {"d": None}, {_ink + "original-d": None})
+    if lpecrush and node.tag.endswith("}path"): rm_default(node.attrib, {"d": None}, {_ink + "original-d": None})
     # Style dictionary, then colour/opacity shortening
     sd = expungestyle(node)
     for c in chromaprops:

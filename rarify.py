@@ -41,7 +41,7 @@ def rarify(f):
     templates = set(rn.findall(".//svg:defs/svg:path", nm_findall))
     mdelem = set(rn.findall(".//svg:title", nm_findall) + rn.findall(".//svg:metadata", nm_findall) + rn.findall(".//svg:metadata//*", nm_findall))
     actual = set([rn] + rn.findall(".//*")) - templates - mdelem
-    for n in actual: whack(n, flags.lpeoutput)
+    for n in actual: whack(n, flags.lpecrush)
     for t in templates: weakwhack(t)
     if flags.dimens: [rn.attrib.pop(span, 0) for span in ("height", "width", "viewBox")]
     # 2c: further processing on text objects
@@ -92,7 +92,7 @@ cdl = argparse.ArgumentParser(prog="./rarify.py", description="Rarify, the uncou
 cdl.add_argument("-m", "--metadata", action="store_false", default=True, help="don't remove metadata")
 cdl.add_argument("-d", "--dimens", action="store_true", default=False, help="remove dimensions")
 cdl.add_argument("-s", "--scripts", action="store_false", default=True, help="don't remove scripts")
-cdl.add_argument("-l", "--lpeoutput", action="store_true", default=False, help="preserve LPE output for rendering by other applications")
+cdl.add_argument("-l", "--lpecrush", action="store_true", default=False, help="remove LPE output (this will break the picture outside Inkscape if it has LPEs)")
 cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
 cdl.add_argument("files", nargs="*", help="list of files to rarify")
 flags = cdl.parse_args()

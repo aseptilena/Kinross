@@ -2,7 +2,9 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 import random
-from math import log, ceil
+from math import sqrt, log, ceil
+from cmath import rect
+from .vectors import linterp
 # SystemRandom is good enough for simulation and pretty pictures, but here I add a few more useful functions, especially discrete distributions.
 # The specifications of the binomial and Poisson algorithms are from Luc Devroye's book (http://luc.devroye.org/chapter_ten.pdf).
 class KinrossRandom(random.SystemRandom):
@@ -33,3 +35,22 @@ class KinrossRandom(random.SystemRandom):
             s += self.expovariate(1)
             k += 1
         return r + k
+
+# The following functions rely on an instance of the Kinross generator, here named rng.
+rng = KinrossRandom()
+def rectpointpick(c2 = 1+1j, c1 = 0):
+    """Picks a point in the rectangle with c1 and c2 as opposite corners."""
+    return complex(linterp(c1.real, c2.real, rng.random()), linterp(c1.imag, c2.imag, rng.random()))
+def roundpointpick(r = 1, c = 0, ri = 0):
+    """Picks a point in the annulus/circle with centre c, outer radius r and inner radius ri."""
+    return c + rect(sqrt(rng.uniform(ri * ri, r * r)), 6.283185307179586 * rng.random())
+def trianglepointpick(v1 = 1, v2 = 1j, o = 0):
+    """Picks a point within the triangle with vertices at o, o + v1 and o + v2."""
+    t1, t2 = rng.random(), rng.random()
+    if t1 + t2 > 1: t1, t2 = 1 - t1, 1 - t2
+    return o + v1 * t1 + v2 * t2
+
+def bridsondisc(c2 = 64+64j, c1 = 0, r = 1):
+    """Poisson-samples the given rectangular region with all distances between points at least r using Bridson's algorithm; returns the points sampled."""
+    # http://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf
+    pass # TODO

@@ -1,5 +1,5 @@
 **Kinross: a vector library and assorted Python scripts for Inkscape**  
-Parcly Taxel / Jeremy Tan, 2015  
+Parcly Taxel / Jeremy Tan, 2016  
 [Tumblr](http://parclytaxel.tumblr.com) | [Twitter](https://twitter.com/Parcly_Taxel) | [Derpibooru](https://derpiboo.ru/profiles/Parcly+Taxel)  
 
 **Don't say it's _My Little Pony: Friendship Is Magic_**  

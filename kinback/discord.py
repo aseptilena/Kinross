@@ -53,8 +53,7 @@ def trianglepointpick(v1 = 1, v2 = 1j, o = 0):
 
 def bridsondisc(c2 = 64+64j, r = 1, c1 = 0):
     """Poisson-samples the given rectangular region with all distances between points at least r using Bridson's algorithm.
-    My empirical tests show the mean number of circles generated as approximately 0.679 * area / radius^2;
-    since this balloons very fast, the procedure here is a generator."""
+    My empirical tests show the number of circles generated as approximately 0.679 * area / radius^2; since this balloons very fast, the procedure here is a generator."""
     rvec, msh, r2 = c2 - c1, r * 0.7071067811865476, r * r # http://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf
     sense_x, sense_y, w, h = -1 if rvec.real < 0 else 1, -1 if rvec.imag < 0 else 1, abs(rvec.real), abs(rvec.imag)
     NX, NY = ceil(w / msh), ceil(h / msh)

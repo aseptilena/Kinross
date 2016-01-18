@@ -18,6 +18,7 @@ class KinrossRandom(random.SystemRandom):
         n, p = 16 if num == 0 else ceil(abs(num)), 0.5 if not 0 <= prob <= 1 else prob # Waiting-time method, page 525
         if p == 0: return 0
         if p == 1: return n
+        if p == 0.5: return bin(self.getrandbits(n)).count('1')
         if p > 0.5: return n - self.binomialvariate(n, 1 - p)
         t = 0
         for res in range(n + 1):

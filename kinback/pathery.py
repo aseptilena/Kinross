@@ -5,8 +5,7 @@ from math import sin, ceil, inf
 from cmath import isclose
 from .vectors import angle, reflect, pointbounds
 from .regexes import tokenisepath
-from .beziers import bezier
-from .ovalarc import elliparc
+from .segment import bezier, elliparc
 
 def parsepath(p):
     """Converts SVG paths to Kinross paths; see the readme for specifications."""

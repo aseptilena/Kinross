@@ -16,6 +16,6 @@ for b in (b0, b1, b2, bl):
     start = time.perf_counter()
     for q in range(100): l = b.length()
     end = time.perf_counter()
-    print(l) # 7.504871040167711, 6.4788922059020155, 6.879770127854842, 6.982407360576694
+    print(l) # 7.504871040167711, 6.4788922059020155, 6.879770127854844, 6.982407360576693
     print((end - start) * 10) # Approximate times in milliseconds for a Lenovo U41: 3.4, 4.3, 5, 9
 print(b2.projection(0.3+1j)) # 0.1387419826232051

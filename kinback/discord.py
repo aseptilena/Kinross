@@ -21,8 +21,7 @@ class KinrossRandom(random.SystemRandom):
         if p == 1: return n
         res = 0 # Knuth's binomial method (TAOCP)
         while n > 10:
-            l = n // 2 + 1
-            r = n - l + 1
+            l, r = (n >> 1) + 1, n + 1 >> 1
             if n & 1: # l = r, shortcut described on p. 437
                 z = 2
                 while z > 1:

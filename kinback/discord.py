@@ -7,7 +7,7 @@ from cmath import rect
 from .vectors import linterp
 
 # SystemRandom is good enough for simulation and pretty pictures, but here I add a few more useful functions, especially discrete distributions.
-# The specifications of the binomial and Poisson algorithms are from Luc Devroye's book (http://luc.devroye.org/chapter_ten.pdf).
+# Page numbers below refer to Luc Devroye's book on Non-Uniform Random Variate Generation (http://luc.devroye.org/rnbookindex.html).
 class KinrossRandom(random.SystemRandom):
     def geometricvariate(self, p = 0):
         """Geometric distribution with probability of success p. Here we use the number of trials before first failure;
@@ -15,18 +15,33 @@ class KinrossRandom(random.SystemRandom):
         return int(self.expovariate(log(2) if not 0 < p < 1 else -log(1 - p)))
     def binomialvariate(self, num = 0, prob = 2):
         """Binomial distribution with the specified number of trials and probability of success; parameters default to 16 and 0.5."""
-        n, p = 16 if num == 0 else ceil(abs(num)), 0.5 if not 0 <= prob <= 1 else prob # Waiting-time method, page 525
+        n, p = 16 if num == 0 else ceil(abs(num)), 0.5 if not 0 <= prob <= 1 else prob
+        if p == 0.5: return bin(self.getrandbits(n)).count('1')
         if p == 0: return 0
         if p == 1: return n
-        if p == 0.5: return bin(self.getrandbits(n)).count('1')
-        if p > 0.5: return n - self.binomialvariate(n, 1 - p)
-        t = 0
-        for res in range(n + 1):
-            t += self.geometricvariate(p) + 1
-            if t > n: return res
+        res = 0 # Knuth's binomial method (TAOCP)
+        while n > 10:
+            l = n // 2 + 1
+            r = n - l + 1
+            if n & 1: # l = r, shortcut described on p. 437
+                z = 2
+                while z > 1:
+                    u, v = self.random(), 2 * self.random() - 1
+                    z = u * u + v * v
+                bv = u * v * sqrt(1 - z ** (2 / (2 * l - 1))) / z + 0.5
+            else: bv = self.betavariate(l, r)
+            if bv >= p: n, p = l - 1, p / bv
+            else: n, p, res = r - 1, (p - bv) / (1 - bv), res + l
+        q, x, s = -log(1 - p), 0, 0 # Second waiting-time method, p. 525
+        try:
+            while s <= q:
+                s += self.expovariate(1) / (n - x)
+                x += 1
+        except ZeroDivisionError: x += 1
+        return res + x - 1
     def poissonvariate(self, mean = 0):
         """Poisson distribution with the specified mean, which defaults to 1."""
-        m, r = mean if mean > 0 else 1, 0 # Ahrens/Dieter recursive method, page 518
+        m, r = mean if mean > 0 else 1, 0 # Ahrens/Dieter recursive method, p. 518
         while m > 12:
             n = int(0.875 * m)
             g = self.gammavariate(n, 1)

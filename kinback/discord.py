@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 import random
-from math import sqrt, log, ceil
+from math import sqrt, log, ceil, exp
 from cmath import rect
 from .vectors import linterp
 
@@ -19,18 +19,32 @@ class KinrossRandom(random.SystemRandom):
         if p == 0.5: return bin(self.getrandbits(n)).count('1')
         if p == 0: return 0
         if p == 1: return n
-        res = 0 # Knuth's binomial method (TAOCP)
+        res = 0 # TAOCP recursive method
         while n > 10:
-            l, r = (n >> 1) + 1, n + 1 >> 1
-            if n & 1: # l = r, shortcut described on p. 437
+            left, right = (n >> 1) + 1, n + 1 >> 1
+            if n & 1: # left = right, beta variate shortcut on p. 437
                 z = 2
                 while z > 1:
                     u, v = self.random(), 2 * self.random() - 1
                     z = u * u + v * v
-                bv = u * v * sqrt(1 - z ** (2 / (2 * l - 1))) / z + 0.5
-            else: bv = self.betavariate(l, r)
-            if bv >= p: n, p = l - 1, p / bv
-            else: n, p, res = r - 1, (p - bv) / (1 - bv), res + l
+                bv = u * v * sqrt(1 - z ** (2 / (2 * left - 1))) / z + 0.5
+            else: # left = right + 1, Cheng's 1978 algorithm BB
+                n1, huard = n + 1, sqrt((2 * n - 2) / (n * n - 2))
+                rc = right + 1 / huard
+                while True:
+                    u1, u2 = rng.random(), rng.random()
+                    ld = huard * log(u1 / (1 - u1))
+                    try: w = right * exp(ld)
+                    except OverflowError: w = 1.7976931348623157e+308
+                    cb = u1 * u1 * u2
+                    rr = rc * ld - 1.3862944
+                    sm = right + rr - w
+                    if sm + 2.609438 >= 5 * cb: break
+                    lcb = log(cb)
+                    if sm > lcb or rr + n1 * log(n1 / (left + w)) >= lcb: break
+                bv = left / (left + w)
+            if bv >= p: n, p = left - 1, p / bv
+            else: n, p, res = right - 1, (p - bv) / (1 - bv), res + left
         q, x, s = -log(1 - p), 0, 0 # Second waiting-time method, p. 525
         try:
             while s <= q:

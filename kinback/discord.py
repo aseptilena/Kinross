@@ -34,8 +34,7 @@ class KinrossRandom(random.SystemRandom):
                 while True:
                     u1, u2 = self.random(), self.random()
                     ld = huard * log(u1 / (1 - u1))
-                    try: w = right * exp(ld)
-                    except OverflowError: w = 1.7976931348623157e+308
+                    w = right * exp(ld)
                     cb = u1 * u1 * u2
                     rr = rc * ld - 1.3862944
                     sm = right + rr - w

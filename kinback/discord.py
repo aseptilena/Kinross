@@ -32,7 +32,7 @@ class KinrossRandom(random.SystemRandom):
                 n1, huard = n + 1, sqrt((2 * n - 2) / (n * n - 2))
                 rc = right + 1 / huard
                 while True:
-                    u1, u2 = rng.random(), rng.random()
+                    u1, u2 = self.random(), self.random()
                     ld = huard * log(u1 / (1 - u1))
                     try: w = right * exp(ld)
                     except OverflowError: w = 1.7976931348623157e+308

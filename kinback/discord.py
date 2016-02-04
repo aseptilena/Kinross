@@ -15,10 +15,8 @@ class KinrossRandom(random.SystemRandom):
         return int(self.expovariate(log(2) if not 0 < p < 1 else -log(1 - p)))
     def binomialvariate(self, num = 0, prob = 2):
         """Binomial distribution with the specified number of trials and probability of success; parameters default to 16 and 0.5."""
-        n, p = 16 if num == 0 else ceil(abs(num)), 0.5 if not 0 <= prob <= 1 else prob
+        n, p = ceil(abs(num)) if num else 16, prob if 0 < prob < 1 else 0.5
         if p == 0.5: return bin(self.getrandbits(n)).count('1')
-        if p == 0: return 0
-        if p == 1: return n
         res = 0 # TAOCP recursive method
         while n > 10:
             left, right = (n >> 1) + 1, n + 1 >> 1

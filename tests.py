@@ -26,7 +26,7 @@ start = time.perf_counter()
 for q in range(100000): bbins[rr.binomialvariate(32, 0.6)] += 1
 end = time.perf_counter()
 print(bbins[19], sum([n * bbins[n] for n in range(len(bbins))]) / 100000) # Mode and mean (14205 and 19.2 expected)
-print((end - start) * 10, "μs / binomial variate") # 28.5 μs
+print((end - start) * 10, "μs / binomial variate") # 26 μs
 
 d = {}
 start = time.perf_counter()
@@ -35,4 +35,4 @@ for q in range(100000):
     d[v] = d.get(v, 0) + 1
 end = time.perf_counter()
 print(d) # 24 should have the largest associated value, since it is the mean
-print((end - start) * 10, "μs / Poisson variate") # 27.5 μs
+print((end - start) * 10, "μs / Poisson variate") # 28 μs

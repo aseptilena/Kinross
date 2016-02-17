@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # http://parclytaxel.tumblr.com
 import random
-from math import sqrt, log, ceil, exp
+from math import sqrt, log, ceil
 from cmath import rect
 from .vectors import linterp
 
@@ -17,31 +17,19 @@ class KinrossRandom(random.SystemRandom):
         """Binomial distribution with the specified number of trials and probability of success; parameters default to 16 and 0.5."""
         n, p = ceil(abs(num)) if num else 16, prob if 0 < prob < 1 else 0.5
         if p == 0.5: return bin(self.getrandbits(n)).count('1')
-        res = 0 # TAOCP recursive method
-        while n > 10:
-            left, right = (n >> 1) + 1, n + 1 >> 1
-            if n & 1: # left = right, beta variate shortcut on p. 437
-                z = 2
-                while z > 1:
-                    u, v = self.random(), 2 * self.random() - 1
-                    z = u * u + v * v
-                bv = u * v * sqrt(1 - z ** (2 / (2 * left - 1))) / z + 0.5
-            else: # left = right + 1, Cheng's 1978 algorithm BB
-                n1, huard = n + 1, sqrt((2 * n - 2) / (n * n - 2))
-                rc = right + 1 / huard
-                while True:
-                    u1, u2 = self.random(), self.random()
-                    ld = huard * log(u1 / (1 - u1))
-                    w = right * exp(ld)
-                    cb = u1 * u1 * u2
-                    rr = rc * ld - 1.3862944
-                    sm = right + rr - w
-                    if sm + 2.609438 >= 5 * cb: break
-                    lcb = log(cb)
-                    if sm > lcb or rr + n1 * log(n1 / (left + w)) >= lcb: break
-                bv = left / (left + w)
-            if bv >= p: n, p = left - 1, p / bv
-            else: n, p, res = right - 1, (p - bv) / (1 - bv), res + left
+        res = 0 # Relles's recursive method (1972, hinted on p. 538)
+        while n > 16:
+            if not n & 1:
+                n -= 1
+                res += self.random() < p
+            n >>= 1
+            z = 2 # Beta variate shortcut on p. 437
+            while z > 1:
+                u, v = self.random(), 2 * self.random() - 1
+                z = u * u + v * v
+            bv = u * v * sqrt(1 - z ** (2 / (2 * n + 1))) / z + 0.5
+            if bv < p: res, p = res + n + 1, (p - bv) / (1 - bv)
+            else: p /= bv
         q, x, s = -log(1 - p), 0, 0 # Second waiting-time method, p. 525
         try:
             while s <= q:

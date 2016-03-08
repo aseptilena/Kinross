@@ -44,7 +44,7 @@ def handletransform(item, tf):
     props["transform"] = tf
     return t.Element(item.tag, props)
 
-# Examples of the function's use below; object/radius/density fixed
+# Examples of the function's use below; object/density fixed
 # For the astroid sparkles in Nightmare Rarity's mane
 astroid = t.Element("path", {"d": "M-5,0C-2-1-1-4 0-11 1-4 2-1 5,0 2,1 1,4 0,11-1,4-2,1-5,0Z", "fill": "#fff"})
 def rtf_astroid(size):

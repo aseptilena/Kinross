@@ -1,7 +1,8 @@
 #!/usr/bin/env python3.5
 # The main function here "spallates" (makes many instances, some of which may be transformed) an object on a canvas.
 # This was originally motivated by the need to generate plausible patterns for MLPFIM vectors, but can be fine-tuned.
-# Parcly Taxel / Jeremy Tan, 2016 | https://parclytaxel.tumblr.com
+# Parcly Taxel / Jeremy Tan, 2016
+# https://parclytaxel.tumblr.com
 from cmath import polar, rect
 import xml.etree.ElementTree as t
 from kinback.affines import affine, parsetransform, collapsibility

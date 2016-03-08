@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.5
 # Rarify, the uncouth SVG optimiser
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 import os, time, argparse
 import xml.etree.ElementTree as t
 from kinback.svgproc import *

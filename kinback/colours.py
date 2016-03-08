@@ -1,6 +1,6 @@
 # Helper functions for Kinross: colours in all their colours
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 from math import isclose
 
 # An RGBA/LABI/LCHI colour is a 4-tuple of floats. CSS aliases follow in the order Wikipedia gives them:

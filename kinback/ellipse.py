@@ -1,6 +1,6 @@
 # Helper functions for Kinross: ellipses (part of Rarify phase 4)
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 from math import pi, sqrt, hypot, degrees
 from .vectors import *
 from .regexes import floatinkrep

@@ -1,6 +1,6 @@
 # Helper functions for Kinross: SVG segments
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 from math import pi, sqrt, hypot, tan, atan, radians, floor, ceil
 from cmath import isclose
 from itertools import product

@@ -1,6 +1,6 @@
 # Helper functions for Kinross: random point and structure generation (and a nod to MLPFIM's Discord)
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 import random
 from math import sqrt, log, ceil
 from cmath import rect

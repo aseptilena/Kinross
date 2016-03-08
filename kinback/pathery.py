@@ -1,6 +1,6 @@
 # Helper functions for Kinross: paths
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 from math import sin, ceil, inf
 from cmath import isclose
 from .vectors import angle, reflect, pointbounds

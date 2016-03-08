@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.5
 # Stress tests for the Kinback library (times are for the computer I use, a Lenovo U41)
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 
 # Bézier curve arc length
 from kinback.pathery import *

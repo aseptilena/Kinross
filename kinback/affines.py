@@ -1,6 +1,6 @@
 # Helper functions for Kinross: affine transformations
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 from math import sin, cos, tan, copysign, degrees, radians, nan
 from cmath import isclose, phase
 from .vectors import saltire, perpbisect, signedangle

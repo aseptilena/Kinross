@@ -1,6 +1,6 @@
 # Helper functions for Kinross: numerical algebra and methods
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 from math import sqrt, isclose, copysign
 from cmath import sqrt as csqrt
 from itertools import product

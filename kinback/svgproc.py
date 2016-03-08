@@ -1,6 +1,6 @@
 # Helper functions for Kinross: SVG node processing and simplification (Rarify's "Sweetie Belle", phases 2 and 3)
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 from xml.etree.ElementTree import tostring
 from xml.dom.minidom import parseString
 from .colours import shortcolour, shortdiaph

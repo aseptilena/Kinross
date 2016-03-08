@@ -1,6 +1,6 @@
 # Helper functions for Kinross: regular expressions for SVG parsing
 # Parcly Taxel / Jeremy Tan, 2016
-# http://parclytaxel.tumblr.com
+# https://parclytaxel.tumblr.com
 import re
 huge0 = re.compile(r"0{3,}$")
 tiny0 = re.compile(r"(\.0{3,})(\d+)")

@@ -7,7 +7,6 @@ from cmath import polar, rect
 import xml.etree.ElementTree as t
 from kinback.affines import affine, parsetransform, collapsibility
 from kinback.ellipse import oval
-from kinback.svgproc import formalxml
 from kinback.discord import KinrossRandom, rectpointpick
 sp = "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}"
 t.register_namespace("sodipodi", sp[1:-1])
@@ -51,7 +50,7 @@ astroid = t.Element("path", {"d": "M-5,0C-2-1-1-4 0-11 1-4 2-1 5,0 2,1 1,4 0,11-
 def rtf_astroid(size):
     pos, scale = rectpointpick(size), 1 + min(rng.geometricvariate(2 / 3), 4) / 4
     return "translate({} {})scale({})".format(round(pos.real, 3), round(pos.imag, 3), scale)
-def spallate_astroid(size = 1100+1400j): return spallate(astroid, rtf_astroid, 1.96e-4, size)
+def spallate_astroid(size = 1100+1400j): return spallate(astroid, rtf_astroid, 2e-4, size)
 
 # For the Equestrian night sky
 circle = t.Element("circle", {"r": "1", "fill": "#b4a8fe"})
@@ -65,4 +64,4 @@ star = t.Element("path", {"fill": "#b6ecff", sp + "type": "star", sp + "sides": 
 def rtf_star(size):
     pos, scale, twist = rectpointpick(size), min(rng.geometricvariate(3 / 5), 4) + 1, rng.random() * 90
     return "translate({} {})rotate({})scale({})".format(round(pos.real, 3), round(pos.imag, 3), twist, scale)
-def spallate_star(size = 1000+1000j): return spallate(star, rtf_star, 1.49e-4, size)
+def spallate_star(size = 1000+1000j): return spallate(star, rtf_star, 1.5e-4, size)

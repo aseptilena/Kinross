@@ -193,12 +193,18 @@ def whack(node, lpecrush = False):
     for aset in defattrb:
         if aset[0] == node.tag or not aset[0]: rm_default(node.attrib, *aset[1:])
     if lpecrush and node.tag.endswith("}path"): rm_default(node.attrib, {"d": None}, {_ink + "original-d": None})
-    # Style dictionary, then colour/opacity shortening
+    # Style dictionary, colour/opacity shortening, normalisation for paint-order
     sd = expungestyle(node)
     for c in chromaprops:
         if c in sd: sd[c] = shortcolour(sd[c])
     for d in diaphanities:
         if d in sd: sd[d] = shortdiaph(sd[d])
+    if sd.get("paint-order", "normal") != "normal":
+        pm = sd["paint-order"]
+        if pm.count(" ") == 2: pm = pm[:pm.rfind(" ")]
+        if pm.endswith("fill"): pm = pm[:-5]
+        if pm == "fill stroke": pm = "normal"
+        sd["paint-order"] = pm
     # Properties rendered useless if other properties are set certain ways
     if sd.get("stroke-dasharray", "none") == "none": sd.pop("stroke-dashoffset", 0)
     if sd.get("stroke", "none") == "none":

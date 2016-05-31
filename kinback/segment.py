@@ -1,4 +1,4 @@
-# Helper functions for Kinross: SVG segments
+# Helper functions for Kinross: Bézier curve and elliptical arc segments (includes whole ellipses!)
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
 from math import pi, sqrt, hypot, tan, atan, radians, floor, ceil
@@ -9,7 +9,41 @@ from .affines import affine, backaffine
 from .algebra import rombergquad, polyn
 from .regexes import floatinkrep
 from .ellipse import oval
-hpi = pi / 2
+
+T, hpi = pi * 2, pi / 2
+
+# A simple ellipse is considered a special case of the elliptical arc class, the arc spanning the four quadrants.
+# Inputs left-to-right are centre, radii, angle of r1 to +x and endpoint params; th normalised to [0, pi).
+class ellipt:
+    def __init__(self, c = 0j, r1 = 1, r2 = 1, th = 0, t0 = 0, t1 = T):
+        self.c, self.r1, self.r2, self.th, self.t0, self.t1 = c, abs(r1), abs(r2), th % pi, t0, t1
+    def __str__(self):
+        out = "({:.4f} {:.4f}@{:.f}/{:.4f}".format(self.c, self.r1, self.th, self.r2)
+        if self.O(): out += " {:.4f}:{:.4f}".format(self.t0, self.t1)
+        return out + ")"
+    def __repr__(self): return "ellipt({}, {}, {}, {}, {}, {})".format(self.c, self.r1, self.r2, self.th, self.t0, self.t1)
+    
+    def O(self): return self.t0 == 0 and self.t1 == T # tests whether the ellipse is complete, hence O
+    def at(self, t): return self.c + complex(self.r1 * cos(t), self.r2 * sin(t)) * rect(1, self.th) # param t of complete ellipse
+    def __call__(self, t): return self.at(linterp(self.t0, self.t1, t)) # param t of arc
+    def __neg__(self, t): return ellipt(self.c, self.r1, self.r2, self.th, self.t1, self.t0) # reverse arc
+    def d(self, t): # derivative at param t of arc
+        on = linterp(self.t0, self.t1, t)
+        return (-1) ** (self.t0 > self.t1) * complex(-sin(on) * self.r1, cos(on) * self.r2) * rect(1, self.th)
+    
+    # TODO affine transformations
+    
+    def perim(self):
+        """Perimeter of whole ellipse. Iterative formula for elliptic integral from Semjon Adlaj (http://www.ams.org/notices/201208/rtx120801094p.pdf)."""
+        if self.r1 == self.r2: return T * self.r1
+        beta = (self.r2 / self.r1) ** (-1) ** (self.r2 > self.r1)
+        nx, ny, nz = 1, beta * beta, 0
+        while not isclose(nx, ny, abs_tol=1e-14):
+            rd = sqrt((nx - nz) * (ny - nz))
+            nx, ny, nz = (nx + ny) / 2, nz + rd, nz - rd
+        mx, my = 1, beta
+        while not isclose(mx, my, abs_tol=1e-14): mx, my = (mx + my) / 2, sqrt(mx * my)
+        return (nx + ny) / (mx + my) * T * max(self.r1, self.r2)
 
 class bezier:
     def __init__(self, *p):
@@ -179,31 +213,31 @@ class elliparc:
         if type(self.ell) == oval: # These values aid the arc length computation
             sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
             self.sf, self.ef = sr(self.tstart / hpi), er(self.tend / hpi)
-    def __str__(self):
+    def __str__(self): #
         return "{{{} {} {} {} {}:{}}}".format(floatinkrep(self.ell.centre.real) + "," + floatinkrep(self.ell.centre.imag),
                                               floatinkrep(self.ell.rx), floatinkrep(self.ell.ry), floatinkrep(self.ell.tilt), self.tstart, self.tend)
-    def __repr__(self):
+    def __repr__(self): #
         return "elliparc({}, {}, {})".format(self.tstart, repr(self.ell), self.tend)
     
-    def __call__(self, t):
+    def __call__(self, t): #
         """See? This is why the endpoint parameters are allowed to go outside the principal range here."""
         return self.ell.parampoint(linterp(self.tstart, self.tend, t))
-    def start(self): return self.ell.parampoint(self.tstart)
-    def end(self): return self.ell.parampoint(self.tend)
+    def start(self): return self.ell.parampoint(self.tstart) # arc(0)
+    def end(self): return self.ell.parampoint(self.tend) # arc(1)
     def split(self, t):
         """Splits the arc at parameter t, returning a list that can then be inserted."""
         mv = linterp(self.tstart, self.tend, t)
         return [elliparc(self.tstart, self.ell, mv), elliparc(mv, self.ell, self.tend)]
-    def reverse(self):
+    def reverse(self): # -arc
         """Returns the arc reversed."""
         return elliparc(self.tend, oval(self.ell.centre, self.ell.rx, self.ell.ry, self.ell.tilt), self.tstart)
     
-    def velocity(self, t):
+    def velocity(self, t): # arc.d
         """Returns the velocity (first derivative) of the curve at parameter t."""
         et = linterp(self.tstart, self.tend, t)
         return turn(complex(-sin(et) * self.ell.rx, cos(et) * self.ell.ry) * (1 if tstart < tend else -1), self.ell.tilt)
-    def startdirc(self): return self.velocity(0)
-    def enddirc(self): return -self.velocity(1)
+    def startdirc(self): return self.velocity(0) # arc.d(0)
+    def enddirc(self): return -self.velocity(1) # -arc.d(1)
     
     def affine(self, mat):
         """Transforms the arc by the given matrix."""

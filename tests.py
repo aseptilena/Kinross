@@ -4,7 +4,7 @@
 # https://parclytaxel.tumblr.com
 
 # Bézier curve arc length
-from kinback.pathery import *
+'''from kinback.pathery import *
 import time
 b0 = bezier(0, 3j, 3j, 5) # (0, [])
 b1 = bezier(0, 3j, 0, 5) # (1, [0, 0.5])
@@ -35,4 +35,7 @@ for q in range(100000):
     d[v] = d.get(v, 0) + 1
 end = time.perf_counter()
 print(d) # 24 should have the largest associated value, since it is the mean
-print((end - start) * 10, "μs / Poisson variate") # 28 μs
+print((end - start) * 10, "μs / Poisson variate") # 28 μs'''
+from kinback.segment import ellipt
+a = ellipt(0, 2, 1, 0.4, 0.6, 0.7)
+print(a.perim())

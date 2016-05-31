@@ -20,7 +20,7 @@ rng = KinrossRandom()
 # The <svg> root node containing the spallated copies is returned.
 def spallate(obj, rtf, dens, size = 1000+1000j):
     rn = t.Element("svg", {"viewBox": "0 0 {} {}".format(size.real, size.imag)})
-    for q in range(round(size.real * size.imag * dens / 10000)): rn.append(handletransform(obj, rtf(size)))
+    for q in range(round(size.real * size.imag * dens * 1e-4)): rn.append(handletransform(obj, rtf(size)))
     return rn
 
 def handletransform(item, tf):

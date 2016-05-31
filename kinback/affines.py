@@ -2,15 +2,41 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
 from math import sin, cos, tan, copysign, degrees, radians, nan
-from cmath import isclose, phase
+from cmath import isclose, phase, rect
 from .vectors import saltire, perpbisect, signedangle
 from .regexes import tokenisetransform, floatinkrep, numbercrunch
 
-# Affine transformations are 6-tuples of floats corresponding to the following matrix. Compositions are stored last-to-first-applied.
-#  x  y  o  <- identity transformation: 1, i and 0
-# [c0 c2 c4]
-# [c1 c3 c5]
-# [0  0  1 ]
+# [a c e] Affine matrix structure,
+# [b d f] implemented in the
+# [0 0 1] class below
+class tf:
+    def __init__(self, a, b, c, d, e, f): self.v = (a, b, c, d, e, f)
+    # TODO shortest representation
+    
+    # Constructor functions for SVG
+    def tr(dx, dy = 0): return tf(1, 0, 0, 1, dx, dy)
+    def sc(sx, sy = None): return tf(sx, 0, 0, sx if sy == None else sy, 0, 0)
+    def ro(th, cx = 0, cy = 0):
+        cs = rect(1, radians(th))
+        return tf(cs.real, cs.imag, -cs.imag, cs.real, (1 - cs.real) * cx + cs.imag * cy,
+                                                       (1 - cs.real) * cy - cs.imag * cx)
+    def skx(z): return tf(1, 0, tan(z), 1, 0, 0)
+    def sky(z): return tf(1, tan(z), 0, 1, 0, 0)
+    def fromsvg(s): # SVG string to tf object
+        pass # TODO
+    
+    def __matmul__(self, z): # other transformations handled with rmatmul on classes desired
+        p = self.v
+        if type(z) == tf: # composition of transformations
+            q = z.v
+            return tf(p[0] * q[0] + p[2] * q[1],        p[1] * q[0] + p[3] * q[1],
+                      p[0] * q[2] + p[2] * q[3],        p[1] * q[2] + p[3] * q[3],
+                      p[0] * q[4] + p[2] * q[5] + p[4], p[1] * q[4] + p[3] * q[5] + p[5])
+        elif type(z) == complex: # transformation of point by matrix
+            return complex(p[0] * z.real + p[2] * z.imag + p[4],
+                           p[1] * z.real + p[3] * z.imag + p[5])
+        else: raise TypeError("matrix can only be multiplied with point or matrix")
+
 def affine(mat, p): return complex(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
 def composition(*mats): # if the matrices are in last-to-first order
     p = mats[0]

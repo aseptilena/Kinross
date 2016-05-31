@@ -39,3 +39,9 @@ print((end - start) * 10, "μs / Poisson variate") # 28 μs'''
 from kinback.segment import ellipt
 a = ellipt(0, 2, 1, 0.4, 0.6, 0.7)
 print(a.perim())
+
+from kinback.affines import tf
+z = tf.ro(30, 1, 1)
+y = tf.tr(1, 1) @ tf.ro(30) @ tf.tr(-1, -1)
+print(z.v)
+print(y.v) # should be same, save for last dp

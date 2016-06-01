@@ -2,8 +2,6 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
 import re
-huge0 = re.compile(r"0{3,}$")
-tiny0 = re.compile(r"(\.0{3,})(\d+)")
 nrgx = r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)"
 numre = re.compile(nrgx)
 pathre = re.compile(nrgx[1:-1] + r"|[MCSQTLHVAZmcsqtlhvaz]")
@@ -11,22 +9,22 @@ transformbreaks = re.compile(r"(?:matrix|translate|scale|rotate|skewX|skewY)\s*\
 semicolons = re.compile(r"[^;]+")
 singlerotation = re.compile(r"\s*rotate\s*\(\s*" + nrgx + r"\s*\)\s*")
 
-def floatinkrep(sf, N = 8):
-    """Returns the shortest Inkscape representation of a float: 8 significant digits + N decimal places."""
-    s, f = "-" if sf < 0 else "", abs(sf)
-    left = len(str(int(f)).lstrip("0"))
-    rf = round(f, min(8 - left, N))
-    if not rf: return "0"
-    if rf == int(rf):
-        dec = str(int(rf))
-        em = huge0.search(dec)
-        if em: dec = "{}e{}".format(dec[:em.start()], len(em.group()))
-    elif not left:
-        dec = "{:.8f}".format(rf).rstrip("0")[1:]
-        sm = tiny0.search(dec)
-        if sm: dec = "{}e-{}".format(sm.group(2), len(sm.group(1)))
-    else: dec = str(rf)
-    return s + dec
+from math import log10, floor
+def msfi(x, D = 8):
+    """Returns the Minimal String for a Float in Inkscape (8 sf + D dp)."""
+    if round(x, D) == 0: return "0"
+    a = abs(x)
+    a = round(a, min(D, 8 - max(floor(log10(a)) + 1, 0)))
+    if a % 1000 == 0: # can use a positive exponent for shortening, e.g. 137000 = 137e3
+        i = str(int(a))
+        cf = i.rstrip('0')
+        res = "{}e{}".format(cf, len(i) - len(cf))
+    elif a < 0.001: # can use a negative exponent for shortening, e.g. .00137 = 137e-5
+        v = "{:.8f}".format(a).rstrip('0')[2:]
+        res = "{}e-{}".format(v.lstrip('0'), len(v))
+    else: res = str(a).strip('0').rstrip('.')
+    return '-' * (x < 0) + res
+floatinkrep = msfi # TODO transitional thing
 
 def tokenisepath(p):
     """Parses SVG path data into its tokens and converts numbers into floats.

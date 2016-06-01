@@ -60,7 +60,12 @@ class tf:
     
     def minstr(self):
         """Shortest representation of this matrix in SVG."""
-        pass # TODO
+        p = self.v
+        if   isclose(p[0], p[3]) and isclose(p[1], -p[2]): reflected = False
+        elif isclose(p[0], -p[3]) and isclose(p[1], p[2]): reflected = True
+        else: # matrix not conformal, default output
+            pass
+        pass
 
 def affine(mat, p): return complex(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
 def composition(*mats): # if the matrices are in last-to-first order

@@ -39,16 +39,14 @@ def tokenisetransform(s):
         res.append([typ, [float(n) for n in numre.findall(params)]])
     return res
 
-def numbercrunch(*strs):
+def catn(*ns):
     """Concatenates the given number strings, removing all redundant delimiters."""
-    # A negative number (begin with -) can immediately follow any other number.
-    # A positive float less than 1 (begin with .) can immediately follow exponential forms and numbers that also have a decimal point.
-    # In all other cases, a space has to be inserted.
-    l = list(strs)
-    for i in range(len(l) - 1, 0, -1):
-        if l[i][0] == '-' or l[i][0] == '.' and ('.' in l[i - 1] or 'e' in l[i - 1]): continue
-        l.insert(i, " ")
-    return "".join(l)
+    res, dp = "", True
+    for s in ns:
+        res += s if not res or s[0] == '-' or s[0] == '.' and dp else ' ' + s
+        dp = '.' in s or 'e' in s
+    return res
+numbercrunch = catn # TODO transitional thing
 
 def stylecrunch(stystr):
     """Style string as input, dictionary of its attributes as output. Multiple and misplaced semicolons are skipped over seamlessly."""

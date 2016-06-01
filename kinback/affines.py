@@ -2,9 +2,9 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
 from math import sin, cos, tan, copysign, degrees, radians, nan
-from cmath import isclose, phase, rect
+from cmath import isclose, phase, rect, polar
 from .vectors import saltire, perpbisect, signedangle
-from .regexes import tokenisetransform, floatinkrep, numbercrunch
+from .regexes import tokenisetransform, floatinkrep, numbercrunch, msfi, catn
 
 import re
 tf_re = re.compile(r"(matrix|translate|scale|rotate|skewX|skewY)\s*\((.*?)\)")
@@ -18,7 +18,7 @@ class tf:
     def __str__(self): return "/{:f} {:f} {:f} {:f} {:f} {:f}/".format(*self.v)
     def __repr__(self): return "tf({} {} {} {} {} {})".format(*self.v)
     
-    def I(): return tf(1, 0, 0, 1, 0, 0)
+    def mx(a, b, c, d, e, f): return tf(a, b, c, d, e, f)
     def tr(dx, dy = 0): return tf(1, 0, 0, 1, dx, dy)
     def sc(sx, sy = None): return tf(sx, 0, 0, sx if sy == None else sy, 0, 0)
     def ro(th, cx = 0, cy = 0):
@@ -27,10 +27,10 @@ class tf:
                                                        (1 - cs.real) * cy - cs.imag * cx)
     def skx(z): return tf(1, 0, tan(radians(z)), 1, 0, 0)
     def sky(z): return tf(1, tan(radians(z)), 0, 1, 0, 0)
-    tfmap = {"matrix": __init__, "translate": tr, "scale": sc, "rotate": ro, "skewX": skx, "skewY": sky}
+    tfmap = {"matrix": mx, "translate": tr, "scale": sc, "rotate": ro, "skewX": skx, "skewY": sky}
     def fromsvg(s):
         """Converts an SVG transform string into its equivalent matrix."""
-        out = tf.I()
+        out = tf(1, 0, 0, 1, 0, 0)
         for cmd in tf_re.finditer(s):
             head, load = cmd.groups()
             load = num_re.findall(load)
@@ -58,14 +58,30 @@ class tf:
                p[1] * p[4] - p[0] * p[5])
         return tf(*(a / det for a in out))
     
-    def minstr(self):
-        """Shortest representation of this matrix in SVG."""
-        p = self.v
-        if   isclose(p[0], p[3]) and isclose(p[1], -p[2]): reflected = False
-        elif isclose(p[0], -p[3]) and isclose(p[1], p[2]): reflected = True
-        else: # matrix not conformal, default output
-            pass
-        pass
+    def tosvg(self):
+        """Shortest representation of this matrix in SVG. An empty string returned represents the identity matrix."""
+        a, b, c, d, e, f = self.v
+        if   isclose(a, d) and isclose(b, -c): reflected = False
+        elif isclose(a, -d) and isclose(b, c): reflected = True
+        else: return "matrix({})".format(catn(*(msfi(x) for x in self.v))) # matrix not conformal, default output
+        z = complex(a, b)
+        r, th = polar(z)
+        mr, mth = msfi(r), msfi(degrees(th) % 360)
+        if reflected: sc_cmd = "scale({0}-{0})".format(mr)
+        else: sc_cmd = "scale({})".format(mr) * (mr != "1")
+        if isclose(e, 0) and isclose(f, 0): ro_cmd = "rotate({})".format(mth) # rotation about origin
+        elif isclose(th, 0): # translation
+            dx, dy = msfi(e), msfi(f)
+            if dy == "0": tr_cmd = "translate({})".format(dx) * (dx != "0")
+            else: tr_cmd = "translate({})".format(catn(dx, dy))
+            return tr_cmd + sc_cmd
+        else:
+            z /= r # z.real = cos(th), z.imag = sin(th)
+            k, l = 1 - z.real, z.imag
+            mx, my = msfi((e * k - f * l) / (2 * k)), msfi((e * l + f * k) / (2 * k))
+            ro_cmd = "rotate({})".format(catn(mth, mx, my))
+        return ro_cmd + sc_cmd
+    def minstr(s): return tf.fromsvg(s).tosvg() # convenience function to compress an SVG transformation string
 
 def affine(mat, p): return complex(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
 def composition(*mats): # if the matrices are in last-to-first order
@@ -117,19 +133,3 @@ def parsetransform(tfs):
         elif pair[0] == "skewX": tmats.append(skewing(radians(pair[1][0]), 0))
         elif pair[0] == "skewY": tmats.append(skewing(0, radians(pair[1][0])))
     return composition(*tmats)
-def minimisetransform(tfs):
-    """If the transform string is collapsible, returns its minimal representation, otherwise returns input."""
-    ctm = parsetransform(tfs)
-    h = collapsedtransform(ctm)
-    if h == None: return "matrix({})".format(numbercrunch(*[floatinkrep(v) for v in ctm]))
-    rt, sc = h
-    # Translation/rotation (left) part
-    dx, dy = floatinkrep(rt[1]), floatinkrep(rt[2])
-    if rt[0] is nan: rtstr = ("" if dx == "0" else "translate({})".format(dx)) if dy == "0" else "translate({})".format(numbercrunch(dx, dy))
-    else:
-        thet = floatinkrep(rt[0])
-        rtstr = "rotate({})".format(thet if dx == dy == "0" else numbercrunch(thet, dx, dy))
-    # Scaling (right) part
-    z = floatinkrep(sc[1])
-    scstr = ("" if z == "1" else "scale({})".format(z)) if sc[0] == 1 else "scale({})".format(numbercrunch(z, floatinkrep(-sc[1])))
-    return rtstr + scstr

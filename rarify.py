@@ -5,7 +5,7 @@
 import os, time, argparse
 import xml.etree.ElementTree as t
 from kinback.svgproc import *
-from kinback.affines import minimisetransform
+from kinback.affines import tf
 tr, rn = None, None
 
 def rarify(f):
@@ -73,11 +73,11 @@ def rarify(f):
     # 4a: collapsing into unstroked, untransformed ellipses that reference no other objects
     for b in rn.findall(".//svg:ellipse", nm_findall):
         if not refsof(b): ellipsecollapse(b)
-    # 4b: simplification
+    # 4b: affine simplification
     for withtf in rn.findall(".//*[@transform]", nm_findall):
-        mt = minimisetransform(withtf.get("transform"))
-        if mt == None: del withtf.attrib[transform]
-        else: withtf.set("transform", mt)
+        new = tf.minstr(withtf.get("transform"))
+        if not new: del withtf.attrib[transform]
+        else: withtf.set("transform", new)
     # Final output
     outfn = "{0}-rarified.svg".format(f[:-4])
     with open(outfn, 'w') as outf:

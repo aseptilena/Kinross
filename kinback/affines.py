@@ -6,36 +6,61 @@ from cmath import isclose, phase, rect
 from .vectors import saltire, perpbisect, signedangle
 from .regexes import tokenisetransform, floatinkrep, numbercrunch
 
+import re
+tf_re = re.compile(r"(matrix|translate|scale|rotate|skewX|skewY)\s*\((.*?)\)")
+num_re = re.compile(r"[-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?")
+
 # [a c e] Affine matrix structure,
 # [b d f] implemented in the
 # [0 0 1] class below
 class tf:
     def __init__(self, a, b, c, d, e, f): self.v = (a, b, c, d, e, f)
-    # TODO shortest representation
+    def __str__(self): return "/{:f} {:f} {:f} {:f} {:f} {:f}/".format(*self.v)
+    def __repr__(self): return "tf({} {} {} {} {} {})".format(*self.v)
     
-    # Constructor functions for SVG
+    def I(): return tf(1, 0, 0, 1, 0, 0)
     def tr(dx, dy = 0): return tf(1, 0, 0, 1, dx, dy)
     def sc(sx, sy = None): return tf(sx, 0, 0, sx if sy == None else sy, 0, 0)
     def ro(th, cx = 0, cy = 0):
         cs = rect(1, radians(th))
         return tf(cs.real, cs.imag, -cs.imag, cs.real, (1 - cs.real) * cx + cs.imag * cy,
                                                        (1 - cs.real) * cy - cs.imag * cx)
-    def skx(z): return tf(1, 0, tan(z), 1, 0, 0)
-    def sky(z): return tf(1, tan(z), 0, 1, 0, 0)
-    def fromsvg(s): # SVG string to tf object
-        pass # TODO
+    def skx(z): return tf(1, 0, tan(radians(z)), 1, 0, 0)
+    def sky(z): return tf(1, tan(radians(z)), 0, 1, 0, 0)
+    tfmap = {"matrix": __init__, "translate": tr, "scale": sc, "rotate": ro, "skewX": skx, "skewY": sky}
+    def fromsvg(s):
+        """Converts an SVG transform string into its equivalent matrix."""
+        out = tf.I()
+        for cmd in tf_re.finditer(s):
+            head, load = cmd.groups()
+            load = num_re.findall(load)
+            out @= tf.tfmap[head](*(float(n) for n in load))
+        return out
     
-    def __matmul__(self, z): # other transformations handled with rmatmul on classes desired
+    def __matmul__(self, z):
+        """Application of this matrix M @ z, where z is a point or another matrix."""
         p = self.v
-        if type(z) == tf: # composition of transformations
+        if type(z) == tf:
             q = z.v
             return tf(p[0] * q[0] + p[2] * q[1],        p[1] * q[0] + p[3] * q[1],
                       p[0] * q[2] + p[2] * q[3],        p[1] * q[2] + p[3] * q[3],
                       p[0] * q[4] + p[2] * q[5] + p[4], p[1] * q[4] + p[3] * q[5] + p[5])
-        elif type(z) == complex: # transformation of point by matrix
+        elif type(z) == complex:
             return complex(p[0] * z.real + p[2] * z.imag + p[4],
                            p[1] * z.real + p[3] * z.imag + p[5])
-        else: raise TypeError("matrix can only be multiplied with point or matrix")
+        else: return NotImplemented # rmatmul on desired object
+    def __invert__(self):
+        """Inverse of this matrix, ~M."""
+        p = self.v
+        det = p[0] * p[3] - p[1] * p[2]
+        out = (p[3], -p[1], -p[2], p[0],
+               p[2] * p[5] - p[3] * p[4],
+               p[1] * p[4] - p[0] * p[5])
+        return tf(*(a / det for a in out))
+    
+    def minstr(self):
+        """Shortest representation of this matrix in SVG."""
+        pass # TODO
 
 def affine(mat, p): return complex(mat[0] * p.real + mat[2] * p.imag + mat[4], mat[1] * p.real + mat[3] * p.imag + mat[5])
 def composition(*mats): # if the matrices are in last-to-first order

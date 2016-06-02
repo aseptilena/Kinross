@@ -4,7 +4,7 @@
 from math import sin, cos, tan, copysign, degrees, radians, nan
 from cmath import isclose, phase, rect, polar
 from .vectors import saltire, perpbisect, signedangle
-from .regexes import tokenisetransform, floatinkrep, numbercrunch, msfi, catn
+from .regexes import tokenisetransform, fsmn, catn
 
 import re
 tf_re = re.compile(r"(matrix|translate|scale|rotate|skewX|skewY)\s*\((.*?)\)")
@@ -63,14 +63,14 @@ class tf:
         a, b, c, d, e, f = self.v
         if   isclose(a, d) and isclose(b, -c): reflected = False
         elif isclose(a, -d) and isclose(b, c): reflected = True
-        else: return "matrix({})".format(catn(*(msfi(x) for x in self.v))) # matrix not conformal, default output
+        else: return "matrix({})".format(catn(*(fsmn(x) for x in self.v))) # matrix not conformal, default output
         z = complex(a, b)
         r, th = polar(z)
-        mr, mth = msfi(r), msfi(degrees(th) % 360)
+        mr, mth = fsmn(r), fsmn(degrees(th) % 360)
         if reflected: sc_cmd = "scale({0}-{0})".format(mr)
         else: sc_cmd = "scale({})".format(mr) * (mr != "1")
         if isclose(th, 0): # translation
-            dx, dy = msfi(e), msfi(f)
+            dx, dy = fsmn(e), fsmn(f)
             if dy == "0": tr_cmd = "translate({})".format(dx) * (dx != "0")
             else: tr_cmd = "translate({})".format(catn(dx, dy))
             return tr_cmd + sc_cmd
@@ -78,7 +78,7 @@ class tf:
         else:
             z /= r # z.real = cos(th), z.imag = sin(th)
             k, l = 1 - z.real, z.imag
-            mx, my = msfi((e * k - f * l) / (2 * k)), msfi((e * l + f * k) / (2 * k))
+            mx, my = fsmn((e * k - f * l) / (2 * k)), fsmn((e * l + f * k) / (2 * k))
             ro_cmd = "rotate({})".format(catn(mth, mx, my))
         return ro_cmd + sc_cmd
     def minstr(s): return tf.fromsvg(s).tosvg() # convenience function to compress an SVG transformation string

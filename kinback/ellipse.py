@@ -3,7 +3,7 @@
 # https://parclytaxel.tumblr.com
 from math import pi, sqrt, hypot, degrees
 from .vectors import *
-from .regexes import floatinkrep
+from .regexes import fsmn
 from .algebra import polyn, matdeterm
 from .affines import affine
 hpi = pi / 2
@@ -18,11 +18,11 @@ class oval:
     def __repr__(self): return "oval({}, {}, {}, {})".format(self.centre, self.rx, self.ry, self.tilt)
     def svgrepr(self):
         """Returns the minimal SVG representation of the oval: tag, {attributes}."""
-        a, b = floatinkrep(self.rx), floatinkrep(self.ry)
-        if a == b: tag, resd = "circle", {"cx": floatinkrep(self.centre.real), "cy": floatinkrep(self.centre.imag), "r": a} # circle
+        a, b = fsmn(self.rx), fsmn(self.ry)
+        if a == b: tag, resd = "circle", {"cx": fsmn(self.centre.real), "cy": fsmn(self.centre.imag), "r": a} # circle
         else:
-            oc, theta = turn(self.centre, -self.tilt), floatinkrep(degrees(self.tilt))
-            tag, resd = "ellipse", {"cx": floatinkrep(oc.real), "cy": floatinkrep(oc.imag), "rx": a, "ry": b}
+            oc, theta = turn(self.centre, -self.tilt), fsmn(degrees(self.tilt))
+            tag, resd = "ellipse", {"cx": fsmn(oc.real), "cy": fsmn(oc.imag), "rx": a, "ry": b}
             if theta != "0": resd["transform"] = "rotate({})".format(theta)
         if resd["cx"] == "0": del resd["cx"]
         if resd["cy"] == "0": del resd["cy"]

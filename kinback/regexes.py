@@ -10,8 +10,8 @@ semicolons = re.compile(r"[^;]+")
 singlerotation = re.compile(r"\s*rotate\s*\(\s*" + nrgx + r"\s*\)\s*")
 
 from math import log10, floor
-def msfi(x, D = 8):
-    """Returns the Minimal String for a Float in Inkscape (8 sf + D dp)."""
+def fsmn(x, D = 8):
+    """Float string minimal Inkscape representation (8 sf + D dp)."""
     if round(x, D) == 0: return "0"
     a = abs(x)
     a = round(a, min(D, 8 - max(floor(log10(a)) + 1, 0)))
@@ -24,7 +24,13 @@ def msfi(x, D = 8):
         res = "{}e-{}".format(v.lstrip('0'), len(v))
     else: res = str(a).strip('0').rstrip('.')
     return '-' * (x < 0) + res
-floatinkrep = msfi # TODO transitional thing
+def catn(*ns):
+    """Concatenates the given number strings, removing all redundant delimiters."""
+    res, dp = "", True
+    for s in ns:
+        res += s if not res or s[0] == '-' or s[0] == '.' and dp else ' ' + s
+        dp = '.' in s or 'e' in s
+    return res
 
 def tokenisepath(p):
     """Parses SVG path data into its tokens and converts numbers into floats.
@@ -38,15 +44,6 @@ def tokenisetransform(s):
         typ, params = tf[:-1].split("(")
         res.append([typ, [float(n) for n in numre.findall(params)]])
     return res
-
-def catn(*ns):
-    """Concatenates the given number strings, removing all redundant delimiters."""
-    res, dp = "", True
-    for s in ns:
-        res += s if not res or s[0] == '-' or s[0] == '.' and dp else ' ' + s
-        dp = '.' in s or 'e' in s
-    return res
-numbercrunch = catn # TODO transitional thing
 
 def stylecrunch(stystr):
     """Style string as input, dictionary of its attributes as output. Multiple and misplaced semicolons are skipped over seamlessly."""

@@ -4,7 +4,7 @@
 # https://parclytaxel.tumblr.com
 
 # Bézier curve arc length
-'''from kinback.pathery import *
+from kinback.pathery import *
 import time
 b0 = bezier(0, 3j, 3j, 5) # (0, [])
 b1 = bezier(0, 3j, 0, 5) # (1, [0, 0.5])
@@ -18,24 +18,6 @@ for b in (b0, b1, b2, bl):
     print(l) # 7.504871040167711, 6.4788922059020155, 6.879770127854844, 6.982407360576693
     print((end - start) * 10, "ms / length") # 3.4, 4.3, 5, 9 ms
 
-print()
-# Random number generation
-from kinback.discord import KinrossRandom
-rr, bbins = KinrossRandom(), [0 for q in range(33)]
-start = time.perf_counter()
-for q in range(100000): bbins[rr.binomialvariate(32, 0.6)] += 1
-end = time.perf_counter()
-print(bbins[19], sum([n * bbins[n] for n in range(len(bbins))]) / 100000) # Mode and mean (14205 and 19.2 expected)
-print((end - start) * 10, "μs / binomial variate") # 26 μs
-
-d = {}
-start = time.perf_counter()
-for q in range(100000):
-    v = rr.poissonvariate(24)
-    d[v] = d.get(v, 0) + 1
-end = time.perf_counter()
-print(d) # 24 should have the largest associated value, since it is the mean
-print((end - start) * 10, "μs / Poisson variate") # 28 μs'''
 from kinback.segment import ellipt
 from kinback.affines import tf
 b = ellipt(1+2j, 2.5, 1.25, 0, -0.5, 1.5)

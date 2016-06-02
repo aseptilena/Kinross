@@ -7,7 +7,7 @@ from itertools import product
 from .vectors import *
 from .affines import affine, backaffine, tf
 from .algebra import rombergquad, polyn
-from .regexes import floatinkrep
+from .regexes import fsmn
 from .ellipse import oval
 
 from numbers import Real
@@ -25,6 +25,30 @@ class ellipt:
         if not self.O(): out += " {:.4f}:{:.4f}".format(self.t0, self.t1)
         return out + ")"
     def __repr__(self): return "ellipt({}, {}, {}, {}, {}, {})".format(self.c, self.r1, self.r2, self.th, self.t0, self.t1)
+    
+    def fromsvg_path(start, rx, ry, theta, large, sweep, end):
+        """Given the data in an SVG elliptical arc command, construct the equivalent elliptical object.
+        This follows the SVG specs as closely as possible. Endpoints are complex numbers, large and sweep are bools and the rest are floats."""
+        if start == end: return None
+        if rx == 0 or ry == 0: return bezier(start, end)
+        r1, r2 = abs(rx), abs(ry)
+        # We now take the start as the origin and transform the end, so that the ellipse required becomes a unit circle.
+        disc = tf.sc(1 / r1, 1 / r2) @ tf.ro(-theta) @ (end - start)
+        m = disc / 2
+        ma, mp = polar(m)
+        if ma >= 1:
+            res = ellipt(m, ma, ma, 0, None, mp)
+            res.t0 = res.t1 + (-1) ** sweep * pi
+        else:
+            ct = rect(1, mp + (-1) ** (large == sweep) * acos(ma))
+            res = ellipt(ct, 1, 1, 0)
+            z0, z1 = phase(-ct), phase(disc - ct)
+            if z0 < z1 and not sweep: z0 += T
+            if z0 > z1 and     sweep: z1 += T
+            res.t0, res.t1 = z0, z1
+        res = tf.ro(theta) @ tf.sc(r1, r2) @ res
+        res.c += start
+        return res
     
     def O(self): return self.t0 == 0 and self.t1 == T # tests whether the ellipse is complete, hence O
     def at(self, t): return self.c + complex(self.r1 * cos(t), self.r2 * sin(t)) * rect(1, self.th) # param t of complete ellipse
@@ -74,7 +98,7 @@ class bezier:
     def __init__(self, *p):
         self.p = list(p)[:min(4, len(p))] # cull to cubic curves, since they are the highest degree used in SVG
         self.deg = len(self.p) - 1
-    def __str__(self): return "<{}>".format(" ".join(["{:.4f}".format(n) for n in self.p]))
+    def __str__(self): return "<{}>".format(" ".join("{:.4f}".format(n) for n in self.p))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
     
     def __call__(self, t):
@@ -239,8 +263,8 @@ class elliparc:
             sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
             self.sf, self.ef = sr(self.tstart / H), er(self.tend / H)
     def __str__(self): #
-        return "{{{} {} {} {} {}:{}}}".format(floatinkrep(self.ell.centre.real) + "," + floatinkrep(self.ell.centre.imag),
-                                              floatinkrep(self.ell.rx), floatinkrep(self.ell.ry), floatinkrep(self.ell.tilt), self.tstart, self.tend)
+        return "{{{} {} {} {} {}:{}}}".format(fsmn(self.ell.centre.real) + "," + fsmn(self.ell.centre.imag),
+                                              fsmn(self.ell.rx), fsmn(self.ell.ry), fsmn(self.ell.tilt), self.tstart, self.tend)
     def __repr__(self): #
         return "elliparc({}, {}, {})".format(self.tstart, repr(self.ell), self.tend)
     

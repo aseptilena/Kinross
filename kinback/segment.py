@@ -5,11 +5,12 @@ from math import pi, sqrt, hypot, tan, atan, radians, floor, ceil
 from cmath import polar, isclose
 from itertools import product
 from .vectors import *
-from .affines import affine, backaffine
+from .affines import affine, backaffine, tf
 from .algebra import rombergquad, polyn
 from .regexes import floatinkrep
 from .ellipse import oval
 
+from numbers import Real
 T, H = pi * 2, pi / 2
 
 # A simple ellipse is considered a special case of the elliptical arc class, the arc spanning the four quadrants.
@@ -28,7 +29,14 @@ class ellipt:
     def O(self): return self.t0 == 0 and self.t1 == T # tests whether the ellipse is complete, hence O
     def at(self, t): return self.c + complex(self.r1 * cos(t), self.r2 * sin(t)) * rect(1, self.th) # param t of complete ellipse
     def __call__(self, t): return self.at(linterp(self.t0, self.t1, t)) # param t of arc
-    def __neg__(self, t): return ellipt(self.c, self.r1, self.r2, self.th, self.t1, self.t0) # reverse arc
+    def __getitem__(self, z):
+        if isinstance(z, Real): return self(z) # alias to value call
+        elif type(z) == slice: # segments of arc
+            begin = self.t0 if z.start == None else linterp(self.t0, self.t1, z.start)
+            end   = self.t1 if z.stop  == None else linterp(self.t0, self.t1, z.stop)
+            reverse = -1 if z.step == -1 else 1
+            return ellipt(self.c, self.r1, self.r2, self.th, *(begin, end)[::reverse])
+    def __neg__(self, t): return ellipt(self.c, self.r1, self.r2, self.th, self.t1, self.t0) # reverse arc; faster alternative to ellipt[::-1]
     def d(self, t): # derivative at param t of arc
         on = linterp(self.t0, self.t1, t)
         return (-1) ** (self.t0 > self.t1) * complex(-sin(on) * self.r1, cos(on) * self.r2) * rect(1, self.th)
@@ -42,7 +50,12 @@ class ellipt:
         sa, wa = abs(s), abs(w)
         res = ellipt(d, sa + wa, sa - wa, phase(s - rect(sa, phase(w))))
         if not self.O():
-            pass # TODO
+            z = lambda p: phase(tf.sc(1 / res.r1, 1 / res.r2) @ ((m @ p - d) * rect(1, -res.th)))
+            z0, z1 = z(self(0)), z(self(1))
+            if (self.t0 > self.t1) ^ (m.v[0] * m.v[3] - m.v[1] * m.v[2] < 0) != (z0 > z1): # is the arc flow correct?
+                if   z0 < z1: z0 += T
+                elif z0 > z1: z1 += T
+            res.t0, res.t1 = z0, z1
         return res
     
     def perim(self):
@@ -256,8 +269,8 @@ class elliparc:
         nell, pst, pen = self.ell.affine(mat), affine(mat, self.start()), affine(mat, self.end())
         z = nell.uc_affine()
         start, end = phase(affine(z, pst)), phase(affine(z, pen))
-        if self.tstart < self.tend and start > end: end += 2 * pi
-        if self.tstart > self.tend and start < end: start += 2 * pi
+        if self.tstart < self.tend and start > end: end += T
+        if self.tstart > self.tend and start < end: start += T
         return elliparc(start, nell, end)
     def boundingbox(self):
         """The elliptical arc's orthogonal bounding box."""

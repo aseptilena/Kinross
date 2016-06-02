@@ -38,6 +38,6 @@ print(d) # 24 should have the largest associated value, since it is the mean
 print((end - start) * 10, "μs / Poisson variate") # 28 μs'''
 from kinback.segment import ellipt
 from kinback.affines import tf
-b = ellipt(1+2j, 2.5, 1.25)
-m = tf(1, 0.125, -0.5, 2, 1, -1)
-print(m @ b) # (1.0000+3.1250j 2.6998/2.3873@2.4489)
+b = ellipt(1+2j, 2.5, 1.25, 0, -0.5, 1.5)
+m = tf(-1, 0.5, 0.25, 1, 2, 4)
+print(m @ b) # (1.5000+6.5000j 2.8125/1.2500@2.6224 0.6244:-1.3756)

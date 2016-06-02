@@ -49,6 +49,18 @@ class ellipt:
         res = tf.ro(theta) @ tf.sc(r1, r2) @ res
         res.c += start
         return res
+    def fromsvg_node(ov):
+        """Given an SVG circle or ellipse, returns (ellipse, transform, dictionary of other attributes)."""
+        others = ov.attrib.copy()
+        cx, cy = float(others.pop("cx", "0")), float(others.pop("cy", "0"))
+        if ov.tag.endswith("circle"): rx = ry = float(others.pop("r"))
+        elif ov.tag.endswith("ellipse"): rx, ry = float(others.pop("rx")), float(others.pop("ry"))
+        r0 = ellipt(complex(cx, cy), rx, ry)
+        r1 = tf.fromsvg(others.pop("transform", ""))
+        return (r0, r1, others)
+    def tosvg_node(self):
+        """Returns the SVG representation of this ellipse as a (tag, attribute dictionary). Endpoints are ignored."""
+        pass # TODO
     
     def O(self): return self.t0 == 0 and self.t1 == T # tests whether the ellipse is complete, hence O
     def at(self, t): return self.c + complex(self.r1 * cos(t), self.r2 * sin(t)) * rect(1, self.th) # param t of complete ellipse
@@ -128,18 +140,6 @@ class bezier:
     def velocity(self, t):
         """The velocity (derivative) of this curve at parameter t."""
         return self.deriv()(t)
-    def startdirc(self):
-        N = 1
-        while N <= self.deg:
-            if not isclose(self.p[N], self.p[0]): return self.p[N] - self.p[0]
-            N += 1
-        return 1
-    def enddirc(self):
-        N = self.deg - 1
-        while N >= 0:
-            if not isclose(self.p[N], self.p[-1]): return self.p[N] - self.p[-1]
-            N -= 1
-        return -1
     
     def affine(self, mat):
         """Transforms the curve by the given matrix."""
@@ -285,8 +285,6 @@ class elliparc:
         """Returns the velocity (first derivative) of the curve at parameter t."""
         et = linterp(self.tstart, self.tend, t)
         return turn(complex(-sin(et) * self.ell.rx, cos(et) * self.ell.ry) * (1 if tstart < tend else -1), self.ell.tilt)
-    def startdirc(self): return self.velocity(0) # arc.d(0)
-    def enddirc(self): return -self.velocity(1) # -arc.d(1)
     
     def affine(self, mat):
         """Transforms the arc by the given matrix."""

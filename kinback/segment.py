@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
 from math import pi, sqrt, hypot, tan, atan, radians, floor, ceil
-from cmath import isclose
+from cmath import polar, isclose
 from itertools import product
 from .vectors import *
 from .affines import affine, backaffine
@@ -10,16 +10,18 @@ from .algebra import rombergquad, polyn
 from .regexes import floatinkrep
 from .ellipse import oval
 
-T, hpi = pi * 2, pi / 2
+T, H = pi * 2, pi / 2
 
 # A simple ellipse is considered a special case of the elliptical arc class, the arc spanning the four quadrants.
 # Inputs left-to-right are centre, radii, angle of r1 to +x and endpoint params; th normalised to [0, pi).
 class ellipt:
-    def __init__(self, c = 0j, r1 = 1, r2 = 1, th = 0, t0 = 0, t1 = T):
-        self.c, self.r1, self.r2, self.th, self.t0, self.t1 = c, abs(r1), abs(r2), th % pi, t0, t1
+    def __init__(self, c = 0j, r1 = 1, r2 = 1, th = None, t0 = 0, t1 = T):
+        self.c, self.r2, self.t0, self.t1 = c, abs(r2), t0, t1
+        self.r1, self.th = polar(r1) if th == None else (r1, th)
+        self.th %= pi
     def __str__(self):
-        out = "({:.4f} {:.4f}@{:.f}/{:.4f}".format(self.c, self.r1, self.th, self.r2)
-        if self.O(): out += " {:.4f}:{:.4f}".format(self.t0, self.t1)
+        out = "({:.4f} {:.4f}/{:.4f}@{:.4f}".format(self.c, self.r1, self.r2, self.th)
+        if not self.O(): out += " {:.4f}:{:.4f}".format(self.t0, self.t1)
         return out + ")"
     def __repr__(self): return "ellipt({}, {}, {}, {}, {}, {})".format(self.c, self.r1, self.r2, self.th, self.t0, self.t1)
     
@@ -31,7 +33,17 @@ class ellipt:
         on = linterp(self.t0, self.t1, t)
         return (-1) ** (self.t0 > self.t1) * complex(-sin(on) * self.r1, cos(on) * self.r2) * rect(1, self.th)
     
-    # TODO affine transformations
+    def __rmatmul__(self, m): # Rytz's construction used here
+        d = m @ self.c
+        u_, v = m @ self.at(0) - d, m @ self.at(H) - d
+        if isclose(angle(u_, v), H): res = ellipt(d, u_, v)
+        u = u_ * 1j
+        s, w = (u + v) / 2, (u - v) / 2
+        sa, wa = abs(s), abs(w)
+        res = ellipt(d, sa + wa, sa - wa, phase(s - rect(sa, phase(w))))
+        if not self.O():
+            pass # TODO
+        return res
     
     def perim(self):
         """Perimeter of whole ellipse. Iterative formula for elliptic integral from Semjon Adlaj (http://www.ams.org/notices/201208/rtx120801094p.pdf)."""
@@ -49,7 +61,7 @@ class bezier:
     def __init__(self, *p):
         self.p = list(p)[:min(4, len(p))] # cull to cubic curves, since they are the highest degree used in SVG
         self.deg = len(self.p) - 1
-    def __str__(self): return "<{}>".format(" ".join([floatinkrep(n.real) + "," + floatinkrep(n.imag) for n in self.p]))
+    def __str__(self): return "<{}>".format(" ".join(["{:.4f}".format(n) for n in self.p]))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
     
     def __call__(self, t):
@@ -205,14 +217,14 @@ class elliparc:
                     else:
                         l = abs(astt)
                         rac = sqrt(1 - l * l)
-                        ac = rect(rac, phase(astt) + hpi * (1 if large == sweep else -1))
+                        ac = rect(rac, phase(astt) + H * (1 if large == sweep else -1))
                         c, self.tstart, self.tend = affine(uc2e, ac), phase(astt - ac), phase(aend - ac)
                     self.ell = oval(c, rx, ry, phi)
                     if self.tstart > self.tend and     sweep: self.tend += 2 * pi
                     if self.tstart < self.tend and not sweep: self.tend -= 2 * pi
         if type(self.ell) == oval: # These values aid the arc length computation
             sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
-            self.sf, self.ef = sr(self.tstart / hpi), er(self.tend / hpi)
+            self.sf, self.ef = sr(self.tstart / H), er(self.tend / H)
     def __str__(self): #
         return "{{{} {} {} {} {}:{}}}".format(floatinkrep(self.ell.centre.real) + "," + floatinkrep(self.ell.centre.imag),
                                               floatinkrep(self.ell.rx), floatinkrep(self.ell.ry), floatinkrep(self.ell.tilt), self.tstart, self.tend)
@@ -249,7 +261,7 @@ class elliparc:
         return elliparc(start, nell, end)
     def boundingbox(self):
         """The elliptical arc's orthogonal bounding box."""
-        if isclose(self.ell.tilt, 0) or isclose(abs(self.ell.tilt), hpi): tbnds = (0, hpi)
+        if isclose(self.ell.tilt, 0) or isclose(abs(self.ell.tilt), H): tbnds = (0, H)
         else:
             r = self.ell.ry / self.ell.rx
             tbnds = (atan(-r * tan(self.ell.tilt)), atan(r / tan(self.ell.tilt)))
@@ -270,7 +282,7 @@ class elliparc:
         if isclose(self.tstart, self.tend): return 0
         lf = self.lenf()
         if (self.tend - self.tstart) * (self.ef - self.sf) < 0: return abs(rombergquad(lf, self.tstart, self.tend))
-        sl = rombergquad(lf, self.tstart, self.sf * hpi) + self.ell.quartrarc() * (self.ef - self.sf) + rombergquad(lf, self.ef * hpi, self.tend)
+        sl = rombergquad(lf, self.tstart, self.sf * H) + self.ell.quartrarc() * (self.ef - self.sf) + rombergquad(lf, self.ef * H, self.tend)
         return -sl if self.tend < self.tstart else sl
     def invlength(self, frac):
         """Computes the t value where self.length(t) / self.length() = frac."""

@@ -69,12 +69,12 @@ class tf:
         mr, mth = msfi(r), msfi(degrees(th) % 360)
         if reflected: sc_cmd = "scale({0}-{0})".format(mr)
         else: sc_cmd = "scale({})".format(mr) * (mr != "1")
-        if isclose(e, 0) and isclose(f, 0): ro_cmd = "rotate({})".format(mth) # rotation about origin
-        elif isclose(th, 0): # translation
+        if isclose(th, 0): # translation
             dx, dy = msfi(e), msfi(f)
             if dy == "0": tr_cmd = "translate({})".format(dx) * (dx != "0")
             else: tr_cmd = "translate({})".format(catn(dx, dy))
             return tr_cmd + sc_cmd
+        elif isclose(e, 0) and isclose(f, 0): ro_cmd = "rotate({})".format(mth) # rotation about origin
         else:
             z /= r # z.real = cos(th), z.imag = sin(th)
             k, l = 1 - z.real, z.imag

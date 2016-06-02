@@ -36,5 +36,8 @@ for q in range(100000):
 end = time.perf_counter()
 print(d) # 24 should have the largest associated value, since it is the mean
 print((end - start) * 10, "μs / Poisson variate") # 28 μs'''
+from kinback.segment import ellipt
 from kinback.affines import tf
-print(tf.minstr("matrix(-0.81996625,-0.2160501,-0.2160501,0.81996625,271.27629,-39.763406)")) # rotate(194.76117 133.06281-37.451292)scale(.84795182-.84795182)
+b = ellipt(1+2j, 2.5, 1.25)
+m = tf(1, 0.125, -0.5, 2, 1, -1)
+print(m @ b) # (1.0000+3.1250j 2.6998/2.3873@2.4489)

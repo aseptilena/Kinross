@@ -4,7 +4,7 @@
 from math import pi, sqrt, hypot, degrees
 from .vectors import *
 from .regexes import fsmn
-from .algebra import polyn, matdeterm
+from .algebra import polyn
 from .affines import affine
 hpi = pi / 2
 
@@ -86,25 +86,3 @@ class oval:
         """The inverse of uc_affine() (i.e. the transformation from the unit circle to this ellipse), whose form is even simpler."""
         s, c = sin(self.tilt), cos(self.tilt)
         return (c * self.rx, s * self.rx, -s * self.ry, c * self.ry, self.centre.real, self.centre.imag)
-
-def ell5pts(q, r, s, t, u):
-    """Constructs the ellipse passing through the five points. The algorithms are from the equivalent Pernsteiner extension (http://pernsteiner.org/inkscape/ellipse_5pts)."""
-    pmat, coeffs = [[p.real * p.real, p.real * p.imag, p.imag * p.imag, p.real, p.imag, 1.] for p in (q, r, s, t, u)], []
-    rmat = tuple(zip(*pmat))
-    for i in range(6):
-        sqmat = [rmat[j] for j in range(6) if i != j]
-        coeffs.append(matdeterm(sqmat) * (-1 if i % 2 else 1))
-    a, b, c, d, e, f = coeffs
-    qd = 4 * a * c - b * b
-    if isclose(matdeterm([[a * 2, b, d], [b, c * 2, e], [d, e, f * 2]]), 0) or qd <= 0: return None
-    centre = complex((b * e - 2 * c * d) / qd, (b * d - 2 * a * e) / qd)
-    cx, cy = centre.real, centre.imag
-    axes = [1, 1j] if isclose(b, 0) else [hat(complex(b / 2, l - a)) for l in polyn(qd, -(a + c) * 4, 4).rroots()]
-    lens = [0, 0]
-    for i in (0, 1):
-        dx, dy = axes[i].real, axes[i].imag
-        qa = a * dx * dx + b * dx * dy + c * dy * dy
-        qb = 2 * a * cx * dx + b * (cx * dy + cy * dx) + 2 * c * cy * dy + d * dx + e * dy
-        qc = a * cx * cx + b * cx * cy + c * cy * cy + d * cx + e * cy + f
-        lens[i] = max(polyn(qc, qb, qa).rroots())
-    return oval(centre, lens[0], lens[1], phase(axes[0]))

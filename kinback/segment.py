@@ -118,7 +118,7 @@ class ellipt:
 
 class bezier:
     def __init__(self, *p):
-        self.p = list(p)[:min(4, len(p))] # cull to cubic curves, since they are the highest degree used in SVG
+        self.p = list(p)[:min(4, len(p))] # only the first four points, or less, will be considered
         self.deg = len(self.p) - 1
     def __str__(self): return "<{}>".format(" ".join("{:.4f}".format(n) for n in self.p))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))

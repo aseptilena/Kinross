@@ -5,6 +5,50 @@ from math import sqrt, isclose, copysign
 from cmath import sqrt as csqrt
 from itertools import product
 
+def p_v(p, r):
+    """p is a polynomial as a sequence with powers corresponding to indices; returns (p(r), p / (x - r))."""
+    res = [p[-1]]
+    for a in p[-2::-1]: res.append(res[-1] * r + a)
+    return (res[-1], res[-2::-1])
+
+# Separate functions for solving quadratic and cubic polynomials.
+# The returned roots are in a dictionary {0: (real roots), 1: (complex roots)}.
+def pol2roots(c, b, a): # from https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+    d = b * b - 4 * a * c
+    e = sqrt(abs(d))
+    if d < 0:
+        z = complex(-b, e) / (2 * a)
+        return {1: (z.conjugate(), z)}
+    else:
+        be = -b + e if b < 0 else -(b + e)
+        return {0: (2 * c / be, be / a / 2)}
+
+def pol3roots(ad, ac, ab, a):
+    b, c, d = ab / a, ac / a, ad / a
+    fl = -b / 3
+    fv, qp = p_v((d, c, b, 1), fl)
+    if abs(fv) <= 1e-15:
+        res = pol2roots(*qp)
+        res[0] = res.get(0, ()) + (fl,)
+        return res
+    Z = b * b - 3 * c
+    if abs(Z) <= 1e-15:
+        r = fl - fv ** (1 / 3)
+        return {0: (r, r, r)}
+    iterate = fl if Z < 0 else fl - copysign(sqrt(Z) * 2 / 3, fv)
+    num = (c * d, c * c + 2 * b * d, 3 * (b * c + d), 2 * (2 * c + b * b), 5 * b, 3)
+    denom = (c * c - b * d, 3 * (b * c - d), 3 * (b * b + c), 8 * b, 6)
+    delta = 1
+    for q in range(16):
+        if abs(delta) > 1e-15:
+            delta = p_v(num, iterate)[0] / p_v(denom, iterate)[0]
+            iterate -= delta
+        else: break
+    j = iterate + b
+    res = pol2roots(j * iterate + c, j, 1)
+    res[0] = res.get(0, ()) + (iterate,)
+    return res
+
 class polyn:
     """A polyn stores a list of (real) coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on."""
     def __init__(self, *coeffs): self.a = list(coeffs)
@@ -154,29 +198,3 @@ def rombergquad(f, a, b, e = 1e-18):
         v.insert(0, v[0] / 2 + h * sum([f(a + i * h) for i in range(1, 1 << len(v), 2)]))
         for i in range(1, len(v)): v[i] = v[i - 1] + (v[i - 1] - v[i]) / (4 ** i - 1)
     return v[-1]
-
-def matdeterm(m, exact = False):
-    """Bareiss's determinant algorithm as given in http://cs.nyu.edu/~yap/book/alge/ftpSite/l10.ps.gz (section 2).
-    This gives exact results for integer matrices when exact is True."""
-    import operator
-    divf = operator.floordiv if exact else operator.truediv
-    a, N = [list(r[:]) for r in m], len(m)
-    # Elementary row operations do not change the determinant
-    counter = 0
-    while counter < N:
-        if not isclose(a[counter][counter], 0):
-            counter += 1
-            continue
-        nadded = True
-        for z in range(N):
-            if not isclose(a[z][counter], 0) and z != counter:
-                a[counter] = [sum(pair) for pair in zip(a[counter], a[z])]
-                nadded = False
-                break
-        if nadded: return 0 # The determinant of a matrix with a row or column of zeros is 0
-        counter += 1
-    for k in range(1, N):
-        kk = k - 1
-        for i in range(k, N):
-            for j in range(k, N): a[i][j] = divf(a[i][j] * a[kk][kk] - a[i][kk] * a[kk][j], 1 if not kk else a[k - 2][k - 2])
-    return a[-1][-1]

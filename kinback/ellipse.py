@@ -4,7 +4,6 @@
 from math import pi, sqrt, hypot, degrees
 from .vectors import *
 from .regexes import fsmn
-from .algebra import polyn
 from .affines import affine
 hpi = pi / 2
 

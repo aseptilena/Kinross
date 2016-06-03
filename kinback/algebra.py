@@ -1,191 +1,119 @@
 # Helper functions for Kinross: numerical algebra and methods
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
-from math import sqrt, isclose, copysign
+from math import sqrt, copysign
 from cmath import sqrt as csqrt
-from itertools import product
+from numbers import Number
+from itertools import product, zip_longest
 
-def p_v(p, r):
-    """p is a polynomial as a sequence with powers corresponding to indices; returns (p(r), p / (x - r))."""
+def ruff(p, r): # p / [-r, 1], returns (p(r), quotient)
     res = [p[-1]]
     for a in p[-2::-1]: res.append(res[-1] * r + a)
     return (res[-1], res[-2::-1])
+def deriv(p): return [p[i] * i for i in range(1, len(p))] # derivative
+def qruff(p, v, u): # p / [v, u, 1], ignoring remainder
+    res = [0, 0]
+    for i in range(len(p) - 1, 1, -1): res.append(p[i] - (u * q[-1] + v * q[-2]))
+    return res[:1:-1]
 
 # Separate functions for solving quadratic and cubic polynomials.
-# The returned roots are in a dictionary {0: (real roots), 1: (complex roots)}.
-def pol2roots(c, b, a): # from https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+# The returned roots are in a dictionary {0: [real roots], 1: [complex roots]}.
+def qdroot(c, b, a): # from https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
     d = b * b - 4 * a * c
     e = sqrt(abs(d))
     if d < 0:
         z = complex(-b, e) / (2 * a)
-        return {1: (z.conjugate(), z)}
+        return {0: [], 1: [z.conjugate(), z]}
     else:
         be = -b + e if b < 0 else -(b + e)
-        return {0: (2 * c / be, be / a / 2)}
+        return {0: [2 * c / be, be / a / 2], 1: []}
 
-def pol3roots(ad, ac, ab, a):
+def cbroot(ad, ac, ab, a):
     b, c, d = ab / a, ac / a, ad / a
     fl = -b / 3
-    fv, qp = p_v((d, c, b, 1), fl)
+    fv, qp = ruff((d, c, b, 1), fl)
     if abs(fv) <= 1e-15:
-        res = pol2roots(*qp)
-        res[0] = res.get(0, ()) + (fl,)
+        res = qdroot(*qp)
+        res[0] += [fl]
         return res
     Z = b * b - 3 * c
     if abs(Z) <= 1e-15:
         r = fl - fv ** (1 / 3)
-        return {0: (r, r, r)}
+        return {0: [r, r, r], 1: []}
     iterate = fl if Z < 0 else fl - copysign(sqrt(Z) * 2 / 3, fv)
     num = (c * d, c * c + 2 * b * d, 3 * (b * c + d), 2 * (2 * c + b * b), 5 * b, 3)
     denom = (c * c - b * d, 3 * (b * c - d), 3 * (b * b + c), 8 * b, 6)
     delta = 1
     for q in range(16):
         if abs(delta) > 1e-15:
-            delta = p_v(num, iterate)[0] / p_v(denom, iterate)[0]
+            delta = ruff(num, iterate)[0] / ruff(denom, iterate)[0]
             iterate -= delta
         else: break
     j = iterate + b
-    res = pol2roots(j * iterate + c, j, 1)
-    res[0] = res.get(0, ()) + (iterate,)
+    res = qdroot(j * iterate + c, j, 1)
+    res[0] += [iterate]
+    return res
+
+def polroots(pp):
+    p = pp[:]
+    res = {0: [], 1: []}
+    try:
+        while abs(p[-1]) < 1e-15: p.pop()
+    except IndexError: return res # zero polynomial
+    while abs(p[0]) < 1e-15:
+        p.pop(0)
+        res[0] += [0]
+    if len(p) == 1: return res
+    if len(p) == 2:
+        res[0] += [-p[0] / p[1]]
+        return res
+    while len(p) > 4: # use Laguerre's method
+        n, x, delta = len(p) - 1, 0, 1
+        f = lambda z: ruff(p, z)[0]
+        p_ = deriv(p)
+        df = lambda z: ruff(p_, z)[0]
+        p__ = deriv(p_)
+        d2f = lambda z: ruff(p__, z)[0]
+        for q in range(64):
+            at = f(x)
+            if abs(delta) < 1e-15 or abs(at) < 1e-15: break
+            G = df(x) / at
+            H = G * G - d2f(x) / at
+            surd = csqrt((n - 1) * (n * H - G * G))
+            d0, d1 = G + surd, G - surd
+            delta = n / d0 if abs(d0) >= abs(d1) else n / d1
+            x -= delta
+        if abs(x.imag) < 1e-14:
+            res[0] += [x.real]
+            p = ruff(p, x.real)[1]
+        else:
+            res[1] += [x, x.conjugate()]
+            p = qruff((x * x.conjugate()).real, -2 * x.real)
+    if len(p) == 3: last = qdroot(*p)
+    if len(p) == 4: last = cbroot(*p)
+    res[0] += last[0]
+    res[1] += last[1]
     return res
 
 class polyn:
-    """A polyn stores a list of (real) coefficients [a0, a1, a2, ...] where a0 is the constant term, a1 is the x term and so on."""
-    def __init__(self, *coeffs): self.a = list(coeffs)
+    def __init__(self, coeffs): self.a = list(coeffs)
     def __getitem__(self, n): return self.a[n]
     def __setitem__(self, n, v): self.a[n] = v
     def __len__(self): return len(self.a)
-    def deg(self): return len(self) - 1
-    def powers(self): return range(len(self) - 1, -1, -1) # High-to-low iterator over the polynomial's powers
-    def __str__(self): return " + ".join(["{}*x^{}".format(self[i], i) for i in self.powers()])
-    def __repr__(self): return "polyn(" + ", ".join([str(c) for c in self.a]) + ")"
-    def ruffini(self, r):
-        """Divides the polynomial by x - r with Ruffini's rule, returning (quotient, remainder/p(r)). If r is a root, this amounts to deflation."""
-        res = [0]
-        for i in self.powers(): res.append(res[-1] * r + self[i])
-        return (polyn(*res[-2:0:-1]), res[-1])
-    def __call__(self, x): return self.ruffini(x)[1]
+    def __call__(self, x): return ruff(self, x)[0]
     
-    def __add__(self, q):
-        res = self.a + [0] * max(0, len(q) - len(self))
-        for i in range(len(q)): res[i] += q[i]
-        return polyn(*res)
-    def __sub__(self, q):
-        res = self.a + [0] * max(0, len(q) - len(self))
-        for i in range(len(q)): res[i] -= q[i]
-        return polyn(*res)
-    def __neg__(self): return polyn(*[-c for c in self.a])
+    def __add__(self, q): return polyn(a + b for a, b in zip_longest(self, q, fillvalue=0))
+    def __sub__(self, q): return polyn(a - b for a, b in zip_longest(self, q, fillvalue=0))
     def __mul__(self, q):
-        if type(q) != polyn: return polyn(*[c * q for c in self.a])
+        if isinstance(q, Number): return polyn(c * q for c in self.a)
         res = [0] * (len(self) + len(q) - 1)
         for p in product(range(len(self)), range(len(q))): res[sum(p)] += self[p[0]] * q[p[1]]
-        return polyn(*res)
+        return polyn(res)
     def __rmul__(self, q): return self * q
-    def __divmod__(self, b):
-        if type(b) != polyn: return (polyn(*[c / b for c in self.a]), polyn(0))
-        r, d, q = self.a[:], b.a, []
-        while len(r) >= len(d):
-            q.append(r[-1] / d[-1])
-            for i in range(-1, -len(d) - 1, -1): r[i] -= q[-1] * d[i]
-            r.pop()
-        return (polyn(*q[::-1]), polyn(*r))
-    def __floordiv__(self, b): return divmod(self, b)[0]
-    def __truediv__(self, b): return self // b
-    def __mod__(self, b): return divmod(self, b)[1]
-    def deriv(self): return polyn(*[i * self[i] for i in range(1, len(self))])
-    def antideriv(self): return polyn(*([0] + [self[i] / (i + 1) for i in range(len(self))]))
-    def norm(self): return self / self[-1]
+    def d(self): return polyn(deriv(self))
     
-    def quadruffini(self, u, v):
-        """Divides the polynomial by x^2 + ux + v with a Ruffini-like scheme, returning (quotient, c, d) where the remainder is cx + d."""
-        q = [0, 0]
-        for i in range(self.deg(), 1, -1): q.append(self[i] - u * q[-1] - v * q[-2])
-        return (polyn(*q[:1:-1]), self[1] - u * q[-1] - v * q[-2], self[0] - v * q[-1])
-    def laguerrestep(self, x):
-        """Calculates one step of Laguerre's method for the given iterate."""
-        r = self(x)
-        if abs(r) < 1e-15: return 0
-        dp = self.deriv()
-        s, t, n = dp(x), dp.deriv()(x), self.deg()
-        u = s / r
-        v = u * u - t / r
-        rooty = csqrt((n - 1) * (n * v - u * u))
-        d0, d1 = u + rooty, u - rooty
-        return n / d0 if abs(d0) >= abs(d1) else n / d1
-    def roots(self):
-        """Finds all ([real], [complex]) roots of the polynomial."""
-        cfs, out = self.a[:], ([], [])
-        while abs(cfs[-1]) <= 1e-15 and len(cfs) > 1: cfs.pop() # scrub high and low zeros to make things easier
-        while abs(cfs[0]) <= 1e-15 and len(cfs) > 1:
-            cfs.pop(0)
-            out[0].append(0)
-        p = polyn(*cfs)
-        if p.deg() == 0: pass
-        elif p.deg() == 1: out[0].append(-p[0] / p[1])
-        elif p.deg() == 2: # Derivation from https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
-            a, b, c = p[2], p[1], p[0]
-            d = b * b - 4 * a * c
-            e = sqrt(abs(d))
-            if d < 0:
-                r, i = -b / (2 * a), e / (2 * a)
-                out[1].extend([complex(r, -i), complex(r, i)])
-            else: out[0].extend([2 * c / (-b + e), (-b + e) / (2 * a)] if b < 0 else [-(b + e) / (2 * a), -2 * c / (b + e)])
-        elif p.deg() == 3: # Halley-based numerical method for solving a cubic from http://derpy.me/samuelsoncubic
-            d, c, b = [v / p[3] for v in p[:3]]
-            fl = -b / 3
-            fv = p(fl)
-            if abs(fv) <= 1e-15:
-                j = fl + b
-                k = j * fl + c
-                last = polyn(k, j, 1).roots()
-                last[0].append(fl)
-                out[0].extend(last[0])
-                out[1].extend(last[1])
-            else:
-                Z = b * b - 3 * c
-                if abs(Z) <= 1e-15: out[0].extend([fl - fv ** (1 / 3)] * 3)
-                else:
-                    iterate = fl if Z < 0 else fl - copysign(sqrt(Z) * 2 / 3, fv)
-                    num = polyn(c * d, c * c + 2 * b * d, 3 * (b * c + d), 2 * (2 * c + b * b), 5 * b, 3)
-                    denom = polyn(c * c - b * d, 3 * (b * c - d), 3 * (b * b + c), 8 * b, 6)
-                    delta = 1
-                    for q in range(16):
-                        if abs(delta) > 1e-15:
-                            delta = num(iterate) / denom(iterate)
-                            iterate -= delta
-                        else: break
-                    j = iterate + b
-                    k = j * iterate + c
-                    last = polyn(k, j, 1).roots()
-                    last[0].append(iterate)
-                    out[0].extend(last[0])
-                    out[1].extend(last[1])
-        else: # Laguerre's method. NOT Haycartes's method.
-            p = p.norm()
-            while p.deg() > 2:
-                iterate, delta = 0, 1
-                for q in range(64):
-                    if abs(delta) > 1e-15:
-                        delta = p.laguerrestep(iterate)
-                        iterate -= delta
-                    else: break
-                if abs(iterate.imag) < 1e-14:
-                    out[0].append(iterate.real)
-                    p = p.ruffini(iterate.real)[0]
-                else:
-                    out[1].extend([iterate, iterate.conjugate()])
-                    p = p.quadruffini(-2 * iterate.real, iterate.real * iterate.real + iterate.imag + iterate.imag)[0]
-            last = p.roots()
-            out[0].extend(last[0])
-            out[1].extend(last[1])
-        for i in range(len(out[1]) - 1, 0, -2):
-            if abs(out[1][i].imag) <= 1e-14:
-                out[0].extend([out[1][i].real] * 2)
-                del out[1][i:i + 2]
-        return out
-    def rroots(self):
-        """Like roots() but only returns the real ones, sorted ascending."""
-        return sorted(self.roots()[0])
+    def roots(self): return polroots(self)
+    def rroots(self): return sorted(self.roots()[0])
 
 def rombergquad(f, a, b, e = 1e-18):
     """∫(a, b) f(x) dx by Romberg's method."""

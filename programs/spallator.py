@@ -5,7 +5,8 @@
 # https://parclytaxel.tumblr.com
 from cmath import polar, rect
 import xml.etree.ElementTree as t
-from kinback.affines import affine, parsetransform, collapsibility
+from kinback.affines import parsetransform, collapsibility, tf
+from kinback.segment import ellipt
 from kinback.ellipse import oval
 from kinback.discord import KinrossRandom, rectpointpick
 sp = "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}"
@@ -23,20 +24,20 @@ def spallate(obj, rtf, dens, size = 1000+1000j):
     for q in range(round(size.real * size.imag * dens * 1e-4)): rn.append(handletransform(obj, rtf(size)))
     return rn
 
-def handletransform(item, tf):
+def handletransform(item, tfs):
     if item.tag == "circle" or item.tag == "ellipse":
-        cx, cy, rx, ry = float(item.get("cx", "0")), float(item.get("cy", "0")), float(item.get("r", item.get("rx"))), float(item.get("r", item.get("ry")))
-        others = {k: item.attrib[k] for k in item.attrib if k not in ("cx", "cy", "r", "rx", "ry")}
-        ntag, nattrib = oval(complex(cx, cy), rx, ry).affine(parsetransform(tf)).svgrepr()
-        nattrib.update(others)
-        return t.Element(ntag, nattrib)
+        m = tf.fromsvg(tfs)
+        e, u, oth = ellipt.fromsvg_node(item)
+        tag, atb = (m @ u @ e).tosvg_node()
+        atb.update(oth)
+        return t.Element(tag, atb)
     if item.get(sp + "type") == "star":
-        tm = parsetransform(tf)
-        if collapsibility(tm):
+        m = tf.fromsvg(tfs)
+        if m.isconformal():
             others = item.attrib.copy()
-            centre = affine(tm, complex(float(item.get(sp + "cx", "0")), float(item.get(sp + "cy", "0"))))
-            np1 = affine(tm, rect(float(item.get(sp + "r1")), float(item.get(sp + "arg1"))))
-            np2 = affine(tm, rect(float(item.get(sp + "r2")), float(item.get(sp + "arg2"))))
+            centre = m @ complex(float(item.get(sp + "cx", "0")), float(item.get(sp + "cy", "0")))
+            np1 = m @ rect(float(item.get(sp + "r1")), float(item.get(sp + "arg1")))
+            np2 = m @ rect(float(item.get(sp + "r2")), float(item.get(sp + "arg2")))
             r1, arg1 = polar(np1 - centre)
             r2, arg2 = polar(np2 - centre)
             nparams = {sp + "cx": str(centre.real), sp + "cy": str(centre.imag), sp + "r1": str(round(r1, 3)),
@@ -44,7 +45,7 @@ def handletransform(item, tf):
             others.update(nparams)
             return t.Element("path", others)
     props = item.attrib.copy()
-    props["transform"] = tf
+    props["transform"] = tfs
     return t.Element(item.tag, props)
 
 # Examples of the function's use below; object/density fixed

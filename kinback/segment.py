@@ -117,8 +117,9 @@ class ellipt:
         return (nx + ny) / (mx + my) * T * max(self.r1, self.r2)
 
 class bezier:
-    def __init__(self, *p):
-        self.p = list(p)[:min(4, len(p))] # only the first four points, or less, will be considered
+    def __init__(self, *points):
+        if not 1 < len(points) < 5: raise TypeError("bezier only takes two to four points")
+        self.p = points
         self.deg = len(self.p) - 1
     def __str__(self): return "<{}>".format(" ".join("{:.4f}".format(n) for n in self.p))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
@@ -154,17 +155,16 @@ class bezier:
     def affine(self, mat):
         """Transforms the curve by the given matrix."""
         return bezier(*[affine(mat, n) for n in self.p])
-    def xypolyns(self):
-        """Returns the (x-component, y-component) polynomials of this curve."""
-        cp = self.p
-        if   self.deg == 3: l = (cp[0], 3 * (cp[1] - cp[0]), 3 * (cp[2] - 2 * cp[1] + cp[0]), cp[3] - 3 * cp[2] + 3 * cp[1] - cp[0])
-        elif self.deg == 2: l = (cp[0], 2 * (cp[1] - cp[0]), cp[2] - 2 * cp[1] + cp[0])
-        elif self.deg == 1: l = (cp[0], cp[1] - cp[0])
-        return (polyn(*[n.real for n in l]), polyn(*[n.imag for n in l]))
+    def polyns(self): # x and y-axis polynomials
+        a = self.p
+        if   self.deg == 3: l = (a[0], 3 * (a[1] - a[0]), 3 * (a[2] - 2 * a[1] + a[0]), a[3] - 3 * a[2] + 3 * a[1] - a[0])
+        elif self.deg == 2: l = (a[0], 2 * (a[1] - a[0]), a[2] - 2 * a[1] + a[0])
+        elif self.deg == 1: l = (a[0], a[1] - a[0])
+        return (polyn(n.real for n in l), polyn(n.imag for n in l))
     def boundingbox(self):
         """The orthogonal bounding box of this curve as a tuple of two opposite points."""
         if self.deg == 1: return pointbounds(self.p)
-        xb, yb = [[self(t) for t in pn.deriv().rroots() if 0 < t < 1] for pn in self.xypolyns()]
+        xb, yb = [[self(t) for t in pn.deriv().rroots() if 0 < t < 1] for pn in self.polyns()]
         return pointbounds(xb + yb + [self.start(), self.end()])
     
     def kind(self):
@@ -190,20 +190,20 @@ class bezier:
             else: return nothing
         if num > 0:
             d1 = self.deriv()
-            xp, yp = d1.xypolyns()
-            xpp, ypp = d1.deriv().xypolyns()
+            xp, yp = d1.polyns()
+            xpp, ypp = d1.deriv().polyns()
             return (num, (xp * ypp - yp * xpp).rroots())
         else:
             # Because the curve is cubic the equations are conic sections and solving is quite simple.
-            [c, b, a], [f, e, d] = [f.a[1:] for f in self.xypolyns()]
+            [c, b, a], [f, e, d] = [f.a[1:] for f in self.polyns()]
             # These conics are {a, a, a, b, b, c} and {d, d, d, e, e, f} (powers from left to right are x², xy, y², x, y, 1).
             # The degenerate conic between them is (b + ez)(x + y) + (c + fz) = 0 where z = -a / d, so the sum of solutions (x + y) is:
             J = (a * f - c * d) / (b * d - a * e)
             # Adding axy on both sides of the x-coordinate equation yields ax² + 2axy + ay² + bx + by + c = axy,
             # which reduces to aJ² + bJ + c = axy. The product of solutions (xy) is thus:
-            K = polyn(c / a, b / a, 1)(J)
+            K = polyn((c / a, b / a, 1))(J)
             # A polynomial with x and y as its roots can then be constructed and the self-intersection parameters found.
-            return (num, polyn(K, -J, 1).rroots())
+            return (num, polyn((K, -J, 1)).rroots())
     def lenf(self):
         """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
         def z(t): return abs(self.velocity(t))
@@ -237,8 +237,8 @@ class bezier:
     def projection(self, z):
         """The parameter t corresponding to the projection of z onto the curve; the smallest t is returned if two or more parameters tie for shortest distance."""
         def dist(t): return abs(self(t) - z)
-        x, y = self.xypolyns()
-        dx, dy = self.deriv().xypolyns()
+        x, y = self.polyns()
+        dx, dy = self.deriv().polyns()
         x[0], y[0] = x[0] - z.real, y[0] - z.imag
         return sorted([0] + [t for t in (x * dx + y * dy).rroots() if 0 < t < 1] + [1], key=dist)[0]
 

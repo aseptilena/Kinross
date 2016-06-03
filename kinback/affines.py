@@ -58,6 +58,9 @@ class tf:
                p[1] * p[4] - p[0] * p[5])
         return tf(*(a / det for a in out))
     
+    def isconformal(self):
+        a, b, c, d = self.v[:4]
+        return isclose(a, d) and isclose(b, -c) or isclose(a, -d) and isclose(b, c) # TODO legacy function
     def tosvg(self):
         """Shortest representation of this matrix in SVG. An empty string returned represents the identity matrix."""
         a, b, c, d, e, f = self.v

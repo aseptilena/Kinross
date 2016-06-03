@@ -5,9 +5,8 @@
 # https://parclytaxel.tumblr.com
 from cmath import polar, rect
 import xml.etree.ElementTree as t
-from kinback.affines import parsetransform, collapsibility, tf
+from kinback.affines import tf
 from kinback.segment import ellipt
-from kinback.ellipse import oval
 from kinback.discord import KinrossRandom, rectpointpick
 sp = "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}"
 t.register_namespace("sodipodi", sp[1:-1])

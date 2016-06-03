@@ -21,16 +21,7 @@ def collinear(a, b, c): return isclose(cross(a, b, c), 0)
 
 def between(p, q): return (p + q) / 2
 def linterp(p, q, t): return (1 - t) * p + t * q
-def perpbisect(a, b):
-    m = between(a, b)
-    return (lturn(a, m), rturn(a, m))
-def saltire(l, m):
-    """Intersects two lines to their common point – the figure looks like the Scottish cross, hence the name."""
-    v, w = l[0] - l[1], m[0] - m[1]
-    denom = cross(v, w)
-    if abs(denom) < 1e-10: return None
-    lc, mc = cross(l[0], l[1]), cross(m[0], m[1])
-    return complex(lc * w.real - mc * v.real, lc * w.imag - mc * v.imag) / denom
+
 def pointbounds(pts):
     """The orthogonal bounding box of an array of points, represented as a tuple of opposing corners."""
     xs, ys = tuple(map(lambda p: p.real, pts)), tuple(map(lambda p: p.imag, pts))

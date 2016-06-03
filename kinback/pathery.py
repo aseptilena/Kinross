@@ -7,7 +7,8 @@ from .vectors import angle, reflect, pointbounds
 from .regexes import tokenisepath
 from .segment import bezier, elliparc
 
-def parsepath(p):
+# TODO XXX FIXME the oval and elliparc classes have been merged into a single class, ellipt; REWRITE NECESSARY
+'''def parsepath(p):
     """Converts SVG paths to Kinross paths; see the readme for specifications."""
     t, pos = tokenisepath(p), 0
     out, current = [], 0
@@ -72,4 +73,4 @@ def parsepath(p):
                 if not nextseg.isdegenerate():
                     out[-1].append(nextseg)
             current = params[-1]
-    return out
+    return out'''

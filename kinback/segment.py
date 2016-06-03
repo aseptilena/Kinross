@@ -5,12 +5,10 @@ from math import pi, sqrt, hypot, tan, atan, radians, degrees, floor, ceil
 from cmath import polar, isclose
 from itertools import product
 from .vectors import *
-from .affines import affine, backaffine, tf
+from .affines import tf
 from .algebra import rombergquad, polyn
 from .regexes import fsmn
-from .ellipse import oval
 
-from numbers import Real
 T, H = pi * 2, pi / 2
 
 # A simple ellipse is considered a special case of the elliptical arc class, the arc spanning the four quadrants.
@@ -76,12 +74,12 @@ class ellipt:
     def at(self, t): return self.c + complex(self.r1 * cos(t), self.r2 * sin(t)) * rect(1, self.th) # param t of complete ellipse
     def __call__(self, t): return self.at(linterp(self.t0, self.t1, t)) # param t of arc
     def __getitem__(self, z):
-        if isinstance(z, Real): return self(z) # alias to value call
-        elif type(z) == slice: # segments of arc
+        if type(z) == slice: # segments of arc
             begin = self.t0 if z.start == None else linterp(self.t0, self.t1, z.start)
             end   = self.t1 if z.stop  == None else linterp(self.t0, self.t1, z.stop)
             reverse = -1 if z.step == -1 else 1
             return ellipt(self.c, self.r1, self.r2, self.th, *(begin, end)[::reverse])
+        return self(z) # calling a number aliases to value call
     def __neg__(self, t): return ellipt(self.c, self.r1, self.r2, self.th, self.t1, self.t0) # reverse arc; faster alternative to ellipt[::-1]
     def d(self, t): # derivative at param t of arc
         on = linterp(self.t0, self.t1, t)
@@ -119,8 +117,7 @@ class ellipt:
 class bezier:
     def __init__(self, *points):
         if not 1 < len(points) < 5: raise TypeError("bezier only takes two to four points")
-        self.p = points
-        self.deg = len(self.p) - 1
+        self.p, self.deg = points, len(points) - 1
     def __str__(self): return "<{}>".format(" ".join("{:.4f}".format(n) for n in self.p))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
     
@@ -138,12 +135,7 @@ class bezier:
             bef.append(q[0])
             aft.append(q[-1])
         return [bezier(*bef), bezier(*aft[::-1])]
-    def reverse(self):
-        """Returns the curve reversed."""
-        return bezier(*self.p[::-1])
-    def isdegenerate(self):
-        """True if all control points are coincident."""
-        return min([isclose(self.p[-1], self.p[i]) for i in range(len(self.p) - 1)])
+    def __neg__(self): return bezier(*self.p[::-1])
     
     def deriv(self):
         """The derivative of this Bézier curve."""
@@ -152,9 +144,7 @@ class bezier:
         """The velocity (derivative) of this curve at parameter t."""
         return self.deriv()(t)
     
-    def affine(self, mat):
-        """Transforms the curve by the given matrix."""
-        return bezier(*[affine(mat, n) for n in self.p])
+    def __rmatmul__(self, m): return bezier(*(m @ s for s in self.p))
     def polyns(self): # x and y-axis polynomials
         a = self.p
         if   self.deg == 3: l = (a[0], 3 * (a[1] - a[0]), 3 * (a[2] - 2 * a[1] + a[0]), a[3] - 3 * a[2] + 3 * a[1] - a[0])
@@ -180,7 +170,7 @@ class bezier:
             p00, p01, p11 = self.p[:3]
             p4 = self.p[3]
         xv, yv = p11 - p01, p01 - p00
-        clue = backaffine((xv.real, xv.imag, yv.real, yv.imag, p00.real, p00.imag), p4)
+        clue = ~tf(xv.real, xv.imag, yv.real, yv.imag, p00.real, p00.imag) @ p4
         x, y = clue.real, clue.imag
         if y >= 1 and x < 1 or y > 1 and x >= 1: num = 1
         elif x * (x - 2) + 4 * y >= 3 and x < 1: num = 2
@@ -242,68 +232,7 @@ class bezier:
         x[0], y[0] = x[0] - z.real, y[0] - z.imag
         return sorted([0] + [t for t in (x * dx + y * dy).rroots() if 0 < t < 1] + [1], key=dist)[0]
 
-class elliparc:
-    def __init__(self, *data):
-        """Initialises the Kinross arc. tstart to tend is increasing if the arc turns clockwise; phi is in degrees."""
-        self.deg = -1
-        if len(data) == 3: # tstart, ell, tend (Kinross representation)
-            self.tstart, self.ell, self.tend = data
-        elif len(data) == 7: # start, rx, ry, phi, large, sweep, end (SVG representation)
-            start, rx, ry, phi, large, sweep, end = data
-            if isclose(start, end): self.tstart, self.tend, self.ell = 7, 7, [start, end]
-            else:
-                rx, ry, phi = abs(rx), abs(ry), radians(phi)
-                if rx < 1e-8 or ry < 1e-8: self.tstart, self.tend, self.ell = 8, 8, [start, end]
-                else:
-                    z1, z2, mid = turn(rx, phi), turn(ry * 1j, phi), between(start, end)
-                    uc2e = (z1.real, z1.imag, z2.real, z2.imag, mid.real, mid.imag)
-                    astt, aend = backaffine(uc2e, start), backaffine(uc2e, end)
-                    large, sweep = large != 0, sweep != 0 # True = 1, False = 0
-                    if abs(astt - aend) >= 2: # There is only one ellipse or the ellipse is too small
-                        c, self.tstart, self.tend = mid, phase(astt), phase(aend)
-                    else:
-                        l = abs(astt)
-                        rac = sqrt(1 - l * l)
-                        ac = rect(rac, phase(astt) + H * (1 if large == sweep else -1))
-                        c, self.tstart, self.tend = affine(uc2e, ac), phase(astt - ac), phase(aend - ac)
-                    self.ell = oval(c, rx, ry, phi)
-                    if self.tstart > self.tend and     sweep: self.tend += 2 * pi
-                    if self.tstart < self.tend and not sweep: self.tend -= 2 * pi
-        if type(self.ell) == oval: # These values aid the arc length computation
-            sr, er = (floor, ceil) if self.tend < self.tstart else (ceil, floor)
-            self.sf, self.ef = sr(self.tstart / H), er(self.tend / H)
-    def __str__(self): #
-        return "{{{} {} {} {} {}:{}}}".format(fsmn(self.ell.centre.real) + "," + fsmn(self.ell.centre.imag),
-                                              fsmn(self.ell.rx), fsmn(self.ell.ry), fsmn(self.ell.tilt), self.tstart, self.tend)
-    def __repr__(self): #
-        return "elliparc({}, {}, {})".format(self.tstart, repr(self.ell), self.tend)
-    
-    def __call__(self, t): #
-        """See? This is why the endpoint parameters are allowed to go outside the principal range here."""
-        return self.ell.parampoint(linterp(self.tstart, self.tend, t))
-    def start(self): return self.ell.parampoint(self.tstart) # arc(0)
-    def end(self): return self.ell.parampoint(self.tend) # arc(1)
-    def split(self, t):
-        """Splits the arc at parameter t, returning a list that can then be inserted."""
-        mv = linterp(self.tstart, self.tend, t)
-        return [elliparc(self.tstart, self.ell, mv), elliparc(mv, self.ell, self.tend)]
-    def reverse(self): # -arc
-        """Returns the arc reversed."""
-        return elliparc(self.tend, oval(self.ell.centre, self.ell.rx, self.ell.ry, self.ell.tilt), self.tstart)
-    
-    def velocity(self, t): # arc.d
-        """Returns the velocity (first derivative) of the curve at parameter t."""
-        et = linterp(self.tstart, self.tend, t)
-        return turn(complex(-sin(et) * self.ell.rx, cos(et) * self.ell.ry) * (1 if tstart < tend else -1), self.ell.tilt)
-    
-    def affine(self, mat):
-        """Transforms the arc by the given matrix."""
-        nell, pst, pen = self.ell.affine(mat), affine(mat, self.start()), affine(mat, self.end())
-        z = nell.uc_affine()
-        start, end = phase(affine(z, pst)), phase(affine(z, pen))
-        if self.tstart < self.tend and start > end: end += T
-        if self.tstart > self.tend and start < end: start += T
-        return elliparc(start, nell, end)
+class elliparc: # functions not yet migrated are here
     def boundingbox(self):
         """The elliptical arc's orthogonal bounding box."""
         if isclose(self.ell.tilt, 0) or isclose(abs(self.ell.tilt), H): tbnds = (0, H)

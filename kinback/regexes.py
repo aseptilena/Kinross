@@ -7,7 +7,6 @@ numre = re.compile(nrgx)
 pathre = re.compile(nrgx[1:-1] + r"|[MCSQTLHVAZmcsqtlhvaz]")
 transformbreaks = re.compile(r"(?:matrix|translate|scale|rotate|skewX|skewY)\s*\(.*?\)")
 semicolons = re.compile(r"[^;]+")
-singlerotation = re.compile(r"\s*rotate\s*\(\s*" + nrgx + r"\s*\)\s*")
 
 from math import log10, floor
 def fsmn(x, D = 8):

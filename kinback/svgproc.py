@@ -4,9 +4,9 @@
 from xml.etree.ElementTree import tostring
 from xml.dom.minidom import parseString
 from .colours import shortcolour, shortdiaph
-from .regexes import stylecrunch, singlerotation
-from .affines import parsetransform
-from .ellipse import oval
+from .regexes import stylecrunch
+from .affines import tf
+from .segment import ellipt
 def formalxml(rn):
     """Returns the formatted string of the element rn and its children (tab = two spaces)."""
     return parseString(tostring(rn, "unicode")).toprettyxml("  ")
@@ -253,8 +253,8 @@ def ellipsecollapse(ell):
     """Given a transformed ellipse element, collapses the transform into the ellipse if it has no stroke and then converts into a circle if applicable."""
     if ell.get("stroke") == None and "stroke" not in stylecrunch(ell.get("style", "")): # ensures that no transformation of the stroke is lost
         tfstr = ell.get("transform", "rotate(0)")
-        if not singlerotation.fullmatch(tfstr): # avoids wasting time on already-optimised ellipses (whitespace is processed later)
-            newps = oval(complex(float(ell.get("cx", "0")), float(ell.get("cy", "0"))), float(ell.get("rx")), float(ell.get("ry"))).affine(parsetransform(tfstr)).svgrepr()
-            for param in {"cx", "cy", "rx", "ry", "transform"} & set(ell.keys()): del ell.attrib[param]
-            ell.tag = _svg + newps[0]
-            ell.attrib.update(newps[1])
+        if "rotate" not in tfstr or tfstr.count('(') > 1:
+            e, t, oth = ellipt.fromsvg_node(ell)
+            tag, atb = (t @ e).tosvg_node()
+            atb.update(oth)
+            ell.tag, ell.attrib = _svg + tag, atb

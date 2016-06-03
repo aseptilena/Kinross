@@ -1,7 +1,7 @@
 # Helper functions for Kinross: Bézier curve and elliptical arc segments (includes whole ellipses!)
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
-from math import pi, sqrt, hypot, tan, atan, radians, floor, ceil
+from math import pi, sqrt, hypot, tan, atan, radians, degrees, floor, ceil
 from cmath import polar, isclose
 from itertools import product
 from .vectors import *
@@ -60,7 +60,17 @@ class ellipt:
         return (r0, r1, others)
     def tosvg_node(self):
         """Returns the SVG representation of this ellipse as a (tag, attribute dictionary). Endpoints are ignored."""
-        pass # TODO
+        rx, ry = fsmn(self.r1), fsmn(self.r2)
+        if rx == ry: tag, attrib, o = "circle", {"r": rx}, self.c
+        else:
+            tag, tt = "ellipse", self.th % pi
+            if tt >= H: rx, ry, tt = ry, rx, tt - H
+            attrib, o, tts = {"rx": rx, "ry": ry}, self.c * rect(1, -tt), fsmn(degrees(tt))
+            if tts != "0": attrib["transform"] = "rotate({})".format(tts)
+        cx, cy = fsmn(o.real), fsmn(o.imag)
+        if cx != "0": attrib["cx"] = cx
+        if cy != "0": attrib["cy"] = cy
+        return (tag, attrib)
     
     def O(self): return self.t0 == 0 and self.t1 == T # tests whether the ellipse is complete, hence O
     def at(self, t): return self.c + complex(self.r1 * cos(t), self.r2 * sin(t)) * rect(1, self.th) # param t of complete ellipse

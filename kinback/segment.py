@@ -115,9 +115,13 @@ class ellipt:
         return (nx + ny) / (mx + my) * T * max(self.r1, self.r2)
 
 class bezier:
-    def __init__(self, *points):
-        if not 1 < len(points) < 5: raise TypeError("bezier only takes two to four points")
-        self.p, self.deg = points, len(points) - 1
+    def __init__(self, *w):
+        if not 1 < len(w) < 5: raise TypeError("bezier only takes two to four points")
+        self.p, self.deg = w, len(w) - 1
+        if   self.deg == 3: l = (w[0], 3 * (w[1] - w[0]), 3 * (w[2] - 2 * w[1] + w[0]), w[3] - 3 * w[2] + 3 * w[1] - w[0])
+        elif self.deg == 2: l = (w[0], 2 * (w[1] - w[0]), w[2] - 2 * w[1] + w[0])
+        elif self.deg == 1: l = (w[0], w[1] - w[0])
+        self.px, self.py = polyn(n.real for n in l), polyn(n.imag for n in l)
     def __str__(self): return "<{}>".format(" ".join("{:.4f}".format(n) for n in self.p))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
     

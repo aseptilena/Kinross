@@ -6,7 +6,7 @@ from cmath import polar, isclose
 from itertools import product
 from .vectors import *
 from .affines import tf
-from .algebra import rombergquad, polyn
+from .algebra import rombergquad, pn
 from .regexes import fsmn
 
 T, H = pi * 2, pi / 2
@@ -121,11 +121,13 @@ class bezier:
         if   self.deg == 3: l = (w[0], 3 * (w[1] - w[0]), 3 * (w[2] - 2 * w[1] + w[0]), w[3] - 3 * w[2] + 3 * w[1] - w[0])
         elif self.deg == 2: l = (w[0], 2 * (w[1] - w[0]), w[2] - 2 * w[1] + w[0])
         elif self.deg == 1: l = (w[0], w[1] - w[0])
-        self.px, self.py = polyn(n.real for n in l), polyn(n.imag for n in l)
+        self.xypn = pn(*(n.real for n in l)), pn(*(n.imag for n in l)) # polynomials in the x and y directions
     def __str__(self): return "<{}>".format(" ".join("{:.4f}".format(n) for n in self.p))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
     
     def __call__(self, t):
+        if t == 0: return self.p[0]
+        if t == 1: return self.p[-1]
         q = self.p[:]
         while len(q) > 1: q = [linterp(q[i], q[i + 1], t) for i in range(len(q) - 1)]
         return q[0]
@@ -149,17 +151,11 @@ class bezier:
         return self.deriv()(t)
     
     def __rmatmul__(self, m): return bezier(*(m @ s for s in self.p))
-    def polyns(self): # x and y-axis polynomials
-        a = self.p
-        if   self.deg == 3: l = (a[0], 3 * (a[1] - a[0]), 3 * (a[2] - 2 * a[1] + a[0]), a[3] - 3 * a[2] + 3 * a[1] - a[0])
-        elif self.deg == 2: l = (a[0], 2 * (a[1] - a[0]), a[2] - 2 * a[1] + a[0])
-        elif self.deg == 1: l = (a[0], a[1] - a[0])
-        return (polyn(n.real for n in l), polyn(n.imag for n in l))
-    def boundingbox(self):
-        """The orthogonal bounding box of this curve as a tuple of two opposite points."""
+    
+    def bounds(self): # orthogonal bounding box, represented as two opposite points
         if self.deg == 1: return pointbounds(self.p)
-        xb, yb = [[self(t) for t in pn.d().rroots() if 0 < t < 1] for pn in self.polyns()]
-        return pointbounds(xb + yb + [self.start(), self.end()])
+        xb, yb = ([self(t) for t in z.d().reals() if 0 < t < 1] for z in self.xypn)
+        return pointbounds(xb + yb + [self(0), self(1)])
     
     def kind(self):
         """Returns the kind of this Bézier curve according to https://pomax.github.io/bezierinfo/#canonical with any significant points.
@@ -183,21 +179,20 @@ class bezier:
             if K < 3 * y and x < 0 or K < y * (x + y) and x < 1 and y > 0: num = -1
             else: return nothing
         if num > 0:
-            d1 = self.deriv()
-            xp, yp = d1.polyns()
-            xpp, ypp = d1.deriv().polyns()
-            return (num, (xp * ypp - yp * xpp).rroots())
+            xp, yp = (z.d() for z in self.xypn)
+            xpp, ypp = xp.d(), yp.d()
+            return (num, (xp * ypp - yp * xpp).reals())
         else:
             # Because the curve is cubic the equations are conic sections and solving is quite simple.
-            [c, b, a], [f, e, d] = [f.a[1:] for f in self.polyns()]
+            [c, b, a], [f, e, d] = [s[1:] for s in self.xypn]
             # These conics are {a, a, a, b, b, c} and {d, d, d, e, e, f} (powers from left to right are x², xy, y², x, y, 1).
             # The degenerate conic between them is (b + ez)(x + y) + (c + fz) = 0 where z = -a / d, so the sum of solutions (x + y) is:
             J = (a * f - c * d) / (b * d - a * e)
             # Adding axy on both sides of the x-coordinate equation yields ax² + 2axy + ay² + bx + by + c = axy,
             # which reduces to aJ² + bJ + c = axy. The product of solutions (xy) is thus:
-            K = polyn((c / a, b / a, 1))(J)
+            K = pn(c / a, b / a, 1)(J)
             # A polynomial with x and y as its roots can then be constructed and the self-intersection parameters found.
-            return (num, polyn((K, -J, 1)).rroots())
+            return (num, pn(K, -J, 1).reals())
     def lenf(self):
         """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
         def z(t): return abs(self.velocity(t))

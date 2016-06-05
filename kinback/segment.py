@@ -158,7 +158,7 @@ class bezier:
     def boundingbox(self):
         """The orthogonal bounding box of this curve as a tuple of two opposite points."""
         if self.deg == 1: return pointbounds(self.p)
-        xb, yb = [[self(t) for t in pn.deriv().rroots() if 0 < t < 1] for pn in self.polyns()]
+        xb, yb = [[self(t) for t in pn.d().rroots() if 0 < t < 1] for pn in self.polyns()]
         return pointbounds(xb + yb + [self.start(), self.end()])
     
     def kind(self):

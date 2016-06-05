@@ -88,7 +88,7 @@ def polroots(pp):
             p = ruff(p, x.real)[1]
         else:
             res[1] += [x, x.conjugate()]
-            p = qruff((x * x.conjugate()).real, -2 * x.real)
+            p = qruff(x.real * x.real + x.imag * x.imag, -2 * x.real)
     if len(p) == 3: last = qdroot(*p)
     if len(p) == 4: last = cbroot(*p)
     res[0] += last[0]

@@ -17,5 +17,5 @@ def linterp(p, q, t): return (1 - t) * p + t * q
 
 def pointbounds(pts):
     """The orthogonal bounding box of an array of points, represented as a tuple of opposing corners."""
-    xs, ys = tuple(map(lambda p: p.real, pts)), tuple(map(lambda p: p.imag, pts))
+    xs, ys = [p.real for p in pts], [p.imag for p in pts]
     return complex(min(xs), min(ys)), complex(max(xs), max(ys))

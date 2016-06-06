@@ -5,8 +5,8 @@ from math import sqrt, copysign
 from cmath import sqrt as csqrt
 from itertools import zip_longest
 
-# Separate functions for solving quadratic and cubic polynomials.
-# The returned roots are in a dictionary {0: [real roots], 1: [complex roots]}.
+# Polynomial classes and functions, including root extraction.
+# Roots returned are in a dictionary {0: [real roots], 1: [complex roots]}.
 def qdroot(c, b, a): # from https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
     d = b * b - 4 * a * c
     e = sqrt(abs(d))

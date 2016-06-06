@@ -84,7 +84,6 @@ class ellipt:
     def d(self, t): # derivative at param t of arc
         on = linterp(self.t0, self.t1, t)
         return (-1) ** (self.t0 > self.t1) * complex(-sin(on) * self.r1, cos(on) * self.r2) * rect(1, self.th)
-    
     def __rmatmul__(self, m): # Rytz's construction used here
         d = m @ self.c
         u_, v = m @ self.at(0) - d, m @ self.at(H) - d
@@ -122,19 +121,17 @@ class bezier:
         elif self.deg == 2: l = (w[0], 2 * (w[1] - w[0]), w[2] - 2 * w[1] + w[0])
         elif self.deg == 1: l = (w[0], w[1] - w[0])
         self.xypn = pn(*(n.real for n in l)), pn(*(n.imag for n in l)) # polynomials in the x and y directions
+        self.xydpn = [z.d() for z in self.xypn] # derivatives of those polynomials
+        alp = self.xydpn[0] * self.xydpn[0] + self.xydpn[1] * self.xydpn[1]
+        self.lenf = lambda t: sqrt(alp(t)) # length function
     def __str__(self): return "<{}>".format(" ".join("{:.4f}".format(n) for n in self.p))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
     
     def __call__(self, t):
         if t == 0: return self.p[0]
         if t == 1: return self.p[-1]
-        q = self.p[:]
-        while len(q) > 1: q = [linterp(q[i], q[i + 1], t) for i in range(len(q) - 1)]
-        return q[0]
-    def start(self): return self.p[0]
-    def end(self): return self.p[-1]
-    def split(self, t):
-        """Splits the curve at parameter t, returning a list that can then be inserted."""
+        return complex(*(z(t) for z in self.xypn))
+    def split(self, t): # TODO adapt this to slice notation
         bef, aft, q = [self.p[0]], [self.p[-1]], self.p[:]
         while len(q) > 1:
             q = [linterp(q[i], q[i + 1], t) for i in range(len(q) - 1)]
@@ -142,19 +139,12 @@ class bezier:
             aft.append(q[-1])
         return [bezier(*bef), bezier(*aft[::-1])]
     def __neg__(self): return bezier(*self.p[::-1])
-    
-    def deriv(self):
-        """The derivative of this Bézier curve."""
-        return bezier(*[self.deg * (self.p[i + 1] - self.p[i]) for i in range(self.deg)])
-    def velocity(self, t):
-        """The velocity (derivative) of this curve at parameter t."""
-        return self.deriv()(t)
-    
+    def d(self, t): return complex(*(z(t) for z in self.xydpn))
     def __rmatmul__(self, m): return bezier(*(m @ s for s in self.p))
     
     def bounds(self): # orthogonal bounding box, represented as two opposite points
         if self.deg == 1: return pointbounds(self.p)
-        xb, yb = ([self(t) for t in z.d().reals() if 0 < t < 1] for z in self.xypn)
+        xb, yb = ([self(t) for t in z.reals() if 0 < t < 1] for z in self.xydpn)
         return pointbounds(xb + yb + [self(0), self(1)])
     
     def kind(self):
@@ -193,15 +183,11 @@ class bezier:
             K = pn(c / a, b / a, 1)(J)
             # A polynomial with x and y as its roots can then be constructed and the self-intersection parameters found.
             return (num, pn(K, -J, 1).reals())
-    def lenf(self):
-        """Like the elliptical arc class, returns the integrand of the arc length integral for this curve."""
-        def z(t): return abs(self.velocity(t))
-        return z
     def length(self, end = 1, start = 0):
         """The length of this curve between the specified endpoint parameters."""
         if self.deg == 1: return abs(self.p[1] - self.p[0])
         knots = [start] + [t for t in self.kind()[1] if start < t < end] + [end]
-        return sum([rombergquad(self.lenf(), knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
+        return sum([rombergquad(self.lenf, knots[i], knots[i + 1]) for i in range(len(knots) - 1)])
     def invlength(self, frac):
         """Computes the t value where self.length(t) / self.length() = frac. This and the corresponding elliptical arc function use the Illinois algorithm."""
         if frac <= 0: return 0

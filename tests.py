@@ -15,5 +15,5 @@ for b in (b0, b1, b2, bl):
     start = time.perf_counter()
     for q in range(100): l = b.length()
     end = time.perf_counter()
-    print(l) # 7.504871040167711, 6.4788922059020155, 6.879770127854844, 6.982407360576693
-    print((end - start) * 10, "ms / length") # 3.4, 4.3, 5, 9 ms
+    print(l) # 7.504871040167711, 6.4788922059020155, 6.879770127854842, 6.982407360576692
+    print((end - start) * 10, "ms / length") # 1.6, 2, 2.3, 3.7 ms

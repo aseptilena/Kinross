@@ -3,9 +3,12 @@
 # https://parclytaxel.tumblr.com
 from math import sin, ceil, inf
 from cmath import isclose
-from .vectors import angle, reflect, pointbounds
 from .regexes import tokenisepath
 from .segment import bezier, elliparc
+
+def parsepath(p):
+    # The new path format consists of a tuple ([segments], [closedness]) whose two components have equal length.
+    pass # TODO
 
 # TODO XXX FIXME the oval and elliparc classes have been merged into a single class, ellipt; REWRITE NECESSARY
 '''def parsepath(p):

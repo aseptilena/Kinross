@@ -3,16 +3,13 @@
 # https://parclytaxel.tumblr.com
 from math import pi, sqrt, hypot, tan, atan, radians, degrees, floor, ceil
 from cmath import polar, isclose
-from itertools import product
-from .vectors import *
 from .affines import tf
-from .algebra import rombergquad, pn
+from .algebra import collinear, linterp, rombergquad, pn
 from .regexes import fsmn
-
 T, H = pi * 2, pi / 2
 
 # A simple ellipse is considered a special case of the elliptical arc class, the arc spanning the four quadrants.
-# Inputs left-to-right are centre, radii, angle of r1 to +x and endpoint params; th normalised to [0, pi).
+# Inputs left-to-right are centre, radii, angle of r1 to +x and endpoint params; th is normalised to [0, pi).
 class ellipt:
     def __init__(self, c = 0j, r1 = 1, r2 = 1, th = None, t0 = 0, t1 = T):
         self.c, self.r2, self.t0, self.t1 = c, abs(r2), t0, t1
@@ -87,7 +84,7 @@ class ellipt:
     def __rmatmul__(self, m): # Rytz's construction used here
         d = m @ self.c
         u_, v = m @ self.at(0) - d, m @ self.at(H) - d
-        if isclose(angle(u_, v), H): res = ellipt(d, u_, v)
+        if abs(v) < 1e-9 or abs((u_ / v).real) < 1e-9: res = ellipt(d, u_, v)
         u = u_ * 1j
         s, w = (u + v) / 2, (u - v) / 2
         sa, wa = abs(s), abs(w)

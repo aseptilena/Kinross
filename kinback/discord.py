@@ -4,7 +4,7 @@
 import random
 from math import sqrt, log, ceil
 from cmath import rect
-from .vectors import linterp
+from .algebra import linterp
 
 # SystemRandom is good enough for simulation and pretty pictures, but here I add a few more useful functions, especially discrete distributions.
 # Page numbers below refer to Luc Devroye's book on Non-Uniform Random Variate Generation (http://luc.devroye.org/rnbookindex.html).

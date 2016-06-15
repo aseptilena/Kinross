@@ -2,8 +2,19 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
 from math import sqrt, copysign
-from cmath import sqrt as csqrt
+from cmath import phase, rect, sqrt as csqrt, isclose
 from itertools import zip_longest
+
+# Remnants of the vectors module; this contains the all-important linterp function
+def linterp(p, q, t): return (1 - t) * p + t * q
+
+def cross(a, b, o = 0j): return (a.real - o.real) * (b.imag - o.imag) - (a.imag - o.imag) * (b.real - o.real)
+def collinear(a, b, c): return isclose(cross(a, b, c), 0)
+
+def reflect(p, o = 0j): return 2 * o - p
+def pointbounds(pts): # orthogonal bounding box of an array of points, represented as a tuple of opposing corners
+    xs, ys = [p.real for p in pts], [p.imag for p in pts]
+    return complex(min(xs), min(ys)), complex(max(xs), max(ys))
 
 # Polynomial classes and functions, including root extraction.
 # Roots returned are in a dictionary {0: [real roots], 1: [complex roots]}.

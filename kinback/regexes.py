@@ -3,8 +3,11 @@
 # https://parclytaxel.tumblr.com
 import re
 nrgx = r"([-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?)"
-pathre = re.compile(nrgx[1:-1] + r"|[MCSQTLHVAZmcsqtlhvaz]")
 semicolons = re.compile(r"[^;]+")
+
+tf_re = re.compile(r"(matrix|translate|scale|rotate|skewX|skewY)\s*\((.*?)\)")
+num_re = re.compile(r"[-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?")
+pcomm_re = re.compile("([MZLHVCSQTAmzlhvcsqta])([^MZLHVCSQTAmzlhvcsqta]*)")
 
 from math import log10, floor
 def fsmn(x, D = 8):
@@ -28,11 +31,6 @@ def catn(*ns):
         res += s if not res or s[0] == '-' or s[0] == '.' and dp else ' ' + s
         dp = '.' in s or 'e' in s
     return res
-
-def tokenisepath(p):
-    """Parses SVG path data into its tokens and converts numbers into floats.
-    This does not further parse into curves and arcs afterwards, the task left instead to parserhythm() in svgpath."""
-    return [t if t.isalpha() else float(t) for t in pathre.findall(p)]
 
 def stylecrunch(stystr):
     """Style string as input, dictionary of its attributes as output. Multiple and misplaced semicolons are skipped over seamlessly."""

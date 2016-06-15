@@ -3,12 +3,8 @@
 # https://parclytaxel.tumblr.com
 from math import sin, cos, tan, copysign, degrees, radians, nan
 from cmath import isclose, phase, rect, polar
-from .regexes import fsmn, catn
+from .regexes import fsmn, catn, tf_re, num_re
 from numbers import Number
-
-import re
-tf_re = re.compile(r"(matrix|translate|scale|rotate|skewX|skewY)\s*\((.*?)\)")
-num_re = re.compile(r"[-+]?(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.?))(?:[eE][-+]?[0-9]+)?")
 
 # [a c e] Affine matrix structure,
 # [b d f] implemented in the

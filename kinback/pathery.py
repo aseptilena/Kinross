@@ -3,12 +3,15 @@
 # https://parclytaxel.tumblr.com
 from math import sin, ceil, inf
 from cmath import isclose
-from .regexes import tokenisepath
-from .segment import bezier, elliparc
+from .regexes import pcomm_re, num_re
+from .segment import bezier, ellipt
 
 def parsepath(p):
     # The new path format consists of a tuple ([segments], [closedness]) whose two components have equal length.
-    pass # TODO
+    for headload in pcomm_re.finditer(p):
+        head, load = headload.groups()
+        load = [float(n) for n in num_re.findall(load)]
+        print(head, load) # TODO
 
 # TODO XXX FIXME the oval and elliparc classes have been merged into a single class, ellipt; REWRITE NECESSARY
 '''def parsepath(p):

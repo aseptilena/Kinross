@@ -1,8 +1,8 @@
 # Helper functions for Kinross: Bézier curve and elliptical arc segments (includes whole ellipses!)
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
-from math import pi, sqrt, hypot, tan, atan, radians, degrees, floor, ceil
-from cmath import polar, isclose
+from math import sqrt, sin, cos, tan, atan, pi, hypot, radians, degrees, floor, ceil
+from cmath import rect, polar, phase, isclose
 from .affines import tf
 from .algebra import collinear, linterp, rombergquad, pn
 from .regexes import fsmn
@@ -113,7 +113,7 @@ class ellipt:
 class bezier:
     def __init__(self, *w):
         if not 1 < len(w) < 5: raise TypeError("bezier only takes two to four points")
-        self.p, self.deg = w, len(w) - 1
+        self.p, self.deg = list(w), len(w) - 1
         if   self.deg == 3: l = (w[0], 3 * (w[1] - w[0]), 3 * (w[2] - 2 * w[1] + w[0]), w[3] - 3 * w[2] + 3 * w[1] - w[0])
         elif self.deg == 2: l = (w[0], 2 * (w[1] - w[0]), w[2] - 2 * w[1] + w[0])
         elif self.deg == 1: l = (w[0], w[1] - w[0])

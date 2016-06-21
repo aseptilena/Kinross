@@ -6,12 +6,14 @@ from cmath import isclose
 from .regexes import pcomm_re, num_re
 from .segment import bezier, ellipt
 
+strides = {'M': 2, 'Z': 0, 'L': 2, 'H': 1, 'V': 1, 'C': 6, 'S': 4, 'Q': 4, 'T': 2, 'A': 7}
+
 def parsepath(p):
     # The new path format consists of a tuple ([segments], [closedness]) whose two components have equal length.
     for headload in pcomm_re.finditer(p):
         head, load = headload.groups()
         load = [float(n) for n in num_re.findall(load)]
-        print(head, load) # TODO
+    pass # TODO
 
 # TODO XXX FIXME the oval and elliparc classes have been merged into a single class, ellipt; REWRITE NECESSARY
 '''def parsepath(p):

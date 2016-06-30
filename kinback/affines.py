@@ -68,7 +68,7 @@ class tf:
         mr, mth = fsmn(r), fsmn(degrees(th) % 360)
         if reflected: sc_cmd = "scale({0}-{0})".format(mr)
         else: sc_cmd = "scale({})".format(mr) * (mr != "1")
-        if isclose(th, 0): # translation
+        if isclose(th, 0) or mth == "360": # translation; second condition prevents large rotation centre coordinates
             dx, dy = fsmn(e), fsmn(f)
             if dy == "0": tr_cmd = "translate({})".format(dx) * (dx != "0")
             else: tr_cmd = "translate({})".format(catn(dx, dy))

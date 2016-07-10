@@ -6,10 +6,10 @@ from .regexes import pcomm_re, num_re
 from .segment import bezier, ellipt
 
 strides = {'L': 2, 'H': 1, 'V': 1, 'C': 6, 'S': 4, 'Q': 4, 'T': 2, 'A': 7}
-
 class path:
     def __init__(self, p):
-        # The path class holds a list of lists for the sub-paths and the segments within them. There is a separate list that holds closedness.
+        # The path class holds a list of lists for the sub-paths and the segments within them.
+        # There is a separate list that holds closedness.
         self.segments, self.closed, pen = [], [], 0
         for headload in pcomm_re.finditer(p):
             head, load = headload.groups()
@@ -33,7 +33,7 @@ class path:
             else:
                 cmds = [load[i * strides[typ]:(i + 1) * strides[typ]] for i in range(len(load) // strides[typ])]
                 for cmd in cmds:
-                    if   typ == "H": params = [complex(cmd[0] + (pen.real if rel else 0), pen.imag)] # Absolutisation and filling of blanks happen at the same time here
+                    if   typ == "H": params = [complex(cmd[0] + (pen.real if rel else 0), pen.imag)]
                     elif typ == "V": params = [complex(pen.real, cmd[0] + (pen.imag if rel else 0))]
                     elif typ == "A":
                         end = complex(cmd[5], cmd[6]) + (pen if rel else 0)

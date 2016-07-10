@@ -85,10 +85,11 @@ class ellipt:
         d = m @ self.c
         u_, v = m @ self.at(0) - d, m @ self.at(H) - d
         if abs(v) < 1e-9 or abs((u_ / v).real) < 1e-9: res = ellipt(d, u_, v)
-        u = u_ * 1j
-        s, w = (u + v) / 2, (u - v) / 2
-        sa, wa = abs(s), abs(w)
-        res = ellipt(d, sa + wa, sa - wa, phase(s - rect(sa, phase(w))))
+        else:
+            u = u_ * 1j
+            s, w = (u + v) / 2, (u - v) / 2
+            sa, wa = abs(s), abs(w)
+            res = ellipt(d, sa + wa, sa - wa, phase(s - rect(sa, phase(w))))
         if not self.O():
             z = lambda p: phase(tf.sc(1 / res.r1, 1 / res.r2) @ ((m @ p - d) * rect(1, -res.th)))
             z0, z1 = z(self(0)), z(self(1))

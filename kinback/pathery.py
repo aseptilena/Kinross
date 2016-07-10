@@ -1,86 +1,48 @@
 # Helper functions for Kinross: paths
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
-from math import sin, ceil, inf
 from cmath import isclose
-from .regexes import pcomm_re, num_re, fsmn, catn
+from .regexes import pcomm_re, num_re
 from .segment import bezier, ellipt
 
-strides = {'M': 2, 'Z': 0, 'L': 2, 'H': 1, 'V': 1, 'C': 6, 'S': 4, 'Q': 4, 'T': 2, 'A': 7}
+strides = {'L': 2, 'H': 1, 'V': 1, 'C': 6, 'S': 4, 'Q': 4, 'T': 2, 'A': 7}
 
-def parsepath(p):
-    # The new path format consists of a tuple ([segments], [closedness]) whose two components have equal length.
-    out = ""
-    for headload in pcomm_re.finditer(p):
-        head, load = headload.groups()
-        load = catn(*[fsmn(float(n)) for n in num_re.findall(load)])
-        out += head + load
-    print(out)
-
-# TODO XXX FIXME the oval and elliparc classes have been merged into a single class, ellipt; REWRITE NECESSARY
-'''def parsepath(p):
-    """Converts SVG paths to Kinross paths; see the readme for specifications."""
-    t, pos = tokenisepath(p), 0
-    out, current = [], 0
-    take, prevailing, params = 2, "M", []
-    while pos < len(t):
-        # Obtain the command and its parameters
-        val = t[pos]
-        if type(val) == str:
-            if val in "Cc": take = 6
-            elif val in "MmLlTt": take = 2
-            elif val in "Zz": take = 0
-            elif val in "HhVv": take = 1
-            elif val in "SsQq": take = 4
-            elif val in "Aa": take = 7
-            prevailing, params = val, t[pos + 1:pos + take + 1]
-            pos += take + 1
-        else: # pos landed on a float, command is unchanged
-            params = t[pos:pos + take]
-            pos += take
-        # Absolutise coordinates
-        if prevailing == "h": params[0] += current.real
-        elif prevailing == "v": params[0] += current.imag
-        elif prevailing == "a":
-            params[5] += current.real
-            params[6] += current.imag
-        elif prevailing.islower():
-            for i in range(take // 2):
-                params[2 * i] += current.real
-                params[2 * i + 1] += current.imag
-        # Fill in blanks, pair coordinates and add current position
-        rhtype = prevailing.lower()
-        lastseg = out[-1][-1] if len(out) > 0 and len(out[-1]) > 0 else bezier(0, 1)
-        if   rhtype == "h": params.append(current.imag)
-        elif rhtype == "v": params.insert(0, current.real)
-        elif rhtype in "st":
-            r = reflect(lastseg.p[-2], current) if lastseg.deg == (3 if rhtype == "s" else 2) else current
-            params[:0] = [r.real, r.imag]
-        if rhtype == "a":
-            params[5:] = [complex(params[5], params[6])]
-            params.insert(0, current)
-        else: params = [current] + [complex(params[2 * i], params[2 * i + 1]) for i in range(len(params) // 2)]
-        # Construct the next segment
-        if rhtype == "m":
-            if type(t[pos - 3]) != str: out[-1].append(bezier(*params)) # Implied moveto
-            else: out.append([]) # Explicit moveto
-            current = params[1]
-        elif rhtype == "z":
-            spstart, spend = out[-1][0].start(), out[-1][-1].end()
-            if not isclose(spstart, spend): out[-1].append(bezier(spend, spstart)) # The bridging line need not be drawn if nothing is bridged
-            out[-1].append(0)
-            if pos < len(t) and t[pos].lower() != "m": # zC, zL, etc.
-                out.append([])
-                current = spstart
-        else:
-            if rhtype == "a":
-                nextseg = elliparc(*params)
-                if nextseg.tstart >= 7:
-                    if nextseg.tstart == 8: nextseg = bezier(*nextseg.ell)
-                    out[-1].append(nextseg)
+class path:
+    def __init__(self, p):
+        # The path class holds a list of lists for the sub-paths and the segments within them. There is a separate list that holds closedness.
+        self.segments, self.closed, pen = [], [], 0
+        for headload in pcomm_re.finditer(p):
+            head, load = headload.groups()
+            typ, rel = head.upper(), head.islower()
+            load = [float(n) for n in num_re.findall(load)]
+            
+            if typ == "M": # This is a special case, as any extra numbers after the second are equivalent to linetos
+                pen = complex(load[0], load[1]) + (pen if rel else 0)
+                self.segments.append([])
+                self.closed.append(False)
+                load = load[2:]
+                while load:
+                    pento = complex(load[0], load[1]) + (pen if rel else 0)
+                    self.segments[-1].append(bezier(pen, pento))
+                    pen, load = pento, load[2:]
+            elif typ == "Z":
+                self.closed[-1] = True
+                start, end = self.segments[-1][0](0), self.segments[-1][-1](1)
+                if not isclose(start, end): self.segments[-1].append(bezier(end, start))
+                pen = start
             else:
-                nextseg = bezier(*params)
-                if not nextseg.isdegenerate():
-                    out[-1].append(nextseg)
-            current = params[-1]
-    return out'''
+                cmds = [load[i * strides[typ]:(i + 1) * strides[typ]] for i in range(len(load) // strides[typ])]
+                for cmd in cmds:
+                    if   typ == "H": params = [complex(cmd[0] + (pen.real if rel else 0), pen.imag)] # Absolutisation and filling of blanks happen at the same time here
+                    elif typ == "V": params = [complex(pen.real, cmd[0] + (pen.imag if rel else 0))]
+                    elif typ == "A":
+                        end = complex(cmd[5], cmd[6]) + (pen if rel else 0)
+                        params = cmd[:5] + [end]
+                    else:
+                        params = [complex(cmd[2 * i], cmd[2 * i + 1]) + (pen if rel else 0) for i in range(len(cmd) // 2)]
+                        if typ in "ST":
+                            rpoint = pen if not self.segments[-1] else self.segments[-1][-1].svg_refl(typ)
+                            params = [rpoint] + params
+                    params = [pen] + params
+                    self.segments[-1].append(ellipt.fromsvg_path(*params) if typ == "A" else bezier(*params))
+                    pen = params[-1]

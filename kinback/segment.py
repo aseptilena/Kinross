@@ -98,6 +98,8 @@ class ellipt:
             res.t0, res.t1 = z0, z1
         return res
     
+    def svg_refl(self, ncommand): return self(1) # assume coincident with cursor
+    
     def perim(self):
         """Perimeter of whole ellipse. Iterative formula for elliptic integral from Semjon Adlaj (http://www.ams.org/notices/201208/rtx120801094p.pdf)."""
         if self.r1 == self.r2: return T * self.r1
@@ -138,6 +140,10 @@ class bezier:
     def __neg__(self): return bezier(*self.p[::-1])
     def d(self, t): return complex(*(z(t) for z in self.xydpn))
     def __rmatmul__(self, m): return bezier(*(m @ s for s in self.p))
+    
+    def svg_refl(self, ncommand): # For determining SVG paths; returns the extra control point implied by S/T commands, given the command type in question
+        if self.deg == 2 and ncommand == "T" or self.deg == 3 and ncommand == "S": return 2 * self.p[-1] - self.p[-2]
+        return self.p[-1]
     
     def bounds(self): # orthogonal bounding box, represented as two opposite points
         if self.deg == 1: return pointbounds(self.p)

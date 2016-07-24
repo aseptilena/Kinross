@@ -17,6 +17,3 @@ for b in (b0, b1, b2, bl):
     end = time.perf_counter()
     print(l) # 7.504871040167711, 6.4788922059020155, 6.879770127854842, 6.982407360576692
     print((end - start) * 10, "ms / length") # 1.6, 2, 2.3, 4 ms
-
-from kinback.affines import tf
-print(tf.minstr("matrix(0.00414115,0.99999143,-0.99999143,0.00414115,759.77998,141.20779)"))

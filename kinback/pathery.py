@@ -2,7 +2,7 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
 from cmath import isclose
-from .regexes import pcomm_re, num_re
+from .regexes import pcomm_re, num_re, fsmn, catn
 from .segment import bezier, ellipt
 
 strides = {'L': 2, 'H': 1, 'V': 1, 'C': 6, 'S': 4, 'Q': 4, 'T': 2, 'A': 7}
@@ -46,3 +46,12 @@ class path:
                     params = [pen] + params
                     self.segments[-1].append(ellipt.fromsvg_path(*params) if typ == "A" else bezier(*params))
                     pen = params[-1]
+
+def parsepath(p):
+    out = ""
+    for headload in pcomm_re.finditer(p):
+        head, load = headload.groups()
+        typ, rel = head.upper(), head.islower()
+        load = catn(*[fsmn(float(n)) for n in num_re.findall(load)])
+        out += head + load
+    print(out)

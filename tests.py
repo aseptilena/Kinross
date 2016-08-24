@@ -5,6 +5,7 @@
 
 # Bézier curve arc length
 from kinback.pathery import *
+from kinback.algebra import *
 import time
 b0 = bezier(0, 3j, 3j, 5) # (0, [])
 b1 = bezier(0, 3j, 0, 5) # (1, [0, 0.5])
@@ -17,3 +18,12 @@ for b in (b0, b1, b2, bl):
     end = time.perf_counter()
     print(l) # 7.504871040167711, 6.4788922059020155, 6.879770127854842, 6.982407360576692
     print((end - start) * 10, "ms / length") # 1.6, 2, 2.3, 4 ms
+
+from kinback.discord import bridsondisc
+from statistics import mean
+from math import pi
+
+res = []
+while True:
+    res.append(len(list(bridsondisc(100+100j))))
+    print(mean(res) * pi / 40000)

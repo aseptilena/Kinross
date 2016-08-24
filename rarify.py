@@ -4,6 +4,7 @@
 # https://parclytaxel.tumblr.com
 import os, time, argparse
 import xml.etree.ElementTree as t
+from glob import glob
 from kinback.svgproc import *
 from kinback.affines import tf
 tr, rn = None, None
@@ -94,6 +95,9 @@ cdl.add_argument("-d", "--dimens", action="store_true", default=False, help="rem
 cdl.add_argument("-s", "--scripts", action="store_false", default=True, help="don't remove scripts")
 cdl.add_argument("-l", "--lpecrush", action="store_true", default=False, help="remove LPE output (this will break the picture outside Inkscape if it has LPEs)")
 cdl.add_argument("-x", "--xml", action="store_true", default=False, help="add XML header")
-cdl.add_argument("files", nargs="*", help="list of files to rarify")
+cdl.add_argument("files", nargs="*", help="list of files to rarify (if left blank, defaults to all SVG files in current directory)")
 flags = cdl.parse_args()
-for f in flags.files: rarify(f)
+flist = flags.files
+if not flist: flist = glob("*.svg")
+flist = [s for s in flist if not s.endswith("-rarified.svg")]
+for f in flist: rarify(f)

@@ -4,7 +4,7 @@
 from math import sqrt, sin, cos, tan, atan, pi, hypot, radians, degrees, floor, ceil
 from cmath import rect, polar, phase, isclose
 from .affines import tf
-from .algebra import collinear, linterp, rombergquad, pn
+from .algebra import collinear, linterp, rombergquad, Pol
 from .regexes import fsmn
 T, H = pi * 2, pi / 2
 
@@ -120,9 +120,9 @@ class bezier:
         if   self.deg == 3: l = (w[0], 3 * (w[1] - w[0]), 3 * (w[2] - 2 * w[1] + w[0]), w[3] - 3 * w[2] + 3 * w[1] - w[0])
         elif self.deg == 2: l = (w[0], 2 * (w[1] - w[0]), w[2] - 2 * w[1] + w[0])
         elif self.deg == 1: l = (w[0], w[1] - w[0])
-        self.xypn = pn(*(n.real for n in l)), pn(*(n.imag for n in l)) # polynomials in the x and y directions
-        self.xydpn = [z.d() for z in self.xypn] # derivatives of those polynomials
-        alp = self.xydpn[0] * self.xydpn[0] + self.xydpn[1] * self.xydpn[1]
+        self.px, self.py = Pol(n.real for n in l), Pol(n.imag for n in l) # polynomials in the x and y directions
+        self.pdx, self.pdy = self.px.d(), self.py.d() # derivatives of those polynomials
+        alp = self.pdx * self.pdx + self.pdy * self.pdy
         self.lenf = lambda t: sqrt(alp(t)) # length function
     def __str__(self): return "<{}>".format(" ".join("{:.4f}".format(n) for n in self.p))
     def __repr__(self): return "bezier({})".format(", ".join([str(n) for n in self.p]))
@@ -130,7 +130,7 @@ class bezier:
     def __call__(self, t):
         if t == 0: return self.p[0]
         if t == 1: return self.p[-1]
-        return complex(*(z(t) for z in self.xypn))
+        return complex(self.px(t), self.py(t))
     def split(self, t): # TODO adapt this to slice notation
         bef, aft, q = [self.p[0]], [self.p[-1]], self.p[:]
         while len(q) > 1:
@@ -139,7 +139,7 @@ class bezier:
             aft.append(q[-1])
         return [bezier(*bef), bezier(*aft[::-1])]
     def __neg__(self): return bezier(*self.p[::-1])
-    def d(self, t): return complex(*(z(t) for z in self.xydpn))
+    def d(self, t): return complex(self.pdx(t), self.pdy(t))
     def __rmatmul__(self, m): return bezier(*(m @ s for s in self.p))
     
     def svg_refl(self, ncommand): # For determining SVG paths; returns the extra control point implied by S/T commands, given the command type in question
@@ -148,7 +148,7 @@ class bezier:
     
     def bounds(self): # orthogonal bounding box, represented as two opposite points
         if self.deg == 1: return pointbounds(self.p)
-        xb, yb = ([self(t) for t in z.reals() if 0 < t < 1] for z in self.xydpn)
+        xb, yb = ([self(t) for t in z.reals() if 0 < t < 1] for z in (self.dpx, self.dpy))
         return pointbounds(xb + yb + [self(0), self(1)])
     
     def kind(self):
@@ -173,20 +173,18 @@ class bezier:
             if K < 3 * y and x < 0 or K < y * (x + y) and x < 1 and y > 0: num = -1
             else: return nothing
         if num > 0:
-            xp, yp = (z.d() for z in self.xypn)
-            xpp, ypp = xp.d(), yp.d()
-            return (num, (xp * ypp - yp * xpp).reals())
+            return num, (self.pdx * self.pdy.d() - self.pdy * self.pdx.d()).reals()
         else:
             # Because the curve is cubic the equations are conic sections and solving is quite simple.
-            [c, b, a], [f, e, d] = [s[1:] for s in self.xypn]
+            [c, b, a], [f, e, d] = self.px[1:], self.py[1:]
             # These conics are {a, a, a, b, b, c} and {d, d, d, e, e, f} (powers from left to right are x², xy, y², x, y, 1).
             # The degenerate conic between them is (b + ez)(x + y) + (c + fz) = 0 where z = -a / d, so the sum of solutions (x + y) is:
             J = (a * f - c * d) / (b * d - a * e)
             # Adding axy on both sides of the x-coordinate equation yields ax² + 2axy + ay² + bx + by + c = axy,
             # which reduces to aJ² + bJ + c = axy. The product of solutions (xy) is thus:
-            K = pn(c / a, b / a, 1)(J)
+            K = Pol([c / a, b / a, 1])(J)
             # A polynomial with x and y as its roots can then be constructed and the self-intersection parameters found.
-            return (num, pn(K, -J, 1).reals())
+            return (num, Pol([K, -J, 1]).reals())
     def length(self, end = 1, start = 0):
         """The length of this curve between the specified endpoint parameters."""
         if self.deg == 1: return abs(self.p[1] - self.p[0])
@@ -215,11 +213,8 @@ class bezier:
         return round(mid, 12)
     def projection(self, z):
         """The parameter t corresponding to the projection of z onto the curve; the smallest t is returned if two or more parameters tie for shortest distance."""
-        def dist(t): return abs(self(t) - z)
-        x, y = self.polyns()
-        dx, dy = self.deriv().polyns()
-        x[0], y[0] = x[0] - z.real, y[0] - z.imag
-        return sorted([0] + [t for t in (x * dx + y * dy).rroots() if 0 < t < 1] + [1], key=dist)[0]
+        dist = lambda t: abs(self(t) - z)
+        return sorted([0] + [t for t in ((self.px - Pol([z.real])) * self.pdx + (self.py - Pol([z.imag])) * self.pdy).reals() if 0 < t < 1] + [1], key=dist)[0]
 
 class elliparc: # functions not yet migrated are here
     def boundingbox(self):

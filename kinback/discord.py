@@ -2,9 +2,11 @@
 # Parcly Taxel / Jeremy Tan, 2016
 # https://parclytaxel.tumblr.com
 import random
-from math import sqrt, log, ceil
+from math import sqrt, log, ceil, pi
 from cmath import rect
 from .algebra import linterp
+T = 2 * pi
+BDG, BDL, BDU = sqrt(2) / 2, sqrt(2) - 1, 2 - sqrt(2)
 
 # SystemRandom is good enough for simulation and pretty pictures, but here I add a few more useful functions, especially discrete distributions.
 # Page numbers below refer to Luc Devroye's book on Non-Uniform Random Variate Generation (http://luc.devroye.org/rnbookindex.html).
@@ -58,7 +60,7 @@ def rectpointpick(c2 = 1+1j, c1 = 0):
     return complex(linterp(c1.real, c2.real, rng.random()), linterp(c1.imag, c2.imag, rng.random()))
 def roundpointpick(r = 1, c = 0, ri = 0):
     """Picks a point in the circle/annulus with centre c, outer radius r and inner radius ri."""
-    return c + rect(sqrt(rng.uniform(ri * ri, r * r)), 6.283185307179586 * rng.random())
+    return c + rect(sqrt(rng.uniform(ri * ri, r * r)), T * rng.random())
 def trianglepointpick(v1 = 1, v2 = 1j, o = 0):
     """Picks a point within the triangle with vertices at o, o + v1 and o + v2."""
     t1, t2 = rng.random(), rng.random()
@@ -68,10 +70,10 @@ def trianglepointpick(v1 = 1, v2 = 1j, o = 0):
 def bridsondisc(c2 = 64+64j, r = 1, c1 = 0):
     """Poisson-samples the given rectangular region with all distances between points at least r using Bridson's algorithm.
     My empirical tests show the number of circles generated as approximately 0.679 * area / radius^2; since this balloons very fast, the procedure here is a generator."""
-    rvec, msh, r2 = c2 - c1, r * 0.7071067811865476, r * r # http://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf
+    rvec, msh, r2 = c2 - c1, r * BDG, r * r # http://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf
     sense_x, sense_y, w, h = -1 if rvec.real < 0 else 1, -1 if rvec.imag < 0 else 1, abs(rvec.real), abs(rvec.imag)
-    NX, NY = ceil(w / msh), ceil(h / msh)
-    grid = [[None for q in range(NX)] for q in range(ceil(NY))]
+    nx, ny = ceil(w / msh), ceil(h / msh)
+    grid = [[None for q in range(nx)] for q in range(ceil(ny))]
     p0 = complex(w * rng.random(), h * rng.random())
     g0 = (int(p0.imag / msh), int(p0.real / msh))
     active = [p0]
@@ -79,7 +81,7 @@ def bridsondisc(c2 = 64+64j, r = 1, c1 = 0):
     grid[g0[0]][g0[1]] = p0
     def faraway(b, dy, dx):
         fy, fx = b[1][0] + dy, b[1][1] + dx
-        if 0 <= fy < NY and 0 <= fx < NX:
+        if 0 <= fy < ny and 0 <= fx < nx:
             op = grid[fy][fx]
             if op != None:
                 ov = op - b[0]
@@ -98,10 +100,10 @@ def bridsondisc(c2 = 64+64j, r = 1, c1 = 0):
                         break
                 if notclose:
                     sx, sy, tsqs = cand.real % msh / msh, cand.imag % msh / msh, []
-                    if sx > 0.585786437626905: tsqs += ((-1, 2), (0, 2), (1, 2))
-                    if sy > 0.585786437626905: tsqs += ((2, -1), (2, 0), (2, 1))
-                    if sx < 0.41421356237309503: tsqs += ((-1, -2), (0, -2), (1, -2))
-                    if sy < 0.41421356237309503: tsqs += ((-2, -1), (-2, 0), (-2, 1))
+                    if sx > BDU: tsqs += ((-1, 2), (0, 2), (1, 2))
+                    if sy > BDU: tsqs += ((2, -1), (2, 0), (2, 1))
+                    if sx < BDL: tsqs += ((-1, -2), (0, -2), (1, -2))
+                    if sy < BDL: tsqs += ((-2, -1), (-2, 0), (-2, 1))
                     for m in tsqs:
                         if not faraway(cb, *m):
                             notclose = False

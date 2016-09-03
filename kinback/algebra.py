@@ -73,10 +73,10 @@ def polroots(p_in):
         for q in range(64):
             at = p(x)
             if abs(delta) < 1e-15 or abs(at) < 1e-15: break
-            G = p1(x) / at
-            H = G * G - p2(x) / at
-            surd = csqrt((n - 1) * (n * H - G * G))
-            d0, d1 = G + surd, G - surd
+            g = p1(x) / at
+            h = g * g - p2(x) / at
+            surd = csqrt((n - 1) * (n * h - g * g))
+            d0, d1 = g + surd, g - surd
             delta = n / d0 if abs(d0) >= abs(d1) else n / d1
             x -= delta
         if abs(x.imag) < 1e-14:

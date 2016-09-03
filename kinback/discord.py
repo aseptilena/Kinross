@@ -6,7 +6,7 @@ from math import sqrt, log, ceil, pi
 from cmath import rect
 from .algebra import linterp
 T = 2 * pi
-BDG, BDL, BDU = sqrt(2) / 2, sqrt(2) - 1, 2 - sqrt(2)
+BDG, BDL, BDU = sqrt(2) / 2, sqrt(2) - 1, 2 - sqrt(2) # constants for the Bridson-disc algorithm
 
 # SystemRandom is good enough for simulation and pretty pictures, but here I add a few more useful functions, especially discrete distributions.
 # Page numbers below refer to Luc Devroye's book on Non-Uniform Random Variate Generation (http://luc.devroye.org/rnbookindex.html).
@@ -15,10 +15,27 @@ class KinrossRandom(random.SystemRandom):
         """Geometric distribution with probability of success p. Here we use the number of trials before first failure;
         this is equivalent to flooring the exponential distribution with parameter -ln(1 - p). p defaults to 0.5."""
         return int(self.expovariate(log(2) if not 0 < p < 1 else -log(1 - p)))
-    def binomialvariate(self, num = 0, prob = 2):
-        """Binomial distribution with the specified number of trials and probability of success; parameters default to 16 and 0.5."""
-        n, p = ceil(abs(num)) if num else 16, prob if 0 < prob < 1 else 0.5
-        if p == 0.5: return bin(self.getrandbits(n)).count('1')
+    def gammavariate(self, k, theta):
+        """Gamma distribution using Marsaglia and Tsang's method. Parameters and operation follow the GSL code for this same distribution."""
+        if k < 1: return self.gammavariate(k + 1, theta) * (1 - self.random()) ** (1 / k)
+        d = k - 1 / 3
+        c = 1 / 3 / sqrt(d)
+        while 1:
+            v = 0
+            while v <= 0:
+                x = self.gauss(0, 1)
+                v = 1 + c * x
+            v, u = v ** 3, 1 - self.random()
+            if u < 1 - 0.0331 * x ** 4: break
+            if log(u) < 0.5 * x * x + d * (1 - v + log(v)): break
+        return d * v * theta
+    def kumaraswamyvariate(self, a, b):
+        """Kumaraswamy distribution, an easy-to-sample approximation of the beta distribution. CDF is 1 - (1 - x ** a) ** b."""
+        return (1 - (1 - self.random()) ** (1 / b)) ** (1 / a)
+    def binomialvariate(self, num, prob):
+        """Binomial distribution with num trials and probability prob of success."""
+        if prob == 0.5: return bin(self.getrandbits(num)).count('1')
+        n, p = num, prob
         res = 0 # Relles's recursive method (1972, hinted on p. 538)
         while n > 16:
             if not n & 1:
@@ -39,9 +56,9 @@ class KinrossRandom(random.SystemRandom):
                 x += 1
         except ZeroDivisionError: x += 1
         return res + x - 1
-    def poissonvariate(self, mean = 0):
-        """Poisson distribution with the specified mean, which defaults to 1."""
-        m, r = mean if mean > 0 else 1, 0 # Ahrens/Dieter recursive method, p. 518
+    def poissonvariate(self, mean):
+        """Poisson distribution with the given mean."""
+        m, r = mean, 0 # Ahrens/Dieter recursive method, p. 518
         while m > 12:
             n = int(0.875 * m)
             g = self.gammavariate(n, 1)
